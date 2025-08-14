@@ -1,5 +1,5 @@
 {
-  "name": "clinic-reports",
+  "name": "clinic-testreports",
   "version": "1.0.0",
   "dependencies": {
     "formidable": "^2.1.1",
