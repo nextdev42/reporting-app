@@ -2,54 +2,52 @@
 <html lang="sw">
 <head>
   <meta charset="UTF-8">
-  <title>Fomu ya Kuripoti Kliniki</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuma Ripoti ya Kliniki</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7f7f7;
-      padding: 30px;
+    /* Reset & body */
+    * { box-sizing: border-box; margin:0; padding:0; font-family: Arial, sans-serif; }
+    body { background: #f2f5f7; color: #333; line-height: 1.6; }
+
+    /* Navbar */
+    nav { background: #0066cc; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+    nav a { color: white; text-decoration: none; margin-left: 15px; }
+    nav a:hover { text-decoration: underline; }
+
+    /* Container */
+    .container { max-width: 600px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+    h1 { margin-bottom: 20px; text-align: center; color: #0066cc; }
+
+    input, select, textarea, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 4px; border: 1px solid #ccc; }
+    textarea { resize: vertical; }
+
+    button { background: #0066cc; color: white; border: none; cursor: pointer; }
+    button:hover { background: #004999; }
+
+    /* Image preview */
+    #preview { margin-top: 10px; max-width: 100%; border-radius: 4px; }
+
+    /* Responsive */
+    @media (max-width: 500px) {
+      .container { padding: 15px; }
     }
-    .container {
-      max-width: 500px;
-      margin: auto;
-      background: white;
-      padding: 20px 30px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-    input, select, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-    }
-    button {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #45a049;
-    }
-    .error {
-      color: red;
-      margin-bottom: 15px;
-    }
+
+    .status { margin-top: 10px; font-weight: bold; text-align: center; }
   </style>
 </head>
 <body>
+
+  <nav>
+    <div>📋 <strong>Ripoti ya Kliniki</strong></div>
+    <div><a href="report.html">Angalia Ripoti Zote</a></div>
+  </nav>
+
   <div class="container">
-    <h1>Fomu ya Kuripoti Matukio kwenye Kliniki</h1>
-    <div id="error" class="error"></div>
+    <h1>Tuma Ripoti Mpya</h1>
     <form id="reportForm" enctype="multipart/form-data">
       <input type="text" name="username" placeholder="Jina la Mtumiaji" required>
+      
       <select name="clinic" required>
         <option value="">Chagua Kliniki</option>
         <option value="Kisiwani">Kisiwani</option>
@@ -57,33 +55,48 @@
         <option value="Mikwambe">Mikwambe</option>
         <option value="Kibada">Kibada</option>
       </select>
+
       <input type="text" name="title" placeholder="Kichwa cha Ripoti" required>
-      <textarea name="description" placeholder="Maelezo ya Ripoti" required></textarea>
-      <input type="file" name="image" accept="image/*">
+      <textarea name="description" placeholder="Maelezo ya Ripoti" rows="5" required></textarea>
+
+      <input type="file" name="image" accept="image/*" id="imageInput">
+      <img id="preview" src="" alt="Onyesha Picha" style="display:none;">
+
       <button type="submit">Tuma Ripoti</button>
+      <div class="status" id="status"></div>
     </form>
   </div>
 
   <script>
     const form = document.getElementById("reportForm");
-    const errorDiv = document.getElementById("error");
+    const statusEl = document.getElementById("status");
+    const imageInput = document.getElementById("imageInput");
+    const preview = document.getElementById("preview");
+
+    // Image preview
+    imageInput.addEventListener("change", () => {
+      const file = imageInput.files[0];
+      if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+      } else {
+        preview.src = "";
+        preview.style.display = "none";
+      }
+    });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      errorDiv.textContent = "";
-
-      const username = form.username.value.trim();
-      const clinic = form.clinic.value;
-      const title = form.title.value.trim();
-      const description = form.description.value.trim();
-
-      // Front-end validation
-      if (!username || !clinic || !title || !description) {
-        errorDiv.textContent = "Tafadhali jaza sehemu zote muhimu.";
-        return;
-      }
+      statusEl.textContent = "Inatumika...";
 
       const formData = new FormData(form);
+
+      // Basic validation
+      if (!form.username.value || !form.clinic.value || !form.title.value || !form.description.value) {
+        alert("Tafadhali jaza sehemu zote muhimu.");
+        statusEl.textContent = "";
+        return;
+      }
 
       try {
         const res = await fetch("/submit", {
@@ -92,16 +105,24 @@
         });
 
         if (!res.ok) {
-          errorDiv.textContent = "Kosa: Imeshindikana kutuma ripoti.";
+          const text = await res.text();
+          statusEl.textContent = "Tatizo: " + text;
           return;
         }
 
-        alert("Ripoti imetumwa kwa mafanikio!");
+        statusEl.textContent = "Ripoti imehifadhiwa!";
         form.reset();
+        preview.src = "";
+        preview.style.display = "none";
+
+        // Redirect to reports page after 1s
+        setTimeout(() => { window.location.href = "report.html"; }, 1000);
+
       } catch (err) {
-        errorDiv.textContent = "Kosa: " + err.message;
+        statusEl.textContent = "Kuna tatizo: " + err.message;
       }
     });
   </script>
+
 </body>
 </html>
