@@ -2,121 +2,129 @@
 <html lang="sw">
 <head>
   <meta charset="UTF-8">
-  <title>Ripoti Zote</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ripoti za Kliniki</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0f2f5;
-      padding: 20px;
-    }
-    .container {
-      max-width: 900px;
-      margin: auto;
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-      margin-bottom: 30px;
-    }
-    .report-card {
-      background: #fff;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    .report-card img {
-      max-width: 100%;
-      margin-top: 10px;
-      border-radius: 4px;
-    }
-    .label {
-      font-weight: bold;
-    }
-    .comment-section {
-      margin-top: 15px;
-    }
-    .comment-section input {
-      width: 75%;
-      padding: 8px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      margin-right: 5px;
-    }
-    .comment-section button {
-      padding: 8px 12px;
-      border-radius: 4px;
-      border: none;
-      background: #007BFF;
-      color: white;
-      cursor: pointer;
-    }
-    .comment-section button:hover {
-      background: #0056b3;
-    }
-    .comment {
-      background: #f1f1f1;
-      padding: 6px 10px;
-      border-radius: 4px;
-      margin-top: 5px;
+    /* Reset & body */
+    * { box-sizing: border-box; margin:0; padding:0; font-family: Arial, sans-serif; }
+    body { background: #f2f5f7; color: #333; line-height: 1.6; }
+
+    /* Navbar */
+    nav { background: #0066cc; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+    nav a { color: white; text-decoration: none; margin-left: 15px; }
+    nav a:hover { text-decoration: underline; }
+
+    /* Container */
+    .container { max-width: 900px; margin: 20px auto; padding: 0 15px; }
+
+    h1, h2 { margin-bottom: 15px; }
+
+    /* Report Card */
+    .report-card { background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .report-card img { max-width: 100%; margin: 10px 0; border-radius: 4px; }
+
+    /* Comments */
+    .comments { margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; }
+    .comment { margin-bottom: 8px; }
+    .comment strong { color: #0066cc; }
+    .comment-input { display: flex; margin-top: 10px; }
+    .comment-input input, .comment-input select { flex: 1; padding: 6px; margin-right: 5px; border-radius: 4px; border: 1px solid #ccc; }
+    .comment-input button { padding: 6px 12px; border:none; border-radius:4px; background:#0066cc; color:white; cursor:pointer; }
+    .comment-input button:hover { background:#004999; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .comment-input { flex-direction: column; }
+      .comment-input input, .comment-input select, .comment-input button { margin: 5px 0; width: 100%; }
     }
   </style>
 </head>
 <body>
+
+  <nav>
+    <div>📋 <strong>Ripoti za Kliniki</strong></div>
+    <div><a href="index.html">Tuma Ripoti Mpya</a></div>
+  </nav>
+
   <div class="container">
     <h1>Ripoti Zote</h1>
     <div id="reports"></div>
   </div>
 
   <script>
-    let reportsData = [];
-
-    async function loadReports() {
+    const CLINICS = ["Kisiwani", "Jirambe", "Mikwambe", "Kibada"];
+    
+    async function fetchReports() {
       const res = await fetch("/api/reports");
-      reportsData = await res.json();
-      renderReports();
-    }
-
-    function renderReports() {
+      const data = await res.json();
       const container = document.getElementById("reports");
       container.innerHTML = "";
 
-      reportsData.forEach((r, idx) => {
+      if (data.length === 0) {
+        container.innerHTML = "<p>Hakuna ripoti bado.</p>";
+        return;
+      }
+
+      data.forEach(report => {
         const div = document.createElement("div");
         div.className = "report-card";
-
         div.innerHTML = `
-          <p><span class="label">Muda:</span> ${r.timestamp}</p>
-          <p><span class="label">Jina la Mtumiaji:</span> ${r.username}</p>
-          <p><span class="label">Kliniki:</span> ${r.clinic}</p>
-          <p><span class="label">Kichwa:</span> ${r.title}</p>
-          <p><span class="label">Maelezo:</span> ${r.description}</p>
-          ${r.image ? `<img src="${r.image}" alt="Ripoti">` : ""}
-          <div class="comment-section">
+          <p><strong>Muda:</strong> ${report.timestamp}</p>
+          <p><strong>Jina la Mtumiaji:</strong> ${report.username}</p>
+          <p><strong>Kliniki:</strong> ${report.clinic}</p>
+          <p><strong>Kichwa:</strong> ${report.title}</p>
+          <p><strong>Maelezo:</strong> ${report.description}</p>
+          ${report.image ? `<img src="${report.image}" alt="Picha ya Ripoti">` : ""}
+          <div class="comments">
             <h4>Maoni:</h4>
-            <div class="comments" id="comments-${idx}"></div>
-            <input type="text" id="comment-input-${idx}" placeholder="Ongeza maoni">
-            <button onclick="addComment(${idx})">Ongeza</button>
+            <div id="comments-${report.id}">
+              ${report.comments.map(c => `<p class="comment"><strong>${c.username} (${c.clinic}):</strong> ${c.comment}</p>`).join("")}
+            </div>
+            <div class="comment-input">
+              <input type="text" placeholder="Jina lako" id="username-${report.id}">
+              <select id="clinic-${report.id}">
+                <option value="">Chagua Kliniki</option>
+                ${CLINICS.map(c => `<option value="${c}">${c}</option>`).join("")}
+              </select>
+              <input type="text" placeholder="Andika maoni..." id="comment-${report.id}">
+              <button onclick="addComment(${report.id})">Ongeza</button>
+            </div>
           </div>
         `;
         container.appendChild(div);
       });
     }
 
-    function addComment(idx) {
-      const input = document.getElementById(`comment-input-${idx}`);
-      const text = input.value.trim();
-      if (!text) return;
+    async function addComment(reportId) {
+      const username = document.getElementById(`username-${reportId}`).value.trim();
+      const clinic = document.getElementById(`clinic-${reportId}`).value;
+      const comment = document.getElementById(`comment-${reportId}`).value.trim();
 
-      const commentDiv = document.createElement("div");
-      commentDiv.className = "comment";
-      commentDiv.textContent = text;
+      if (!username || !clinic || !comment) {
+        alert("Tafadhali jaza jina, kliniki na maoni.");
+        return;
+      }
 
-      document.getElementById(`comments-${idx}`).appendChild(commentDiv);
-      input.value = "";
+      const res = await fetch("/comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ report_id: reportId, username, clinic, comment })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById(`comments-${reportId}`).innerHTML += `
+          <p class="comment"><strong>${username} (${clinic}):</strong> ${comment}</p>
+        `;
+        document.getElementById(`username-${reportId}`).value = "";
+        document.getElementById(`clinic-${reportId}`).value = "";
+        document.getElementById(`comment-${reportId}`).value = "";
+      } else {
+        alert(data.error || "Kuna tatizo kuhifadhi maoni.");
+      }
     }
 
-    loadReports();
+    fetchReports();
   </script>
 </body>
 </html>
