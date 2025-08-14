@@ -8,6 +8,7 @@
   <h2>Submit Clinic Report</h2>
   <form id="reportForm">
     <input name="username" placeholder="Username" required /><br><br>
+
     <select name="clinic" required>
       <option value="">Select Clinic</option>
       <option value="Kisiwani">Kisiwani</option>
@@ -16,6 +17,7 @@
       <option value="Kibada">Kibada</option>
     </select>
     <br><br>
+
     <input name="title" placeholder="Title" required /><br><br>
     <textarea name="description" placeholder="Description" required></textarea><br><br>
     <input type="file" name="image" accept="image/*" /><br><br>
@@ -40,12 +42,16 @@
           body: formData
         });
 
-        const data = await res.json();
-        if (res.ok) {
-          status.textContent = data.message || "Report submitted!";
-          form.reset();
+        // Safely parse JSON or fallback
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { data = { message: text }; }
+
+        if (!res.ok) {
+          status.textContent = "Error: " + (data.error || data.message);
         } else {
-          status.textContent = "Error: " + (data.error || "Unknown");
+          status.textContent = data.message || "Report submitted successfully!";
+          form.reset();
         }
       } catch (err) {
         status.textContent = "Error: " + err.message;
