@@ -18,11 +18,7 @@ export default function Home() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setStatus("Submitting...");
-
-  const formData = new
-
+    e.preventDefault();
 
     // Basic validation
     if (!form.username || !form.clinic || !form.title || !form.description) {
@@ -43,7 +39,7 @@ export default function Home() {
       const res = await fetch("/api/report", {
         method: "POST",
         body: formData,
-        duplex: "half"
+        duplex: "half" // required for Next.js Edge runtime
       });
 
       const data = await res.json();
