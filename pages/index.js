@@ -20,7 +20,6 @@ export default function Home() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
     if (!form.username || !form.clinic || !form.title || !form.description) {
       alert("Please fill in all required fields.");
       return;
@@ -38,7 +37,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/report", {
         method: "POST",
-        body: formData, // ✅ no duplex needed
+        body: formData, // ✅ Node.js runtime, no duplex needed
       });
 
       const data = await res.json();
@@ -49,10 +48,7 @@ export default function Home() {
       }
 
       setStatus(data.message || "Report submitted successfully!");
-      // Redirect to /report after 1 second
-      setTimeout(() => {
-        window.location.href = "/report";
-      }, 1000);
+      setTimeout(() => window.location.href = "/report", 1000);
     } catch (err) {
       setStatus("Error: " + err.message);
     }
@@ -71,16 +67,9 @@ export default function Home() {
         />
         <br /><br />
 
-        <select
-          name="clinic"
-          value={form.clinic}
-          onChange={handleChange}
-          required
-        >
+        <select name="clinic" value={form.clinic} onChange={handleChange} required>
           <option value="">Select Clinic</option>
-          {CLINICS.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
+          {CLINICS.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <br /><br />
 
@@ -102,12 +91,7 @@ export default function Home() {
         />
         <br /><br />
 
-        <input
-          type="file"
-          name="image"
-          accept="image/*"
-          onChange={handleChange}
-        />
+        <input type="file" name="image" accept="image/*" onChange={handleChange} />
         <br /><br />
 
         <button type="submit">Submit Report</button>
