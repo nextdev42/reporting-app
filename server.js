@@ -7,15 +7,19 @@ const sqlite3 = require("sqlite3").verbose();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Serve static files
+app.use(express.static("public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
-app.use("/uploads", express.static(path.join(__dirname, "reports/uploads")));
 
-// Ensure folders exist
+// Upload folder
+const uploadDir = "reports/uploads";
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const upload = multer({ dest: uploadDir });
+
+// Ensure db folder exists
 if (!fs.existsSync("db")) fs.mkdirSync("db");
-if (!fs.existsSync("reports/uploads")) fs.mkdirSync("reports/uploads", { recursive: true });
 
 // Connect to SQLite
 const db = new sqlite3.Database("./db/reports.db");
@@ -47,90 +51,91 @@ db.serialize(() => {
   `);
 });
 
-// Configure multer for file upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "reports/uploads/"),
-  filename: (req, file, cb) => cb(null, Date.now() + "_" + file.originalname),
-});
-const upload = multer({ storage });
+// Helper function for Tanzania timestamp
+function getTanzaniaTimestamp() {
+  const now = new Date();
+  const tzOffset = 3 * 60; // UTC+3 in minutes
+  const tanzaniaTime = new Date(now.getTime() + (tzOffset + now.getTimezoneOffset()) * 60000);
+  const options = {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  };
+  return tanzaniaTime.toLocaleString('sw-TZ', options);
+}
 
-// --- Routes ---
-
-// Submit report
+// Handle report submission
 app.post("/submit", upload.single("image"), (req, res) => {
   const { username, clinic, title, description } = req.body;
   if (!username || !clinic || !title || !description)
-    return res.status(400).send("Tafadhali jaza sehemu zote muhimu.");
+    return res.status(400).send("Jaza sehemu zote muhimu.");
 
-  const timestamp = new Date().toLocaleString("sw-TZ", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric",
-  });
+  let imagePath = "";
+  if (req.file) {
+    const targetPath = path.join(uploadDir, req.file.originalname);
+    fs.renameSync(req.file.path, targetPath);
+    imagePath = targetPath;
+  }
 
-  let imagePath = req.file ? `/uploads/${req.file.filename}` : "";
+  const timestamp = getTanzaniaTimestamp();
 
   const stmt = db.prepare(
     "INSERT INTO reports (timestamp, username, clinic, title, description, image) VALUES (?, ?, ?, ?, ?, ?)"
   );
-  stmt.run(timestamp, username, clinic, title, description, imagePath, function (err) {
-    if (err) return res.status(500).send("Tatizo la database: " + err.message);
-    res.status(200).send("Ripoti imehifadhiwa kwa mafanikio!");
+  stmt.run(timestamp, username, clinic, title, description, imagePath, (err) => {
+    if (err) return res.status(500).send("Tatizo kwenye database: " + err.message);
+    res.redirect("/report.html");
   });
   stmt.finalize();
 });
 
-// Get all reports with comments
+// API to fetch all reports with comments
 app.get("/api/reports", (req, res) => {
-  db.all("SELECT * FROM reports ORDER BY id DESC", [], (err, reports) => {
+  db.all("SELECT * FROM reports ORDER BY id DESC", (err, reports) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    // Attach comments to each report
-    const promises = reports.map(
-      (r) =>
-        new Promise((resolve) => {
-          db.all("SELECT * FROM comments WHERE report_id=? ORDER BY id ASC", [r.id], (err2, comments) => {
-            if (err2) r.comments = [];
-            else r.comments = comments;
-            resolve(r);
-          });
-        })
-    );
+    const reportIds = reports.map(r => r.id);
+    if (reportIds.length === 0) return res.json([]);
 
-    Promise.all(promises).then((fullReports) => res.json(fullReports));
+    db.all(
+      `SELECT * FROM comments WHERE report_id IN (${reportIds.join(",")}) ORDER BY id ASC`,
+      (err2, comments) => {
+        if (err2) return res.status(500).json({ error: err2.message });
+
+        // Attach comments to each report
+        reports.forEach(r => {
+          r.comments = comments.filter(c => c.report_id === r.id);
+        });
+
+        res.json(reports);
+      }
+    );
   });
 });
 
-// Add comment
+// API to add comment to a report
 app.post("/api/comments/:reportId", (req, res) => {
   const reportId = req.params.reportId;
   const { username, clinic, comment } = req.body;
   if (!username || !clinic || !comment)
-    return res.status(400).send("Tafadhali jaza sehemu zote za maoni.");
+    return res.status(400).send("Jaza sehemu zote za maoni.");
 
-  const timestamp = new Date().toLocaleString("sw-TZ", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric",
-  });
-
+  const timestamp = getTanzaniaTimestamp();
   const stmt = db.prepare(
     "INSERT INTO comments (report_id, timestamp, username, clinic, comment) VALUES (?, ?, ?, ?, ?)"
   );
-  stmt.run(reportId, timestamp, username, clinic, comment, function (err) {
-    if (err) return res.status(500).send("Tatizo la database: " + err.message);
-    res.status(200).send("Maoni yamehifadhiwa!");
+  stmt.run(reportId, timestamp, username, clinic, comment, (err) => {
+    if (err) return res.status(500).send("Tatizo kuingiza maoni: " + err.message);
+    res.send("Maoni yamehifadhiwa");
   });
   stmt.finalize();
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server inafanya kazi kwenye http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });
