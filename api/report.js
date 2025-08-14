@@ -1,5 +1,4 @@
 import formidable from "formidable";
-import fs from "fs";
 import XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
 
@@ -18,6 +17,7 @@ export default async function handler(req, res) {
   }
 
   const form = new formidable.IncomingForm();
+  form.keepExtensions = true;
 
   form.parse(req, async (err, fields, files) => {
     if (err) return res.status(500).json({ error: "Form parse error" });
@@ -31,9 +31,9 @@ export default async function handler(req, res) {
       const imageFile = files.image;
       let imageUrl = "";
 
-      // --- Handle image upload if provided ---
+      // --- Handle image upload in memory ---
       if (imageFile) {
-        const buffer = fs.readFileSync(imageFile.filepath);
+        const buffer = await imageFile[0]?.toBuffer?.() || require('fs').readFileSync(imageFile.filepath);
         const imagePath = `images/${Date.now()}-${imageFile.originalFilename}`;
 
         const { data: imgData, error: uploadErr } = await supabase.storage
@@ -42,18 +42,21 @@ export default async function handler(req, res) {
 
         if (uploadErr) throw uploadErr;
 
-        const { publicURL } = supabase.storage.from("clinic-reports").getPublicUrl(imgData.path);
-        imageUrl = publicURL;
+        imageUrl = supabase.storage.from("clinic-reports").getPublicUrl(imgData.path).publicURL;
       }
 
-      // --- Handle Excel ---
+      // --- Handle Excel in memory ---
       let workbook;
       try {
-        // Try downloading existing Excel
-        const { data, error } = await supabase.storage.from("clinic-reports").download("reports.xlsx");
+        const { data, error } = await supabase.storage
+          .from("clinic-reports")
+          .download("reports.xlsx");
+
         if (error) throw error;
-        const buffer = Buffer.from(await data.arrayBuffer());
-        workbook = XLSX.read(buffer, { type: "buffer" });
+
+        const arrayBuffer = await data.arrayBuffer();
+        workbook = XLSX.read(Buffer.from(arrayBuffer), { type: "buffer" });
+
       } catch {
         // First-time creation
         workbook = XLSX.utils.book_new();
@@ -63,7 +66,7 @@ export default async function handler(req, res) {
 
       const ws = workbook.Sheets[workbook.SheetNames[0]];
 
-      // --- Add report row ---
+      // --- Add new row ---
       const timestamp = new Date().toISOString();
       XLSX.utils.sheet_add_json(ws, [{
         Username: username,
@@ -74,7 +77,7 @@ export default async function handler(req, res) {
         "Image URL": imageUrl
       }], { skipHeader: true, origin: -1 });
 
-      // --- Upload Excel ---
+      // --- Write Excel to buffer and upload ---
       const excelBuffer = XLSX.write(workbook, { type: "buffer" });
       const { error: excelUploadErr } = await supabase.storage
         .from("clinic-reports")
