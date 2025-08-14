@@ -6,7 +6,6 @@ import { createClient } from "@supabase/supabase-js";
 
 export const config = { api: { bodyParser: false } };
 
-// Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -29,11 +28,10 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Temp file for Excel
       const tmpExcel = path.join("/tmp", "reports.xlsx");
-
-      // Download existing Excel from Supabase if exists
       let workbook;
+
+      // Try to download existing Excel
       try {
         const { data, error: downloadError } = await supabase.storage
           .from("clinic-reports")
@@ -46,13 +44,15 @@ export default async function handler(req, res) {
       } catch {
         // Create new workbook if not exists
         workbook = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([["Username","Clinic","Title","Description","Timestamp","Image URL"]]);
+        const ws = XLSX.utils.aoa_to_sheet([
+          ["Username","Clinic","Title","Description","Timestamp","Image URL"]
+        ]);
         XLSX.utils.book_append_sheet(workbook, ws, "Reports");
       }
 
       const ws = workbook.Sheets[workbook.SheetNames[0]];
 
-      // Upload image if exists
+      // Upload image
       let imageUrl = "";
       if (imageFile) {
         const imagePath = `images/${Date.now()}-${imageFile.originalFilename}`;
@@ -65,7 +65,9 @@ export default async function handler(req, res) {
 
         if (uploadErr) throw uploadErr;
 
-        const { publicURL } = supabase.storage.from("clinic-reports").getPublicUrl(imageData.path);
+        const { publicURL } = supabase.storage
+          .from("clinic-reports")
+          .getPublicUrl(imageData.path);
         imageUrl = publicURL;
       }
 
@@ -80,7 +82,7 @@ export default async function handler(req, res) {
         "Image URL": imageUrl
       }], { skipHeader: true, origin: -1 });
 
-      // Write to temp Excel
+      // Write temp Excel
       XLSX.writeFile(workbook, tmpExcel);
 
       // Upload Excel to Supabase
@@ -88,13 +90,13 @@ export default async function handler(req, res) {
         .from("clinic-reports")
         .upload("reports.xlsx", fs.createReadStream(tmpExcel), {
           upsert: true,
-          contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          contentType:
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         });
 
       if (excelUploadErr) throw excelUploadErr;
 
       res.status(200).json({ success: true, message: "Report saved successfully!" });
-
     } catch (uploadError) {
       console.error("Upload Error:", uploadError);
       res.status(500).json({ error: uploadError.message || "Unknown upload error" });
