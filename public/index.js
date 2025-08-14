@@ -1,121 +1,64 @@
-import { useState } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clinic Report</title>
+</head>
+<body>
+  <h2>Submit Clinic Report</h2>
+  <form id="reportForm">
+    <input name="username" placeholder="Username" required /><br><br>
 
-const CLINICS = ["Kisiwani", "Jirambe", "Mikwambe", "Kibada"];
+    <select name="clinic" required>
+      <option value="">Select Clinic</option>
+      <option value="Kisiwani">Kisiwani</option>
+      <option value="Jirambe">Jirambe</option>
+      <option value="Mikwambe">Mikwambe</option>
+      <option value="Kibada">Kibada</option>
+    </select>
+    <br><br>
 
-export default function Home() {
-  const [form, setForm] = useState({
-    username: "",
-    clinic: "",
-    title: "",
-    description: "",
-    image: null,
-  });
-  const [status, setStatus] = useState("");
+    <input name="title" placeholder="Title" required /><br><br>
+    <textarea name="description" placeholder="Description" required></textarea><br><br>
+    <input type="file" name="image" accept="image/*" /><br><br>
+    <button type="submit">Submit Report</button>
+  </form>
 
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    setForm({ ...form, [name]: files ? files[0] : value });
-  };
+  <p id="status"></p>
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  <script>
+    const form = document.getElementById('reportForm');
+    const status = document.getElementById('status');
 
-    // Basic validation
-    if (!form.username || !form.clinic || !form.title || !form.description) {
-      alert("Please fill in all required fields.");
-      return;
-    }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = "Submitting...";
 
-    setStatus("Submitting...");
+      const formData = new FormData(form);
 
-    const formData = new FormData();
-    formData.append("username", form.username);
-    formData.append("clinic", form.clinic);
-    formData.append("title", form.title);
-    formData.append("description", form.description);
-    if (form.image) formData.append("image", form.image);
+      try {
+        // FIX: Removed .js from endpoint
+        const res = await fetch('/api/report', {
+          method: 'POST',
+          body: formData
+        });
 
-    try {
-      const res = await fetch("/api/report", {
-        method: "POST",
-        body: formData
-      });
+        // Handle response
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } 
+        catch { data = { message: text }; }
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setStatus("Error: " + (data.error || "Unknown error"));
-        return;
+        if (!res.ok) {
+          status.textContent = "Error: " + (data.error || data.message);
+        } else {
+          status.textContent = data.message || "Report submitted successfully!";
+          form.reset();
+        }
+      } catch (err) {
+        status.textContent = "Error: " + err.message;
       }
-
-      setStatus(data.message || "Report submitted successfully!");
-
-      // Redirect to /report page after 1 second
-      setTimeout(() => {
-        window.location.href = "/report";
-      }, 1000);
-
-    } catch (err) {
-      setStatus("Error: " + err.message);
-    }
-  };
-
-  return (
-    <div style={{ maxWidth: 500, margin: "40px auto", padding: 20 }}>
-      <h2>Submit Clinic Report</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          name="username"
-          placeholder="Username"
-          value={form.username}
-          onChange={handleChange}
-          required
-        />
-        <br /><br />
-
-        <select
-          name="clinic"
-          value={form.clinic}
-          onChange={handleChange}
-          required
-        >
-          <option value="">Select Clinic</option>
-          {CLINICS.map(c => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-        <br /><br />
-
-        <input
-          name="title"
-          placeholder="Title"
-          value={form.title}
-          onChange={handleChange}
-          required
-        />
-        <br /><br />
-
-        <textarea
-          name="description"
-          placeholder="Description"
-          value={form.description}
-          onChange={handleChange}
-          required
-        />
-        <br /><br />
-
-        <input
-          type="file"
-          name="image"
-          accept="image/*"
-          onChange={handleChange}
-        />
-        <br /><br />
-
-        <button type="submit">Submit Report</button>
-      </form>
-
-      {status && <p style={{ marginTop: 20 }}>{status}</p>}
-    </div>
-  );
-}
+    });
+  </script>
+</body>
+</html>
