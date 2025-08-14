@@ -18,7 +18,11 @@ export default function Home() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  setStatus("Submitting...");
+
+  const formData = new
+
 
     // Basic validation
     if (!form.username || !form.clinic || !form.title || !form.description) {
@@ -39,6 +43,7 @@ export default function Home() {
       const res = await fetch("/api/report", {
         method: "POST",
         body: formData,
+        duplex: "half"
       });
 
       const data = await res.json();
