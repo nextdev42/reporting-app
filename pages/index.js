@@ -38,8 +38,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/report", {
         method: "POST",
-        body: formData,
-        duplex: "half" // required for Next.js Edge runtime
+        body: formData, // ✅ no duplex needed for Pages Router
       });
 
       const data = await res.json();
