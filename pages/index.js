@@ -4,21 +4,45 @@ const CLINICS = ["Kisiwani", "Jirambe", "Mikwambe", "Kibada"];
 
 export default function Home() {
   const [status, setStatus] = useState("");
+  const [reportUrl, setReportUrl] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus("Submitting...");
+    setReportUrl("");
 
     const formData = new FormData(e.target);
 
-    const res = await fetch("/api/submit", {
-      method: "POST",
-      body: formData,
-    });
+    // Simple frontend validation
+    if (
+      !formData.get("username") ||
+      !formData.get("clinic") ||
+      !formData.get("title") ||
+      !formData.get("description") ||
+      !formData.get("image")
+    ) {
+      setStatus("Please fill all fields and upload an image.");
+      return;
+    }
 
-    const text = await res.text();
-    setStatus(text);
-    if (res.ok) e.target.reset();
+    try {
+      const res = await fetch("/api/submit", {
+        method: "POST",
+        body: formData,
+      });
+
+      const text = await res.text();
+      setStatus(text);
+
+      if (res.ok) {
+        e.target.reset();
+        // Set the link to the reports page
+        setReportUrl("/reports");
+      }
+    } catch (error) {
+      console.error(error);
+      setStatus("An error occurred while submitting the report.");
+    }
   };
 
   return (
@@ -49,7 +73,17 @@ export default function Home() {
 
         <button type="submit">Submit</button>
       </form>
+
       {status && <p>{status}</p>}
+
+      {reportUrl && (
+        <p>
+          View all reports here:{" "}
+          <a href={reportUrl} target="_blank" rel="noopener noreferrer">
+            {reportUrl}
+          </a>
+        </p>
+      )}
     </div>
   );
 }
