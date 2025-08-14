@@ -1,39 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="sw">
 <head>
   <meta charset="UTF-8">
-  <title>Reports</title>
+  <title>Ripoti Zote</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      padding: 30px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .report-card {
+      background: white;
+      padding: 15px 20px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .report-card img {
+      max-width: 100%;
+      margin-top: 10px;
+      border-radius: 4px;
+    }
+    .label {
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <h1>Submitted Reports</h1>
-  <div id="reports"></div>
+  <div class="container">
+    <h1>Ripoti Zote</h1>
+    <div id="reports"></div>
+  </div>
 
   <script>
-    async function fetchReports() {
+    async function loadReports() {
       const res = await fetch("/api/reports");
-      const data = await res.json();
+      const reports = await res.json();
       const container = document.getElementById("reports");
       container.innerHTML = "";
 
-      data.forEach(r => {
+      reports.forEach(r => {
         const div = document.createElement("div");
-        div.style.border = "1px solid #ccc";
-        div.style.padding = "10px";
-        div.style.marginBottom = "10px";
-
+        div.className = "report-card";
         div.innerHTML = `
-          <p><strong>Time:</strong> ${r.timestamp}</p>
-          <p><strong>Username:</strong> ${r.username}</p>
-          <p><strong>Clinic:</strong> ${r.clinic}</p>
-          <p><strong>Title:</strong> ${r.title}</p>
-          <p><strong>Description:</strong> ${r.description}</p>
-          ${r.image ? `<img src="${r.image}" style="max-width: 100%;">` : ""}
+          <p><span class="label">Muda:</span> ${r.timestamp}</p>
+          <p><span class="label">Jina la Mtumiaji:</span> ${r.username}</p>
+          <p><span class="label">Kliniki:</span> ${r.clinic}</p>
+          <p><span class="label">Kichwa:</span> ${r.title}</p>
+          <p><span class="label">Maelezo:</span> ${r.description}</p>
+          ${r.image ? `<img src="${r.image}" alt="Ripoti">` : ""}
         `;
         container.appendChild(div);
       });
     }
 
-    fetchReports();
+    loadReports();
   </script>
 </body>
 </html>
