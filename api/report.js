@@ -1,19 +1,22 @@
-// For Vercel: exports.handler
 import formidable from "formidable";
 import fs from "fs";
 import path from "path";
 import XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
 
+// Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
+// Disable default body parser for file uploads
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   const form = new formidable.IncomingForm();
   form.parse(req, async (err, fields, files) => {
@@ -30,14 +33,13 @@ export default async function handler(req, res) {
       const tmpExcel = path.join("/tmp", "reports.xlsx");
       let workbook;
 
-      // Try download existing Excel from Supabase
+      // Try to download existing Excel
       try {
-        const { data, error: downloadError } = await supabase.storage
+        const { data, error } = await supabase.storage
           .from("clinic-reports")
           .download("reports.xlsx");
 
-        if (downloadError) throw downloadError;
-
+        if (error) throw error;
         const buffer = Buffer.from(await data.arrayBuffer());
         workbook = XLSX.read(buffer, { type: "buffer" });
       } catch {
@@ -68,6 +70,7 @@ export default async function handler(req, res) {
       }
 
       const timestamp = new Date().toISOString();
+
       XLSX.utils.sheet_add_json(ws, [{
         Username: username,
         Clinic: clinic,
@@ -89,11 +92,11 @@ export default async function handler(req, res) {
 
       if (excelUploadErr) throw excelUploadErr;
 
-      res.status(200).json({ success: true, message: "Report saved successfully!" });
+      return res.status(200).json({ message: "Report saved successfully!" });
 
     } catch (uploadError) {
       console.error(uploadError);
-      res.status(500).json({ error: uploadError.message || "Unknown upload error" });
+      return res.status(500).json({ error: uploadError.message || "Unknown upload error" });
     }
   });
 }
