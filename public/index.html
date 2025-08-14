@@ -1,26 +1,107 @@
 <!DOCTYPE html>
-<html>
+<html lang="sw">
 <head>
   <meta charset="UTF-8">
-  <title>Submit Report</title>
+  <title>Fomu ya Kuripoti Kliniki</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      padding: 30px;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .error {
+      color: red;
+      margin-bottom: 15px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Clinic Report Form</h1>
-  <form action="/submit" method="post" enctype="multipart/form-data">
-    <input type="text" name="username" placeholder="Username" required><br><br>
+  <div class="container">
+    <h1>Fomu ya Kuripoti Matukio kwenye Kliniki</h1>
+    <div id="error" class="error"></div>
+    <form id="reportForm" enctype="multipart/form-data">
+      <input type="text" name="username" placeholder="Jina la Mtumiaji" required>
+      <select name="clinic" required>
+        <option value="">Chagua Kliniki</option>
+        <option value="Kisiwani">Kisiwani</option>
+        <option value="Jirambe">Jirambe</option>
+        <option value="Mikwambe">Mikwambe</option>
+        <option value="Kibada">Kibada</option>
+      </select>
+      <input type="text" name="title" placeholder="Kichwa cha Ripoti" required>
+      <textarea name="description" placeholder="Maelezo ya Ripoti" required></textarea>
+      <input type="file" name="image" accept="image/*">
+      <button type="submit">Tuma Ripoti</button>
+    </form>
+  </div>
 
-    <select name="clinic" required>
-      <option value="">Select Clinic</option>
-      <option value="Kisiwani">Kisiwani</option>
-      <option value="Jirambe">Jirambe</option>
-      <option value="Mikwambe">Mikwambe</option>
-      <option value="Kibada">Kibada</option>
-    </select><br><br>
+  <script>
+    const form = document.getElementById("reportForm");
+    const errorDiv = document.getElementById("error");
 
-    <input type="text" name="title" placeholder="Title" required><br><br>
-    <textarea name="description" placeholder="Description" required></textarea><br><br>
-    <input type="file" name="image" accept="image/*"><br><br>
-    <button type="submit">Submit Report</button>
-  </form>
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorDiv.textContent = "";
+
+      const username = form.username.value.trim();
+      const clinic = form.clinic.value;
+      const title = form.title.value.trim();
+      const description = form.description.value.trim();
+
+      // Front-end validation
+      if (!username || !clinic || !title || !description) {
+        errorDiv.textContent = "Tafadhali jaza sehemu zote muhimu.";
+        return;
+      }
+
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch("/submit", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!res.ok) {
+          errorDiv.textContent = "Kosa: Imeshindikana kutuma ripoti.";
+          return;
+        }
+
+        alert("Ripoti imetumwa kwa mafanikio!");
+        form.reset();
+      } catch (err) {
+        errorDiv.textContent = "Kosa: " + err.message;
+      }
+    });
+  </script>
 </body>
 </html>
