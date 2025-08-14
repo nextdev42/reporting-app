@@ -38,7 +38,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/report", {
         method: "POST",
-        body: formData, // ✅ no duplex needed for Pages Router
+        body: formData, // ✅ No duplex needed for Pages Router
       });
 
       const data = await res.json();
