@@ -1,10 +1,13 @@
+export const config = { api: { bodyParser: false } };
+
+// Force Node.js runtime to avoid duplex error
+export const runtime = "nodejs";
+
 import formidable from "formidable";
 import fs from "fs";
 import path from "path";
 import XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
-
-export const config = { api: { bodyParser: false } };
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
