@@ -1,10 +1,12 @@
 import formidable from "formidable";
 import fs from "fs";
-import * as XLSX from "xlsx";
+import path from "path";
+import XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
 
 export const config = { api: { bodyParser: false } };
 
+// Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -14,57 +16,88 @@ export default async function handler(req, res) {
   if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
 
-  const form = formidable({});
-  const [fields, files] = await form.parse(req);
+  const form = formidable({ multiples: false });
 
-  const username = fields.username?.[0];
-  const clinic = fields.clinic?.[0];
-  const title = fields.title?.[0];
-  const description = fields.description?.[0];
-  const imageFile = files.image?.[0];
-  const timestamp = new Date().toISOString();
+  form.parse(req, async (err, fields, files) => {
+    if (err) return res.status(500).json({ error: "Form parse error" });
 
-  // Create Excel file in memory
-  let data = [["Username", "Clinic", "Title", "Description", "Timestamp"]];
-  const tempFile = "/tmp/reports.xlsx";
+    const { username, clinic, title, description } = fields;
+    const imageFile = files.image;
 
-  try {
-    // Download existing file from Supabase
-    const { data: existingFile } = await supabase
-      .storage
-      .from("clinic-reports")
-      .download("reports.xlsx");
-
-    if (existingFile) {
-      const buf = Buffer.from(await existingFile.arrayBuffer());
-      const workbook = XLSX.read(buf, { type: "buffer" });
-      const sheetName = workbook.SheetNames[0];
-      data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+    if (!username || !clinic || !title || !description) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
-  } catch {
-    // Ignore if not found
-  }
 
-  // Append new row
-  data.push([username, clinic, title, description, timestamp]);
+    try {
+      // Temp file for Excel
+      const tmpExcel = path.join("/tmp", "reports.xlsx");
 
-  // Write new Excel
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Reports");
-  XLSX.writeFile(wb, tempFile);
+      // Download existing Excel from Supabase if exists
+      let workbook;
+      try {
+        const { data, error: downloadError } = await supabase.storage
+          .from("clinic-reports")
+          .download("reports.xlsx");
 
-  // Upload Excel
-  const { error: uploadError } = await supabase.storage
-    .from("clinic-reports")
-    .upload("reports.xlsx", fs.createReadStream(tempFile), {
-      upsert: true,
-      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
+        if (downloadError) throw downloadError;
 
-  if (uploadError) {
-    return res.status(500).json({ error: uploadError.message });
-  }
+        const buffer = Buffer.from(await data.arrayBuffer());
+        workbook = XLSX.read(buffer, { type: "buffer" });
+      } catch {
+        // Create new workbook if not exists
+        workbook = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([["Username","Clinic","Title","Description","Timestamp","Image URL"]]);
+        XLSX.utils.book_append_sheet(workbook, ws, "Reports");
+      }
 
-  res.status(200).json({ success: true });
+      const ws = workbook.Sheets[workbook.SheetNames[0]];
+
+      // Upload image if exists
+      let imageUrl = "";
+      if (imageFile) {
+        const imagePath = `images/${Date.now()}-${imageFile.originalFilename}`;
+        const { data: imageData, error: uploadErr } = await supabase.storage
+          .from("clinic-reports")
+          .upload(imagePath, fs.createReadStream(imageFile.filepath), {
+            upsert: true,
+            contentType: imageFile.mimetype
+          });
+
+        if (uploadErr) throw uploadErr;
+
+        const { publicURL } = supabase.storage.from("clinic-reports").getPublicUrl(imageData.path);
+        imageUrl = publicURL;
+      }
+
+      // Append new row
+      const timestamp = new Date().toISOString();
+      XLSX.utils.sheet_add_json(ws, [{
+        Username: username,
+        Clinic: clinic,
+        Title: title,
+        Description: description,
+        Timestamp: timestamp,
+        "Image URL": imageUrl
+      }], { skipHeader: true, origin: -1 });
+
+      // Write to temp Excel
+      XLSX.writeFile(workbook, tmpExcel);
+
+      // Upload Excel to Supabase
+      const { error: excelUploadErr } = await supabase.storage
+        .from("clinic-reports")
+        .upload("reports.xlsx", fs.createReadStream(tmpExcel), {
+          upsert: true,
+          contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        });
+
+      if (excelUploadErr) throw excelUploadErr;
+
+      res.status(200).json({ success: true, message: "Report saved successfully!" });
+
+    } catch (uploadError) {
+      console.error("Upload Error:", uploadError);
+      res.status(500).json({ error: uploadError.message || "Unknown upload error" });
+    }
+  });
 }
