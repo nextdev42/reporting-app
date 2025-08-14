@@ -3,203 +3,278 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard ya Ripoti</title>
+  <title>Dashibodi ya Ripoti za Kliniki</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      background: #f0f2f5;
+      padding: 0;
+      background: #f5f5f5;
       color: #333;
     }
+
     nav {
-      background: #007BFF;
-      color: #fff;
+      background: #4CAF50;
+      color: white;
       padding: 10px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    nav a {
-      color: #fff;
-      text-decoration: none;
-      margin-left: 15px;
+
+    nav h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    nav button {
+      background: white;
+      color: #4CAF50;
+      border: none;
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-left: 10px;
       font-weight: bold;
     }
-    nav a:hover { text-decoration: underline; }
+
+    nav button:hover {
+      background: #e0e0e0;
+    }
 
     .container {
       max-width: 900px;
       margin: 20px auto;
-      padding: 20px;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 0 15px;
     }
 
-    h2 { color: #007BFF; }
-    input, select, textarea, button {
+    .form-section, .reports-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .form-section h2, .reports-section h2 {
+      margin-top: 0;
+      color: #4CAF50;
+    }
+
+    input, select, textarea {
       width: 100%;
       padding: 8px;
-      margin: 5px 0 15px 0;
-      border-radius: 4px;
+      margin: 6px 0 12px 0;
       border: 1px solid #ccc;
-      font-size: 14px;
+      border-radius: 4px;
+      box-sizing: border-box;
     }
-    button {
-      background: #007BFF;
-      color: #fff;
+
+    button.submit-btn {
+      background: #4CAF50;
+      color: white;
       border: none;
+      padding: 10px 15px;
       cursor: pointer;
+      border-radius: 4px;
+      font-weight: bold;
     }
-    button:hover { background: #0056b3; }
+
+    button.submit-btn:hover {
+      background: #45a049;
+    }
 
     .report-card {
-      border: 1px solid #ccc;
-      border-radius: 6px;
+      border: 1px solid #ddd;
       padding: 12px;
-      margin-bottom: 20px;
-      background: #f9f9f9;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      background: #fafafa;
     }
+
     .report-card img {
       max-width: 100%;
       margin-top: 10px;
       border-radius: 4px;
     }
-    .comment-section {
+
+    .comments {
       margin-top: 10px;
-      padding-top: 10px;
       border-top: 1px solid #ccc;
+      padding-top: 10px;
     }
-    .comment-card {
-      background: #e9ecef;
-      padding: 6px 8px;
-      margin-bottom: 6px;
+
+    .comments input {
+      width: 70%;
+      display: inline-block;
+    }
+
+    .comments button {
+      display: inline-block;
+      width: 25%;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 6px;
       border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .comments button:hover {
+      background: #45a049;
     }
 
     @media (max-width: 600px) {
-      .container { padding: 10px; }
-      nav { flex-direction: column; align-items: flex-start; }
-      nav a { margin: 5px 0 0 0; }
+      .comments input, .comments button {
+        width: 100%;
+        margin-bottom: 6px;
+      }
     }
   </style>
 </head>
 <body>
+  <nav>
+    <h1>Dashibodi ya Ripoti za Kliniki</h1>
+    <div>
+      <button id="toggleFormBtn">Ongeza Ripoti</button>
+    </div>
+  </nav>
 
-<nav>
-  <div>Dashboard ya Ripoti</div>
-  <div>
-    <a href="#create-report">Tuma Ripoti</a>
-    <a href="#view-reports">Angalia Ripoti</a>
+  <div class="container">
+    <div class="form-section" id="reportFormSection" style="display:none;">
+      <h2>Ongeza Ripoti</h2>
+      <form id="reportForm">
+        <input type="text" name="username" placeholder="Jina la Mtumiaji" required>
+        <select name="clinic" required>
+          <option value="">Chagua Kliniki</option>
+          <option value="Kisiwani">Kisiwani</option>
+          <option value="Jirambe">Jirambe</option>
+          <option value="Mikwambe">Mikwambe</option>
+          <option value="Kibada">Kibada</option>
+        </select>
+        <input type="text" name="title" placeholder="Kichwa" required>
+        <textarea name="description" placeholder="Maelezo" required></textarea>
+        <input type="file" name="image" accept="image/*">
+        <button type="submit" class="submit-btn">Tuma Ripoti</button>
+      </form>
+      <p id="formStatus"></p>
+    </div>
+
+    <div class="reports-section">
+      <h2>Ripoti Zilizowasilishwa</h2>
+      <div id="reportsContainer"></div>
+    </div>
   </div>
-</nav>
 
-<div class="container" id="create-report">
-  <h2>Tuma Ripoti</h2>
-  <form id="reportForm">
-    <input name="username" placeholder="Jina la Mtumiaji" required />
-    <select name="clinic" required>
-      <option value="">Chagua Kliniki</option>
-      <option value="Kisiwani">Kisiwani</option>
-      <option value="Jirambe">Jirambe</option>
-      <option value="Mikwambe">Mikwambe</option>
-      <option value="Kibada">Kibada</option>
-    </select>
-    <input name="title" placeholder="Kichwa cha Ripoti" required />
-    <textarea name="description" placeholder="Maelezo ya Ripoti" required></textarea>
-    <input type="file" name="image" accept="image/*" />
-    <button type="submit">Tuma Ripoti</button>
-  </form>
-  <p id="formStatus"></p>
-</div>
+  <script>
+    const toggleFormBtn = document.getElementById("toggleFormBtn");
+    const reportFormSection = document.getElementById("reportFormSection");
+    const reportForm = document.getElementById("reportForm");
+    const formStatus = document.getElementById("formStatus");
+    const reportsContainer = document.getElementById("reportsContainer");
 
-<div class="container" id="view-reports">
-  <h2>Ripoti Zote</h2>
-  <div id="reportsContainer"></div>
-</div>
-
-<script>
-const form = document.getElementById("reportForm");
-const formStatus = document.getElementById("formStatus");
-const reportsContainer = document.getElementById("reportsContainer");
-
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  formStatus.textContent = "Inatumwa...";
-  const data = new FormData(form);
-
-  try {
-    const res = await fetch("/submit", { method: "POST", body: data });
-    const text = await res.text();
-    formStatus.textContent = text;
-    if(res.ok){ form.reset(); fetchReports(); }
-  } catch(err) {
-    formStatus.textContent = "Kuna tatizo: " + err.message;
-  }
-});
-
-async function fetchReports(){
-  reportsContainer.innerHTML = "Inapakia...";
-  try {
-    const res = await fetch("/api/reports");
-    const reports = await res.json();
-    if(reports.length===0){ reportsContainer.innerHTML="<p>Hakuna ripoti.</p>"; return; }
-
-    reportsContainer.innerHTML = "";
-    reports.forEach(r=>{
-      const card = document.createElement("div");
-      card.className="report-card";
-
-      let html = `<p><strong>Muda:</strong> ${r.timestamp}</p>
-                  <p><strong>Jina la Mtumiaji:</strong> ${r.username}</p>
-                  <p><strong>Kliniki:</strong> ${r.clinic}</p>
-                  <p><strong>Kichwa:</strong> ${r.title}</p>
-                  <p><strong>Maelezo:</strong> ${r.description}</p>`;
-      if(r.image) html+=`<img src="${r.image}" alt="picha ya ripoti">`;
-
-      html += `<div class="comment-section">
-                <h4>Maoni</h4>
-                <div id="comments-${r.id}">`;
-      if(r.comments.length===0){ html+='<p>Hakuna maoni.</p>'; }
-      else { r.comments.forEach(c=>{
-        html += `<div class="comment-card"><strong>${c.username} (${c.clinic}) [${c.timestamp}]:</strong> ${c.comment}</div>`;
-      }); }
-      html += `</div>
-                <input type="text" placeholder="Jina lako" id="username-${r.id}" />
-                <select id="clinic-${r.id}">
-                  <option value="">Chagua Kliniki</option>
-                  <option value="Kisiwani">Kisiwani</option>
-                  <option value="Jirambe">Jirambe</option>
-                  <option value="Mikwambe">Mikwambe</option>
-                  <option value="Kibada">Kibada</option>
-                </select>
-                <input type="text" id="comment-${r.id}" placeholder="Andika maoni yako" />
-                <button onclick="addComment(${r.id})">Ongeza Maoni</button>
-              </div>`;
-      card.innerHTML = html;
-      reportsContainer.appendChild(card);
+    toggleFormBtn.addEventListener("click", () => {
+      if (reportFormSection.style.display === "none") {
+        reportFormSection.style.display = "block";
+        toggleFormBtn.textContent = "Ficha Fomu";
+      } else {
+        reportFormSection.style.display = "none";
+        toggleFormBtn.textContent = "Ongeza Ripoti";
+      }
     });
-  } catch(err){ reportsContainer.innerHTML="Kuna tatizo: "+err.message; }
-}
 
-async function addComment(reportId){
-  const username = document.getElementById(`username-${reportId}`).value;
-  const clinic = document.getElementById(`clinic-${reportId}`).value;
-  const comment = document.getElementById(`comment-${reportId}`).value;
-  if(!username || !clinic || !comment){ alert("Jaza sehemu zote za maoni."); return; }
+    async function fetchReports() {
+      reportsContainer.innerHTML = "Inapakia ripoti...";
+      try {
+        const res = await fetch("/api/reports");
+        const data = await res.json();
+        reportsContainer.innerHTML = "";
+        if (data.length === 0) {
+          reportsContainer.innerHTML = "<p>Hakuna ripoti bado.</p>";
+          return;
+        }
 
-  try{
-    const res = await fetch(`/api/comments/${reportId}`,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({username,clinic,comment})
+        data.forEach(report => {
+          const card = document.createElement("div");
+          card.className = "report-card";
+
+          card.innerHTML = `
+            <p><strong>Muda:</strong> ${report.timestamp}</p>
+            <p><strong>Jina la Mtumiaji:</strong> ${report.username}</p>
+            <p><strong>Kliniki:</strong> ${report.clinic}</p>
+            <p><strong>Kichwa:</strong> ${report.title}</p>
+            <p><strong>Maelezo:</strong> ${report.description}</p>
+            ${report.image ? `<img src="${report.image}" alt="Ripoti">` : ""}
+            <div class="comments">
+              <h4>Maoni:</h4>
+              <div class="commentsList">
+                ${report.comments.map(c => `<p>${c.username} (${c.clinic}) [${c.timestamp}]: ${c.comment}</p>`).join("")}
+              </div>
+              <input type="text" placeholder="Jina lako" name="commentUsername">
+              <select name="commentClinic">
+                <option value="">Chagua Kliniki</option>
+                <option value="Kisiwani">Kisiwani</option>
+                <option value="Jirambe">Jirambe</option>
+                <option value="Mikwambe">Mikwambe</option>
+                <option value="Kibada">Kibada</option>
+              </select>
+              <input type="text" placeholder="Andika maoni yako" name="commentText">
+              <button>Add</button>
+            </div>
+          `;
+
+          // Add comment functionality
+          const commentBtn = card.querySelector(".comments button");
+          commentBtn.addEventListener("click", async () => {
+            const username = card.querySelector("input[name='commentUsername']").value;
+            const clinic = card.querySelector("select[name='commentClinic']").value;
+            const commentText = card.querySelector("input[name='commentText']").value;
+
+            if (!username || !clinic || !commentText) {
+              alert("Jaza sehemu zote za maoni.");
+              return;
+            }
+
+            try {
+              await fetch(`/api/comments/${report.id}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, clinic, comment: commentText })
+              });
+              fetchReports(); // Refresh after comment
+            } catch (err) {
+              alert("Tatizo kuingiza maoni: " + err.message);
+            }
+          });
+
+          reportsContainer.appendChild(card);
+        });
+
+      } catch (err) {
+        reportsContainer.innerHTML = "Tatizo kupata ripoti: " + err.message;
+      }
+    }
+
+    reportForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      formStatus.textContent = "Inatuma ripoti...";
+
+      const formData = new FormData(reportForm);
+      try {
+        const res = await fetch("/submit", { method: "POST", body: formData });
+        if (!res.ok) {
+          formStatus.textContent = "Tatizo: " + await res.text();
+          return;
+        }
+        formStatus.textContent = "Ripoti imehifadhiwa!";
+        reportForm.reset();
+        fetchReports(); // Refresh reports after submission
+      } catch (err) {
+        formStatus.textContent = "Tatizo: " + err.message;
+      }
     });
-    if(res.ok){ fetchReports(); } else { alert("Kuna tatizo kuingiza maoni."); }
-  } catch(err){ alert("Kuna tatizo: "+err.message); }
-}
 
-fetchReports();
-</script>
-
+    fetchReports();
+  </script>
 </body>
 </html>
