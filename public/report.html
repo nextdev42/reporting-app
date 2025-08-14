@@ -6,23 +6,24 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f7f7f7;
-      padding: 30px;
+      background: #f0f2f5;
+      padding: 20px;
     }
     .container {
-      max-width: 800px;
+      max-width: 900px;
       margin: auto;
     }
     h1 {
       text-align: center;
       color: #333;
+      margin-bottom: 30px;
     }
     .report-card {
-      background: white;
-      padding: 15px 20px;
-      margin-bottom: 15px;
+      background: #fff;
       border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
     .report-card img {
       max-width: 100%;
@@ -31,6 +32,33 @@
     }
     .label {
       font-weight: bold;
+    }
+    .comment-section {
+      margin-top: 15px;
+    }
+    .comment-section input {
+      width: 75%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      margin-right: 5px;
+    }
+    .comment-section button {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: none;
+      background: #007BFF;
+      color: white;
+      cursor: pointer;
+    }
+    .comment-section button:hover {
+      background: #0056b3;
+    }
+    .comment {
+      background: #f1f1f1;
+      padding: 6px 10px;
+      border-radius: 4px;
+      margin-top: 5px;
     }
   </style>
 </head>
@@ -41,15 +69,22 @@
   </div>
 
   <script>
+    let reportsData = [];
+
     async function loadReports() {
       const res = await fetch("/api/reports");
-      const reports = await res.json();
+      reportsData = await res.json();
+      renderReports();
+    }
+
+    function renderReports() {
       const container = document.getElementById("reports");
       container.innerHTML = "";
 
-      reports.forEach(r => {
+      reportsData.forEach((r, idx) => {
         const div = document.createElement("div");
         div.className = "report-card";
+
         div.innerHTML = `
           <p><span class="label">Muda:</span> ${r.timestamp}</p>
           <p><span class="label">Jina la Mtumiaji:</span> ${r.username}</p>
@@ -57,9 +92,28 @@
           <p><span class="label">Kichwa:</span> ${r.title}</p>
           <p><span class="label">Maelezo:</span> ${r.description}</p>
           ${r.image ? `<img src="${r.image}" alt="Ripoti">` : ""}
+          <div class="comment-section">
+            <h4>Maoni:</h4>
+            <div class="comments" id="comments-${idx}"></div>
+            <input type="text" id="comment-input-${idx}" placeholder="Ongeza maoni">
+            <button onclick="addComment(${idx})">Ongeza</button>
+          </div>
         `;
         container.appendChild(div);
       });
+    }
+
+    function addComment(idx) {
+      const input = document.getElementById(`comment-input-${idx}`);
+      const text = input.value.trim();
+      if (!text) return;
+
+      const commentDiv = document.createElement("div");
+      commentDiv.className = "comment";
+      commentDiv.textContent = text;
+
+      document.getElementById(`comments-${idx}`).appendChild(commentDiv);
+      input.value = "";
     }
 
     loadReports();
