@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+const CLINICS = ["Kisiwani", "Jirambe", "Mikwambe", "Kibada"];
+
 export default function Home() {
   const [status, setStatus] = useState("");
 
@@ -28,8 +30,11 @@ export default function Home() {
 
         <select name="clinic" required>
           <option value="">Select Clinic</option>
-          <option value="Clinic A">Clinic A</option>
-          <option value="Clinic B">Clinic B</option>
+          {CLINICS.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
         </select>
         <br /><br />
 
