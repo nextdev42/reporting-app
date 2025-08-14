@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+const CLINICS = ["Kisiwani", "Jirambe", "Mikwambe", "Kibada"];
+
 export default function Home() {
   const [form, setForm] = useState({
     username: "",
@@ -8,9 +10,7 @@ export default function Home() {
     description: "",
     image: null,
   });
-
-  const [loading, setLoading] = useState(false);
-  const clinics = ["Kisiwani", "Jirambe", "Mikwambe", "Kibada"];
+  const [status, setStatus] = useState("");
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -20,13 +20,13 @@ export default function Home() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
+    // Basic validation
     if (!form.username || !form.clinic || !form.title || !form.description) {
-      alert("Please fill in all fields");
+      alert("Please fill in all required fields.");
       return;
     }
 
-    setLoading(true);
+    setStatus("Submitting...");
 
     const formData = new FormData();
     formData.append("username", form.username);
@@ -41,59 +41,79 @@ export default function Home() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
 
-      window.location.href = "/report";
+      if (!res.ok) {
+        setStatus("Error: " + (data.error || "Unknown error"));
+        return;
+      }
+
+      setStatus(data.message || "Report submitted successfully!");
+      // Redirect to /report after 1 second
+      setTimeout(() => {
+        window.location.href = "/report";
+      }, 1000);
     } catch (err) {
-      alert("Error: " + err.message);
-    } finally {
-      setLoading(false);
+      setStatus("Error: " + err.message);
     }
   };
 
   return (
-    <div style={{ maxWidth: 500, margin: "0 auto" }}>
-      <h1>Submit Clinic Report</h1>
+    <div style={{ maxWidth: 500, margin: "40px auto", padding: 20 }}>
+      <h2>Submit Clinic Report</h2>
       <form onSubmit={handleSubmit}>
         <input
           name="username"
-          placeholder="Your Name"
+          placeholder="Username"
+          value={form.username}
           onChange={handleChange}
           required
         />
+        <br /><br />
+
         <select
           name="clinic"
+          value={form.clinic}
           onChange={handleChange}
           required
-          defaultValue=""
         >
-          <option value="" disabled>Select Clinic</option>
-          {clinics.map((c) => (
+          <option value="">Select Clinic</option>
+          {CLINICS.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
+        <br /><br />
+
         <input
           name="title"
-          placeholder="Report Title"
+          placeholder="Title"
+          value={form.title}
           onChange={handleChange}
           required
         />
+        <br /><br />
+
         <textarea
           name="description"
           placeholder="Description"
+          value={form.description}
           onChange={handleChange}
           required
         />
+        <br /><br />
+
         <input
           type="file"
           name="image"
           accept="image/*"
           onChange={handleChange}
         />
-        <button type="submit" disabled={loading}>
-          {loading ? "Uploading..." : "Submit Report"}
-        </button>
+        <br /><br />
+
+        <button type="submit">Submit Report</button>
       </form>
+
+      {status && <p style={{ marginTop: 20 }}>{status}</p>}
     </div>
   );
 }
