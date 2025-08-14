@@ -9,13 +9,17 @@ const PORT = process.env.PORT || 3000;
 
 // Serve static files
 app.use(express.static("public"));
+
+// Serve uploaded images so they are accessible in the browser
+const uploadDir = "reports/uploads";
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+app.use("/uploads", express.static(uploadDir));
+
+// Middleware for parsing JSON and URL-encoded
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Upload folder
-const uploadDir = "reports/uploads";
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
+// Multer setup
 const upload = multer({ dest: uploadDir });
 
 // Ensure db folder exists
@@ -54,18 +58,18 @@ db.serialize(() => {
 // Helper function for Tanzania timestamp
 function getTanzaniaTimestamp() {
   const now = new Date();
-  const tzOffset = 3 * 60; // UTC+3 in minutes
+  const tzOffset = 3 * 60; // UTC+3
   const tanzaniaTime = new Date(now.getTime() + (tzOffset + now.getTimezoneOffset()) * 60000);
   const options = {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
     hour12: false,
   };
-  return tanzaniaTime.toLocaleString('sw-TZ', options);
+  return tanzaniaTime.toLocaleString("sw-TZ", options);
 }
 
 // Handle report submission
@@ -76,9 +80,10 @@ app.post("/submit", upload.single("image"), (req, res) => {
 
   let imagePath = "";
   if (req.file) {
+    // Save relative path for browser access
     const targetPath = path.join(uploadDir, req.file.originalname);
     fs.renameSync(req.file.path, targetPath);
-    imagePath = targetPath;
+    imagePath = "/uploads/" + req.file.originalname;
   }
 
   const timestamp = getTanzaniaTimestamp();
@@ -98,7 +103,7 @@ app.get("/api/reports", (req, res) => {
   db.all("SELECT * FROM reports ORDER BY id DESC", (err, reports) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    const reportIds = reports.map(r => r.id);
+    const reportIds = reports.map((r) => r.id);
     if (reportIds.length === 0) return res.json([]);
 
     db.all(
@@ -107,8 +112,8 @@ app.get("/api/reports", (req, res) => {
         if (err2) return res.status(500).json({ error: err2.message });
 
         // Attach comments to each report
-        reports.forEach(r => {
-          r.comments = comments.filter(c => c.report_id === r.id);
+        reports.forEach((r) => {
+          r.comments = comments.filter((c) => c.report_id === r.id);
         });
 
         res.json(reports);
