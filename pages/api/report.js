@@ -1,7 +1,5 @@
 export const config = { api: { bodyParser: false } };
-
-// Force Node.js runtime to avoid duplex error
-export const runtime = "nodejs";
+export const runtime = "nodejs"; // ✅ Force Node.js runtime
 
 import formidable from "formidable";
 import fs from "fs";
@@ -31,10 +29,11 @@ export default async function handler(req, res) {
     }
 
     try {
+      // Temporary Excel path
       const tmpExcel = path.join("/tmp", "reports.xlsx");
       let workbook;
 
-      // Try to download existing Excel
+      // Try downloading existing Excel
       try {
         const { data, error: downloadError } = await supabase.storage
           .from("clinic-reports")
@@ -45,7 +44,7 @@ export default async function handler(req, res) {
         const buffer = Buffer.from(await data.arrayBuffer());
         workbook = XLSX.read(buffer, { type: "buffer" });
       } catch {
-        // Create new workbook if not exists
+        // Create new workbook if none exists
         workbook = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([
           ["Username","Clinic","Title","Description","Timestamp","Image URL"]
@@ -55,11 +54,11 @@ export default async function handler(req, res) {
 
       const ws = workbook.Sheets[workbook.SheetNames[0]];
 
-      // Upload image
+      // Upload image to Supabase storage
       let imageUrl = "";
       if (imageFile) {
         const imagePath = `images/${Date.now()}-${imageFile.originalFilename}`;
-        const { data: imageData, error: uploadErr } = await supabase.storage
+        const { data: imgData, error: uploadErr } = await supabase.storage
           .from("clinic-reports")
           .upload(imagePath, fs.createReadStream(imageFile.filepath), {
             upsert: true,
@@ -70,11 +69,11 @@ export default async function handler(req, res) {
 
         const { publicURL } = supabase.storage
           .from("clinic-reports")
-          .getPublicUrl(imageData.path);
+          .getPublicUrl(imgData.path);
         imageUrl = publicURL;
       }
 
-      // Append new row
+      // Append new row with timestamp
       const timestamp = new Date().toISOString();
       XLSX.utils.sheet_add_json(ws, [{
         Username: username,
