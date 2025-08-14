@@ -5,27 +5,22 @@
   <title>Submit Report</title>
 </head>
 <body>
-  <h1>Submit Report</h1>
-  <form id="reportForm">
-    <label>Title: <input type="text" name="title" required></label><br><br>
-    <label>Description:<br><textarea name="description" required></textarea></label><br><br>
-    <button type="submit">Submit</button>
+  <h1>Clinic Report Form</h1>
+  <form action="/submit" method="post" enctype="multipart/form-data">
+    <input type="text" name="username" placeholder="Username" required><br><br>
+
+    <select name="clinic" required>
+      <option value="">Select Clinic</option>
+      <option value="Kisiwani">Kisiwani</option>
+      <option value="Jirambe">Jirambe</option>
+      <option value="Mikwambe">Mikwambe</option>
+      <option value="Kibada">Kibada</option>
+    </select><br><br>
+
+    <input type="text" name="title" placeholder="Title" required><br><br>
+    <textarea name="description" placeholder="Description" required></textarea><br><br>
+    <input type="file" name="image" accept="image/*"><br><br>
+    <button type="submit">Submit Report</button>
   </form>
-
-  <script>
-    document.getElementById("reportForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const formData = Object.fromEntries(new FormData(e.target));
-
-      const res = await fetch("/api/report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
-      });
-
-      const result = await res.json();
-      alert(JSON.stringify(result, null, 2));
-    });
-  </script>
 </body>
 </html>
