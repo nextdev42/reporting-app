@@ -100,6 +100,7 @@
       display: flex;
       flex-direction: column;
       position: relative;
+      max-height: 500px; /* Limit height for scrolling */
     }
 
     .report-card img {
@@ -108,21 +109,24 @@
       border-radius: 4px;
     }
 
-    /* Comment thread styling */
+    /* Comments styling */
     .comments {
-      margin-top: 15px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      flex-grow: 1;
+      margin-top: 15px;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+      position: relative;
     }
 
     .commentsList {
-      max-height: 250px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 50px; /* space for sticky input */
+      flex-grow: 1;
     }
 
     .comment-item {
@@ -150,7 +154,17 @@
       color: #555;
     }
 
-    .comments input[type="text"] {
+    /* Sticky input at bottom of comments */
+    .comment-input-wrapper {
+      display: flex;
+      position: sticky;
+      bottom: 0;
+      background: #fafafa;
+      padding: 8px 0;
+      gap: 2%;
+    }
+
+    .comment-input-wrapper input[type="text"] {
       width: 80%;
       padding: 10px 15px;
       border-radius: 20px;
@@ -160,12 +174,12 @@
       transition: all 0.3s;
     }
 
-    .comments input[type="text"]:focus {
+    .comment-input-wrapper input[type="text"]:focus {
       border-color: #4CAF50;
       box-shadow: 0 0 5px rgba(76,175,80,0.3);
     }
 
-    .comments button {
+    .comment-input-wrapper button {
       width: 18%;
       padding: 10px;
       border-radius: 20px;
@@ -174,16 +188,15 @@
       color: white;
       font-weight: 600;
       cursor: pointer;
-      margin-left: 2%;
       transition: background 0.3s;
     }
 
-    .comments button:hover {
+    .comment-input-wrapper button:hover {
       background: #45a049;
     }
 
     @media(max-width: 600px){
-      .comments input[type="text"], .comments button {
+      .comment-input-wrapper input[type="text"], .comment-input-wrapper button {
         width: 100%;
         margin-bottom: 6px;
       }
@@ -293,14 +306,14 @@
                   </div>
                 `).join('')}
               </div>
-              <input type="text" placeholder="Andika maoni yako" name="commentText">
-              <button>Add</button>
+              <div class="comment-input-wrapper">
+                <input type="text" placeholder="Andika maoni yako" name="commentText">
+                <button>Add</button>
+              </div>
             </div>
           `;
 
-          const commentBtn = card.querySelector(".comments button");
-          const commentsList = card.querySelector(".commentsList");
-
+          const commentBtn = card.querySelector(".comment-input-wrapper button");
           commentBtn.addEventListener("click", async () => {
             const commentInput = card.querySelector("input[name='commentText']");
             const commentText = commentInput.value.trim();
@@ -319,7 +332,6 @@
           reportsContainer.appendChild(card);
         });
 
-        // After all cards rendered, scroll each commentsList to bottom
         document.querySelectorAll('.commentsList').forEach(list => {
           list.scrollTop = list.scrollHeight;
         });
