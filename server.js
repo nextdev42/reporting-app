@@ -54,7 +54,7 @@ async function initDB() {
 initDB();
 
 // Middleware
-app.use(express.static("public"));
+app.use(express.static("public")); // CSS, JS, images
 app.use("/uploads", express.static("reports/uploads"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -64,12 +64,12 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// Multer upload setup
+// Multer setup
 const uploadDir = "reports/uploads";
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 const upload = multer({ dest: uploadDir });
 
-// Helper: Tanzania timestamp
+// Tanzania timestamp
 function getTanzaniaTimestamp() {
   const now = new Date();
   const tzOffset = 3 * 60;
@@ -86,7 +86,14 @@ function auth(req, res, next) {
   next();
 }
 
-// -------- User Registration --------
+// -------- Routes --------
+
+// Serve dashboard with auth
+app.get("/dashboard", auth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "dashboard.html"));
+});
+
+// Registration
 app.post("/register", async (req, res) => {
   const { jina, ukoo, namba, kituo, password, confirmPassword } = req.body;
   if (!jina || !ukoo || !namba || !kituo || !password || !confirmPassword)
@@ -107,7 +114,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// -------- Login --------
+// Login
 app.post("/login", async (req, res) => {
   const { jina, password } = req.body;
   if (!jina || !password) return res.status(400).send("Jaza jina na password.");
@@ -120,26 +127,22 @@ app.post("/login", async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).send("Password si sahihi.");
 
-    // Store session info
     req.session.userId = user.id;
     req.session.jina = user.jina;
     req.session.kituo = user.kituo;
-    res.redirect("/dashboard.html");
+    res.redirect("/dashboard");
   } catch(err) {
     console.error(err);
     res.status(500).send("Tatizo kwenye DB");
   }
 });
 
-// -------- Get Current User Info --------
-app.get("/api/user", auth, async (req, res) => {
-  res.json({
-    jina: req.session.jina,
-    kituo: req.session.kituo
-  });
+// Get current user info
+app.get("/api/user", auth, (req, res) => {
+  res.json({ jina: req.session.jina, kituo: req.session.kituo });
 });
 
-// -------- Logout --------
+// Logout
 app.get("/logout", auth, (req, res) => {
   req.session.destroy(err => {
     if (err) return res.status(500).send("Tatizo ku-logout");
@@ -147,7 +150,7 @@ app.get("/logout", auth, (req, res) => {
   });
 });
 
-// -------- Submit Report --------
+// Submit report
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
   const { title, description } = req.body;
   if (!title || !description) return res.status(400).send("Jaza title na description.");
@@ -168,14 +171,14 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
       "INSERT INTO reports (timestamp, user_id, title, description, image) VALUES ($1,$2,$3,$4,$5)",
       [timestamp, userId, title, description, imgPath]
     );
-    res.redirect("/dashboard.html");
+    res.redirect("/dashboard");
   } catch(err) {
     console.error(err);
     res.status(500).send("Tatizo kwenye database.");
   }
 });
 
-// -------- Fetch Reports + Comments --------
+// Fetch reports + comments
 app.get("/api/reports", auth, async (req, res) => {
   try {
     const r = await pool.query(`
@@ -197,9 +200,7 @@ app.get("/api/reports", auth, async (req, res) => {
     `, [ids]);
 
     const comments = c.rows;
-    reports.forEach(rep => {
-      rep.comments = comments.filter(cm => cm.report_id === rep.id);
-    });
+    reports.forEach(rep => rep.comments = comments.filter(cm => cm.report_id === rep.id));
     res.json(reports);
   } catch(err) {
     console.error(err);
@@ -207,7 +208,7 @@ app.get("/api/reports", auth, async (req, res) => {
   }
 });
 
-// -------- Add Comment --------
+// Add comment
 app.post("/api/comments/:id", auth, async (req, res) => {
   const reportId = req.params.id;
   const { comment } = req.body;
@@ -228,6 +229,4 @@ app.post("/api/comments/:id", auth, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
