@@ -5,7 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const bcrypt = require("bcryptjs");
 const session = require("express-session");
-const pgSession = require('connect-pg-simple')(session); // Add session storage
+const pgSession = require('connect-pg-simple')(session);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,15 +21,13 @@ const pool = new Pool({
 
 // Ensure tables exist
 async function initDB() {
-  // Create session table first
   await pool.query(`
     CREATE TABLE IF NOT EXISTS session (
-      sid VARCHAR(255) NOT NULL PRIMARY KEY,
+      sid VARCHAR(255) PRIMARY KEY,
       sess JSON NOT NULL,
-      expire TIMESTAMP(6) NOT NULL
+      expire TIMESTAMP NOT NULL
     );
   `);
-
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -40,7 +38,6 @@ async function initDB() {
       password TEXT NOT NULL
     );
   `);
-  
   await pool.query(`
     CREATE TABLE IF NOT EXISTS reports (
       id SERIAL PRIMARY KEY,
@@ -51,7 +48,6 @@ async function initDB() {
       image TEXT
     );
   `);
-  
   await pool.query(`
     CREATE TABLE IF NOT EXISTS comments (
       id SERIAL PRIMARY KEY,
@@ -61,7 +57,6 @@ async function initDB() {
       comment TEXT
     );
   `);
-  
   console.log("✅ Database tables ensured");
 }
 initDB();
@@ -72,20 +67,20 @@ app.use("/uploads", express.static("reports/uploads"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Improved session configuration
+// Session setup
 app.use(session({
   name: 'reporting.session',
   store: new pgSession({
     pool: pool,
     tableName: 'session'
   }),
-  secret: "secretkey123",
+  secret: 'secretkey123',
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: 24*60*60*1000, // 24 hours
     sameSite: 'lax'
   }
 }));
@@ -95,15 +90,12 @@ const uploadDir = "reports/uploads";
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 const upload = multer({ dest: uploadDir });
 
-// Tanzania timestamp
+// Tanzania timestamp helper
 function getTanzaniaTimestamp() {
   const now = new Date();
-  const tzOffset = 3 * 60;
-  const tTime = new Date(now.getTime() + (tzOffset + now.getTimezoneOffset()) * 60000);
-  return tTime.toLocaleString("sw-TZ", {
-    day: "2-digit", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
-  });
+  const tzOffset = 3*60;
+  const tTime = new Date(now.getTime() + (tzOffset + now.getTimezoneOffset())*60000);
+  return tTime.toLocaleString("sw-TZ", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 }
 
 // Auth middleware
@@ -114,7 +106,7 @@ function auth(req, res, next) {
 
 // -------- Routes --------
 
-// Serve dashboard with auth and cache prevention
+// Serve dashboard with auth
 app.get("/dashboard", auth, (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.sendFile(path.join(__dirname, "public", "dashboard.html"));
@@ -123,17 +115,12 @@ app.get("/dashboard", auth, (req, res) => {
 // Registration
 app.post("/register", async (req, res) => {
   const { jina, ukoo, namba, kituo, password, confirmPassword } = req.body;
-  if (!jina || !ukoo || !namba || !kituo || !password || !confirmPassword)
-    return res.status(400).send("Jaza sehemu zote muhimu.");
-  if (password !== confirmPassword)
-    return res.status(400).send("Password na confirm password lazima ziwe sawa.");
+  if (!jina || !ukoo || !namba || !kituo || !password || !confirmPassword) return res.status(400).send("Jaza sehemu zote muhimu.");
+  if (password !== confirmPassword) return res.status(400).send("Password na confirm password lazima ziwe sawa.");
 
   const hashed = await bcrypt.hash(password, 10);
   try {
-    await pool.query(
-      "INSERT INTO users (jina, ukoo, namba, kituo, password) VALUES ($1,$2,$3,$4,$5)",
-      [jina, ukoo, namba, kituo, hashed]
-    );
+    await pool.query("INSERT INTO users (jina, ukoo, namba, kituo, password) VALUES ($1,$2,$3,$4,$5)", [jina, ukoo, namba, kituo, hashed]);
     res.redirect("/index.html");
   } catch(err) {
     console.error(err);
@@ -169,37 +156,29 @@ app.get("/api/user", auth, (req, res) => {
   res.json({ jina: req.session.jina, kituo: req.session.kituo });
 });
 
-// Fixed logout route
+// Logout
 app.get("/logout", (req, res) => {
-  const sessionCookie = req.session.cookie;
-  const cookieName = sessionCookie.name || 'reporting.session';
-  
   req.session.destroy(err => {
-    if (err) {
-      console.error("Logout error:", err);
+    if(err) {
+      console.error(err);
       return res.status(500).send("Tatizo ku-logout");
     }
-    
-    // Clear session cookie
-    res.clearCookie(cookieName);
-    
-    // Prevent caching of authenticated pages
+    res.clearCookie('reporting.session');
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    
     res.redirect("/index.html");
   });
 });
 
 // Submit report
-app.post("/submit", auth, upload.single("image"), async (req, res) => {
+app.post("/submit", auth, upload.single("image"), async (req,res) => {
   const { title, description } = req.body;
-  if (!title || !description) return res.status(400).send("Jaza title na description.");
+  if(!title || !description) return res.status(400).send("Jaza title na description.");
 
   const userId = req.session.userId;
   const timestamp = getTanzaniaTimestamp();
-
   let imgPath = "";
-  if (req.file) {
+
+  if(req.file){
     const filename = Date.now() + "_" + req.file.originalname;
     const newPath = path.join(uploadDir, filename);
     fs.renameSync(req.file.path, newPath);
@@ -207,12 +186,9 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
   }
 
   try {
-    await pool.query(
-      "INSERT INTO reports (timestamp, user_id, title, description, image) VALUES ($1,$2,$3,$4,$5)",
-      [timestamp, userId, title, description, imgPath]
-    );
+    await pool.query("INSERT INTO reports (timestamp, user_id, title, description, image) VALUES ($1,$2,$3,$4,$5)", [timestamp, userId, title, description, imgPath]);
     res.redirect("/dashboard");
-  } catch(err) {
+  } catch(err){
     console.error(err);
     res.status(500).send("Tatizo kwenye database.");
   }
@@ -228,11 +204,11 @@ app.get("/api/reports", auth, async (req, res) => {
       ORDER BY r.id DESC
     `);
     const reports = r.rows;
-    const ids = reports.map(x => x.id);
-    if (!ids.length) return res.json([]);
+    const ids = reports.map(x=>x.id);
+    if(!ids.length) return res.json([]);
 
     const c = await pool.query(`
-      SELECT c.*, u.jina AS username, u.kituo AS clinic
+      SELECT c.*, u.jina AS username, u.kituo AS clinic 
       FROM comments c 
       JOIN users u ON c.user_id=u.id 
       WHERE report_id = ANY($1::int[]) 
@@ -240,30 +216,27 @@ app.get("/api/reports", auth, async (req, res) => {
     `, [ids]);
 
     const comments = c.rows;
-    reports.forEach(rep => rep.comments = comments.filter(cm => cm.report_id === rep.id));
+    reports.forEach(rep=>rep.comments = comments.filter(cm=>cm.report_id===rep.id));
     res.json(reports);
-  } catch(err) {
+  } catch(err){
     console.error(err);
     res.status(500).json({ error: "Tatizo kwenye DB" });
   }
 });
 
 // Add comment
-app.post("/api/comments/:id", auth, async (req, res) => {
+app.post("/api/comments/:id", auth, async (req,res)=>{
   const reportId = req.params.id;
   const { comment } = req.body;
-  if (!comment) return res.status(400).send("Andika maoni.");
+  if(!comment) return res.status(400).send("Andika maoni.");
 
   const userId = req.session.userId;
   const timestamp = getTanzaniaTimestamp();
 
-  try {
-    await pool.query(
-      "INSERT INTO comments (report_id, timestamp, user_id, comment) VALUES ($1,$2,$3,$4)",
-      [reportId, timestamp, userId, comment]
-    );
+  try{
+    await pool.query("INSERT INTO comments (report_id, timestamp, user_id, comment) VALUES ($1,$2,$3,$4)", [reportId, timestamp, userId, comment]);
     res.send("Maoni yamehifadhiwa");
-  } catch(err) {
+  }catch(err){
     console.error(err);
     res.status(500).send("Tatizo kuingiza maoni");
   }
