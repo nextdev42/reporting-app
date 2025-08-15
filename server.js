@@ -196,32 +196,83 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
   res.redirect("/dashboard.html");
 });
 
-// Get all reports with comments
+// Get all reports with pagination, filtering, search
 app.get("/api/reports", auth, async (req, res) => {
-  const rr = await pool.query(`
-     SELECT r.*, u.jina AS username, u.kituo AS clinic
-     FROM reports r
-     JOIN users u ON r.user_id = u.id
-     ORDER BY r.id DESC
-  `);
+  try {
+    let { page = 1, limit = 15, clinic, username, search } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
 
-  const ids = rr.rows.map(r => r.id);
-  if (!ids.length) return res.json([]);
+    let whereClauses = [];
+    let params = [];
+    let idx = 1;
 
-  const cc = await pool.query(`
-     SELECT c.*, u.jina AS username, u.kituo AS clinic
-     FROM comments c
-     JOIN users u ON c.user_id=u.id
-     WHERE report_id = ANY($1::int[])
-     ORDER BY c.id DESC
-  `, [ids]);
+    if (clinic) {
+      whereClauses.push(`u.kituo ILIKE $${idx++}`);
+      params.push(`%${clinic}%`);
+    }
+    if (username) {
+      whereClauses.push(`u.jina ILIKE $${idx++}`);
+      params.push(`%${username}%`);
+    }
+    if (search) {
+      whereClauses.push(`(r.title ILIKE $${idx} OR r.description ILIKE $${idx})`);
+      params.push(`%${search}%`);
+      idx++;
+    }
 
-  rr.rows.forEach(rp => {
-    rp.comments = cc.rows.filter(c => c.report_id === rp.id);
-  });
+    const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
-  res.json(rr.rows);
+    // Total count for pagination
+    const countRes = await pool.query(
+      `SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id = u.id ${whereSQL}`,
+      params
+    );
+    const totalReports = parseInt(countRes.rows[0].count);
+    const totalPages = Math.ceil(totalReports / limit);
+    const offset = (page - 1) * limit;
+
+    // Fetch reports
+    const rr = await pool.query(
+      `SELECT r.*, u.jina AS username, u.kituo AS clinic
+       FROM reports r
+       JOIN users u ON r.user_id = u.id
+       ${whereSQL}
+       ORDER BY r.id DESC
+       LIMIT $${idx++} OFFSET $${idx}`,
+      [...params, limit, offset]
+    );
+
+    const ids = rr.rows.map(r => r.id);
+    let cc = [];
+    if (ids.length) {
+      const ccRes = await pool.query(`
+        SELECT c.*, u.jina AS username, u.kituo AS clinic
+        FROM comments c
+        JOIN users u ON c.user_id = u.id
+        WHERE report_id = ANY($1::int[])
+        ORDER BY c.id DESC
+      `, [ids]);
+      cc = ccRes.rows;
+    }
+
+    rr.rows.forEach(rp => {
+      rp.comments = cc.filter(c => c.report_id === rp.id);
+    });
+
+    res.json({
+      reports: rr.rows,
+      page,
+      totalPages,
+      totalReports
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Tatizo kupata ripoti");
+  }
 });
+
 
 // Add comment
 app.post("/api/comments/:id", auth, async (req, res) => {
