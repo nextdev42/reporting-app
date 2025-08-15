@@ -5,33 +5,131 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jisajili</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; }
-    .form-container { max-width: 400px; margin: 50px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    input, select { width: 100%; padding: 8px; margin: 6px 0 12px 0; border: 1px solid #ccc; border-radius: 4px; }
-    button { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    body { 
+      font-family: Arial, sans-serif; 
+      background: #f5f5f5; 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .form-container { 
+      max-width: 400px; 
+      width: 100%;
+      background: white; 
+      padding: 25px; 
+      border-radius: 10px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    h2 {
+      text-align: center;
+      color: #4CAF50;
+      margin-top: 0;
+    }
+    input, select { 
+      width: 100%; 
+      padding: 10px; 
+      margin: 8px 0 15px; 
+      border: 1px solid #ccc; 
+      border-radius: 5px; 
+      box-sizing: border-box;
+    }
+    button { 
+      width: 100%; 
+      padding: 12px; 
+      background: #4CAF50; 
+      color: white; 
+      border: none; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-weight: bold;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
     button:hover { background: #45a049; }
+    .error-message {
+      color: red;
+      font-size: 0.9rem;
+      margin: -10px 0 10px;
+      text-align: center;
+    }
+    .login-link {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 0.9rem;
+    }
+    .login-link a {
+      color: #4CAF50;
+      text-decoration: none;
+    }
+    .login-link a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <div class="form-container">
     <h2>Jisajili</h2>
-    <form method="POST" action="/register">
-      <input type="text" name="firstName" placeholder="Jina lako" required>
-      <input type="text" name="lastName" placeholder="Jina la ukoo" required>
-      <input type="text" name="phone" placeholder="Namba ya simu" required>
-      <select name="clinic" required>
-        <option value="">Chagua Kliniki</option>
+    
+    <div id="errorMsg" class="error-message"></div>
+    
+    <form id="registerForm">
+      <input type="text" name="jina" placeholder="Jina" required>
+      <input type="text" name="ukoo" placeholder="Jina la ukoo" required>
+      <input type="text" name="namba" placeholder="Namba ya simu" required>
+      <select name="kituo" required>
+        <option value="">Chagua Kituo</option>
+        <option value="Kisiwani">Kisiwani</option>
+        <option value="Jirambe">Jirambe</option>
         <option value="Mikwambe">Mikwambe</option>
         <option value="Kibada">Kibada</option>
-        <option value="Jirambe">Jirambe</option>
-        <option value="Kisiwani">Kisiwani</option>
       </select>
-      <input type="text" name="username" placeholder="Jina la mtumiaji" required>
-      <input type="password" name="password" placeholder="Nywila" required>
-      <input type="password" name="confirmPassword" placeholder="Thibitisha Nywila" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <input type="password" name="confirmPassword" placeholder="Confirm Password" required>
       <button type="submit">Jisajili</button>
     </form>
-    <p>Una akaunti? <a href="/login.html">Ingia hapa</a></p>
+    
+    <div class="login-link">
+      Una akaunti? <a href="/index.html">Ingia hapa</a>
+    </div>
   </div>
+
+  <script>
+    const registerForm = document.getElementById("registerForm");
+    const errorMsg = document.getElementById("errorMsg");
+
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorMsg.textContent = "";
+      
+      const formData = new FormData(registerForm);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Client-side validation
+      if (data.password !== data.confirmPassword) {
+        errorMsg.textContent = "Password na confirm password lazima ziwe sawa.";
+        return;
+      }
+      
+      try {
+        const res = await fetch("/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        
+        if (res.ok) {
+          alert("Umejisajili kwa mafanikio! Sasa unaweza kuingia.");
+          window.location.href = "/index.html";
+        } else {
+          const errorText = await res.text();
+          errorMsg.textContent = errorText || "Tatizo kwenye kujisajili. Tafadhali jaribu tena.";
+        }
+      } catch (err) {
+        errorMsg.textContent = "Tatizo la mtandao: " + err.message;
+      }
+    });
+  </script>
 </body>
 </html>
