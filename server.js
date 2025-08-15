@@ -6,6 +6,13 @@ const fs = require("fs");
 const bcrypt = require("bcryptjs");
 const session = require("express-session");
 const pgSession = require("connect-pg-simple")(session);
+// ADD THIS WITH YOUR OTHER REQUIREs:
+const cloudinary = require("cloudinary").v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -165,19 +172,26 @@ app.get("/api/user", auth, (req, res) => {
   res.json({ jina: req.session.jina, kituo: req.session.kituo });
 });
 
-// Submit report
+// Submit report (cloudinary upload)
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
   const { title, description } = req.body;
   if (!title || !description) return res.status(400).send("Jaza title na description.");
-  let imgPath = "";
+
+  let imageUrl = "";
   if (req.file) {
-    const nm = Date.now() + "_" + req.file.originalname;
-    fs.renameSync(req.file.path, path.join(uploadDir, nm));
-    imgPath = "/uploads/" + nm;
+    try {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "clinic-reports"
+      });
+      imageUrl = uploadResult.secure_url;   // permanent CDN url
+    } catch (err) {
+      console.error("Cloudinary error:", err);
+    }
   }
+
   await pool.query(
     "INSERT INTO reports(timestamp,user_id,title,description,image) VALUES($1,$2,$3,$4,$5)",
-    [getTanzaniaTimestamp(), req.session.userId, title, description, imgPath]
+    [getTanzaniaTimestamp(), req.session.userId, title, description, imageUrl]
   );
   res.redirect("/dashboard.html");
 });
