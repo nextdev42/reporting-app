@@ -5,38 +5,154 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashibodi ya Ripoti za Kliniki</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; color: #333; }
-    nav { background: #4CAF50; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-    nav h1 { margin: 0; font-size: 1.5rem; }
-    nav button { background: white; color: #4CAF50; border: none; padding: 8px 12px; cursor: pointer; border-radius: 4px; margin-left: 10px; font-weight: bold; }
-    nav button:hover { background: #e0e0e0; }
-    .greeting { margin-left: 10px; font-weight: bold; }
-    .container { max-width: 900px; margin: 20px auto; padding: 0 15px; }
-    .form-section, .reports-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .form-section h2, .reports-section h2 { margin-top: 0; color: #4CAF50; }
-    input, select, textarea { width: 100%; padding: 8px; margin: 6px 0 12px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-    button.submit-btn { background: #4CAF50; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; font-weight: bold; }
-    button.submit-btn:hover { background: #45a049; }
-    .report-card { border: 1px solid #ddd; padding: 12px; margin-bottom: 15px; border-radius: 6px; background: #fafafa; }
-    .report-card img { max-width: 100%; margin-top: 10px; border-radius: 4px; }
-    .comments { margin-top: 10px; border-top: 1px solid #ccc; padding-top: 10px; }
-    .comments input { width: 70%; display: inline-block; }
-    .comments button { display: inline-block; width: 25%; background: #4CAF50; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; }
-    .comments button:hover { background: #45a049; }
-    @media (max-width: 600px) { .comments input, .comments button { width: 100%; margin-bottom: 6px; } }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    nav {
+      background: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    nav h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    nav button {
+      background: white;
+      color: #4CAF50;
+      border: none;
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-left: 10px;
+      font-weight: bold;
+    }
+
+    nav button:hover {
+      background: #e0e0e0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    .greeting {
+      margin: 15px 0;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .form-section, .reports-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .form-section h2, .reports-section h2 {
+      margin-top: 0;
+      color: #4CAF50;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0 12px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    button.submit-btn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    button.submit-btn:hover {
+      background: #45a049;
+    }
+
+    .report-card {
+      border: 1px solid #ddd;
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+
+    .report-card img {
+      max-width: 100%;
+      margin-top: 10px;
+      border-radius: 4px;
+    }
+
+    .comments {
+      margin-top: 10px;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+    }
+
+    .comments input {
+      width: 70%;
+      display: inline-block;
+    }
+
+    .comments button {
+      display: inline-block;
+      width: 25%;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .comments button:hover {
+      background: #45a049;
+    }
+
+    @media (max-width: 600px) {
+      .comments input, .comments button {
+        width: 100%;
+        margin-bottom: 6px;
+      }
+    }
   </style>
 </head>
 <body>
   <nav>
     <h1>Dashibodi ya Ripoti za Kliniki</h1>
     <div>
-      <span class="greeting" id="greeting"></span>
       <button id="toggleFormBtn">Ongeza Ripoti</button>
       <button onclick="location.href='/logout'">Toka</button>
     </div>
   </nav>
 
   <div class="container">
+    <!-- Greeting -->
+    <div class="greeting" id="greeting">Habari...</div>
+
+    <!-- Report form -->
     <div class="form-section" id="reportFormSection" style="display:none;">
       <h2>Ongeza Ripoti</h2>
       <form id="reportForm">
@@ -48,6 +164,7 @@
       <p id="formStatus"></p>
     </div>
 
+    <!-- Reports list -->
     <div class="reports-section">
       <h2>Ripoti Zilizowasilishwa</h2>
       <div id="reportsContainer"></div>
@@ -62,17 +179,7 @@
     const reportsContainer = document.getElementById("reportsContainer");
     const greeting = document.getElementById("greeting");
 
-    async function loadUser() {
-      try {
-        const res = await fetch("/api/user");
-        const user = await res.json();
-        greeting.textContent = `Habari ya mchana ${user.jina} (${user.kituo})`;
-      } catch (err) {
-        console.error("Tatizo kupata data ya mtumiaji:", err);
-      }
-    }
-    loadUser();
-
+    // Toggle form visibility
     toggleFormBtn.addEventListener("click", () => {
       if (reportFormSection.style.display === "none") {
         reportFormSection.style.display = "block";
@@ -83,17 +190,48 @@
       }
     });
 
+    // Load greeting
+    async function loadGreeting() {
+      try {
+        const res = await fetch("/api/user");
+        const user = await res.json();
+
+        const now = new Date();
+        const tzOffset = 3 * 60;
+        const tTime = new Date(now.getTime() + (tzOffset + now.getTimezoneOffset()) * 60000);
+        const hour = tTime.getHours();
+
+        let greetText = "Habari";
+        if (hour >= 5 && hour < 12) greetText = "Habari ya asubuhi";
+        else if (hour >= 12 && hour < 17) greetText = "Habari ya mchana";
+        else if (hour >= 17 && hour < 21) greetText = "Habari ya jioni";
+        else greetText = "Habari usiku";
+
+        greeting.textContent = `${greetText} ${user.jina} ${user.kituo}`;
+      } catch (err) {
+        greeting.textContent = "Tatizo kuonyesha habari ya mtumiaji";
+      }
+    }
+
+    loadGreeting();
+
+    // Fetch reports with comments
     async function fetchReports() {
       reportsContainer.innerHTML = "Inapakia ripoti...";
       try {
         const res = await fetch("/api/reports");
         const data = await res.json();
         reportsContainer.innerHTML = "";
-        if (!data.length) { reportsContainer.innerHTML = "<p>Hakuna ripoti bado.</p>"; return; }
+
+        if (!data.length) {
+          reportsContainer.innerHTML = "<p>Hakuna ripoti bado.</p>";
+          return;
+        }
 
         data.forEach(report => {
           const card = document.createElement("div");
           card.className = "report-card";
+
           card.innerHTML = `
             <p><strong>Muda:</strong> ${report.timestamp}</p>
             <p><strong>Jina la Mtumiaji:</strong> ${report.username}</p>
@@ -111,19 +249,22 @@
             </div>
           `;
 
-          // Add comment
+          // Add comment functionality
           const commentBtn = card.querySelector(".comments button");
           commentBtn.addEventListener("click", async () => {
             const commentText = card.querySelector("input[name='commentText']").value;
-            if (!commentText) { alert("Jaza maoni."); return; }
+            if (!commentText) {
+              alert("Andika maoni yako.");
+              return;
+            }
             try {
               await fetch(`/api/comments/${report.id}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ comment: commentText })
               });
-              fetchReports(); // refresh comments
-            } catch(err) {
+              fetchReports();
+            } catch (err) {
               alert("Tatizo kuingiza maoni: " + err.message);
             }
           });
@@ -135,9 +276,13 @@
       }
     }
 
+    fetchReports();
+
+    // Submit new report
     reportForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       formStatus.textContent = "Inatuma ripoti...";
+
       const formData = new FormData(reportForm);
       try {
         const res = await fetch("/submit", { method: "POST", body: formData });
@@ -152,8 +297,6 @@
         formStatus.textContent = "Tatizo: " + err.message;
       }
     });
-
-    fetchReports();
   </script>
 </body>
 </html>
