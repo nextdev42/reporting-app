@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const bcrypt = require("bcryptjs");
 const session = require("express-session");
+const pgSession = require('connect-pg-simple')(session); // Add session storage
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,15 @@ const pool = new Pool({
 
 // Ensure tables exist
 async function initDB() {
+  // Create session table first
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS session (
+      sid VARCHAR(255) NOT NULL PRIMARY KEY,
+      sess JSON NOT NULL,
+      expire TIMESTAMP(6) NOT NULL
+    );
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -30,6 +40,7 @@ async function initDB() {
       password TEXT NOT NULL
     );
   `);
+  
   await pool.query(`
     CREATE TABLE IF NOT EXISTS reports (
       id SERIAL PRIMARY KEY,
@@ -40,6 +51,7 @@ async function initDB() {
       image TEXT
     );
   `);
+  
   await pool.query(`
     CREATE TABLE IF NOT EXISTS comments (
       id SERIAL PRIMARY KEY,
@@ -49,19 +61,33 @@ async function initDB() {
       comment TEXT
     );
   `);
+  
   console.log("✅ Database tables ensured");
 }
 initDB();
 
 // Middleware
-app.use(express.static("public")); // CSS, JS, images
+app.use(express.static("public"));
 app.use("/uploads", express.static("reports/uploads"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Improved session configuration
 app.use(session({
+  name: 'reporting.session',
+  store: new pgSession({
+    pool: pool,
+    tableName: 'session'
+  }),
   secret: "secretkey123",
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax'
+  }
 }));
 
 // Multer setup
@@ -88,8 +114,9 @@ function auth(req, res, next) {
 
 // -------- Routes --------
 
-// Serve dashboard with auth
+// Serve dashboard with auth and cache prevention
 app.get("/dashboard", auth, (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.sendFile(path.join(__dirname, "public", "dashboard.html"));
 });
 
@@ -142,10 +169,23 @@ app.get("/api/user", auth, (req, res) => {
   res.json({ jina: req.session.jina, kituo: req.session.kituo });
 });
 
-// Logout
-app.get("/logout", auth, (req, res) => {
+// Fixed logout route
+app.get("/logout", (req, res) => {
+  const sessionCookie = req.session.cookie;
+  const cookieName = sessionCookie.name || 'reporting.session';
+  
   req.session.destroy(err => {
-    if (err) return res.status(500).send("Tatizo ku-logout");
+    if (err) {
+      console.error("Logout error:", err);
+      return res.status(500).send("Tatizo ku-logout");
+    }
+    
+    // Clear session cookie
+    res.clearCookie(cookieName);
+    
+    // Prevent caching of authenticated pages
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    
     res.redirect("/index.html");
   });
 });
