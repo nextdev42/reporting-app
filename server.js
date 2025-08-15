@@ -120,9 +120,10 @@ app.post("/login", async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).send("Password si sahihi.");
 
+    // Store session info
     req.session.userId = user.id;
     req.session.jina = user.jina;
-    req.session.kituo = user.kituo; // save clinic
+    req.session.kituo = user.kituo;
     res.redirect("/dashboard.html");
   } catch(err) {
     console.error(err);
@@ -132,14 +133,10 @@ app.post("/login", async (req, res) => {
 
 // -------- Get Current User Info --------
 app.get("/api/user", auth, async (req, res) => {
-  try {
-    res.json({
-      jina: req.session.jina,
-      kituo: req.session.kituo
-    });
-  } catch(err) {
-    res.status(500).send("Tatizo kupata user info");
-  }
+  res.json({
+    jina: req.session.jina,
+    kituo: req.session.kituo
+  });
 });
 
 // -------- Logout --------
