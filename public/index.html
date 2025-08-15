@@ -3,24 +3,139 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ingia</title>
+  <title>Ingia - Ripoti za Kliniki</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; }
-    .form-container { max-width: 400px; margin: 50px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    input { width: 100%; padding: 8px; margin: 6px 0 12px 0; border: 1px solid #ccc; border-radius: 4px; }
-    button { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    button:hover { background: #45a049; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .auth-container {
+      background: white;
+      padding: 30px 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .auth-container h2 {
+      margin-top: 0;
+      text-align: center;
+      color: #4CAF50;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    .toggle-link {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 0.9rem;
+    }
+
+    .toggle-link a {
+      color: #4CAF50;
+      text-decoration: none;
+    }
+
+    .toggle-link a:hover {
+      text-decoration: underline;
+    }
+
+    .error-message {
+      color: red;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <div class="form-container">
-    <h2>Ingia</h2>
-    <form method="POST" action="/login">
-      <input type="text" name="username" placeholder="Jina la mtumiaji" required>
-      <input type="password" name="password" placeholder="Nywila" required>
-      <button type="submit">Ingia</button>
-    </form>
-    <p>Hauna akaunti? <a href="/register.html">Jisajili hapa</a></p>
+
+<div class="auth-container">
+  <h2>Ingia</h2>
+  
+  <div id="errorMsg" class="error-message"></div>
+
+  <form id="loginForm">
+    <input type="text" name="jina" placeholder="Jina la mtumiaji" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <button type="submit">Ingia</button>
+  </form>
+
+  <div class="toggle-link">
+    Hauna akaunti? <a href="/index.html">Jisajili hapa</a>
   </div>
+</div>
+
+<script>
+  const loginForm = document.getElementById("loginForm");
+  const errorMsg = document.getElementById("errorMsg");
+
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorMsg.textContent = "";
+    
+    const formData = new FormData(loginForm);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      
+      if (res.ok) {
+        // Redirect to dashboard route
+        window.location.href = "/dashboard";
+      } else {
+        const errorText = await res.text();
+        errorMsg.textContent = errorText || "Tatizo kuingia. Tafadhali jaribu tena.";
+      }
+    } catch (err) {
+      errorMsg.textContent = "Tatizo la mtandao: " + err.message;
+    }
+  });
+
+  // Check if user is already logged in
+  async function checkSession() {
+    try {
+      const res = await fetch("/api/user");
+      if (res.ok) window.location.href = "/dashboard";
+    } catch {}
+  }
+  
+  checkSession();
+</script>
 </body>
 </html>
