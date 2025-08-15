@@ -40,6 +40,17 @@ async function initDB() {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS reports (
+      id SERIAL PRIMARY KEY,
+      timestamp TEXT,
+      user_id INTEGER REFERENCES users(id),
+      title TEXT,
+      description TEXT,
+      image TEXT
+    );
+  `);
+
   console.log("✅ Database ready");
 }
 initDB();
@@ -66,7 +77,7 @@ app.use(session({
   }
 }));
 
-// Multer setup
+// Multer setup for file uploads
 const uploadDir = "reports/uploads";
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 const upload = multer({ dest: uploadDir });
@@ -75,6 +86,17 @@ const upload = multer({ dest: uploadDir });
 function auth(req, res, next) {
   if (!req.session.userId) return res.redirect("/index.html");
   next();
+}
+
+// Timestamp helper
+function getTanzaniaTimestamp() {
+  const now = new Date();
+  const tzOffset = 3 * 60; // UTC+3
+  const tTime = new Date(now.getTime() + (tzOffset + now.getTimezoneOffset()) * 60000);
+  return tTime.toLocaleString("sw-TZ", {
+    day: "2-digit", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+  });
 }
 
 // -------- Routes --------
@@ -142,6 +164,34 @@ app.get("/logout", (req, res) => {
 // Get current user info
 app.get("/api/user", auth, (req, res) => {
   res.json({ jina: req.session.jina, kituo: req.session.kituo });
+});
+
+// Submit report route
+app.post("/submit", auth, upload.single("image"), async (req, res) => {
+  const { title, description } = req.body;
+  if (!title || !description) return res.status(400).send("Jaza title na description.");
+
+  const userId = req.session.userId;
+  const timestamp = getTanzaniaTimestamp();
+
+  let imgPath = "";
+  if (req.file) {
+    const filename = Date.now() + "_" + req.file.originalname;
+    const newPath = path.join(uploadDir, filename);
+    fs.renameSync(req.file.path, newPath);
+    imgPath = "/uploads/" + filename;
+  }
+
+  try {
+    await pool.query(
+      "INSERT INTO reports (timestamp, user_id, title, description, image) VALUES ($1,$2,$3,$4,$5)",
+      [timestamp, userId, title, description, imgPath]
+    );
+    res.redirect("/dashboard.html");
+  } catch(err) {
+    console.error(err);
+    res.status(500).send("Tatizo kwenye database.");
+  }
 });
 
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
