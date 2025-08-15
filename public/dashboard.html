@@ -95,8 +95,11 @@
       border: 1px solid #ddd;
       padding: 12px;
       margin-bottom: 15px;
-      border-radius: 6px;
+      border-radius: 8px;
       background: #fafafa;
+      display: flex;
+      flex-direction: column;
+      position: relative;
     }
 
     .report-card img {
@@ -105,34 +108,82 @@
       border-radius: 4px;
     }
 
+    /* Comment thread styling */
     .comments {
-      margin-top: 10px;
-      border-top: 1px solid #ccc;
-      padding-top: 10px;
+      margin-top: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    .comments input {
-      width: 70%;
-      display: inline-block;
+    .commentsList {
+      max-height: 250px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .comment-item {
+      background: #e8f5e9;
+      padding: 10px 14px;
+      border-radius: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      word-wrap: break-word;
+      font-size: 0.9rem;
+    }
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .comment-header span.username {
+      color: #2e7d32;
+    }
+
+    .comment-header span.time {
+      font-size: 0.75rem;
+      color: #555;
+    }
+
+    .comments input[type="text"] {
+      width: 80%;
+      padding: 10px 15px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .comments input[type="text"]:focus {
+      border-color: #4CAF50;
+      box-shadow: 0 0 5px rgba(76,175,80,0.3);
     }
 
     .comments button {
-      display: inline-block;
-      width: 25%;
+      width: 18%;
+      padding: 10px;
+      border-radius: 20px;
+      border: none;
       background: #4CAF50;
       color: white;
-      border: none;
-      padding: 6px;
-      border-radius: 4px;
+      font-weight: 600;
       cursor: pointer;
+      margin-left: 2%;
+      transition: background 0.3s;
     }
 
     .comments button:hover {
       background: #45a049;
     }
 
-    @media (max-width: 600px) {
-      .comments input, .comments button {
+    @media(max-width: 600px){
+      .comments input[type="text"], .comments button {
         width: 100%;
         margin-bottom: 6px;
       }
@@ -149,10 +200,8 @@
   </nav>
 
   <div class="container">
-    <!-- Greeting -->
     <div class="greeting" id="greeting">Habari...</div>
 
-    <!-- Report form -->
     <div class="form-section" id="reportFormSection" style="display:none;">
       <h2>Ongeza Ripoti</h2>
       <form id="reportForm">
@@ -164,7 +213,6 @@
       <p id="formStatus"></p>
     </div>
 
-    <!-- Reports list -->
     <div class="reports-section">
       <h2>Ripoti Zilizowasilishwa</h2>
       <div id="reportsContainer"></div>
@@ -179,7 +227,6 @@
     const reportsContainer = document.getElementById("reportsContainer");
     const greeting = document.getElementById("greeting");
 
-    // Toggle form visibility
     toggleFormBtn.addEventListener("click", () => {
       if (reportFormSection.style.display === "none") {
         reportFormSection.style.display = "block";
@@ -190,32 +237,26 @@
       }
     });
 
-    // Load greeting
     async function loadGreeting() {
       try {
         const res = await fetch("/api/user");
         const user = await res.json();
-
         const now = new Date();
         const tzOffset = 3 * 60;
         const tTime = new Date(now.getTime() + (tzOffset + now.getTimezoneOffset()) * 60000);
         const hour = tTime.getHours();
-
         let greetText = "Habari";
         if (hour >= 5 && hour < 12) greetText = "Habari ya asubuhi";
         else if (hour >= 12 && hour < 17) greetText = "Habari ya mchana";
         else if (hour >= 17 && hour < 21) greetText = "Habari ya jioni";
         else greetText = "Habari usiku";
-
         greeting.textContent = `${greetText} ${user.jina} ${user.kituo}`;
-      } catch (err) {
+      } catch {
         greeting.textContent = "Tatizo kuonyesha habari ya mtumiaji";
       }
     }
-
     loadGreeting();
 
-    // Fetch reports with comments
     async function fetchReports() {
       reportsContainer.innerHTML = "Inapakia ripoti...";
       try {
@@ -242,54 +283,60 @@
             <div class="comments">
               <h4>Maoni:</h4>
               <div class="commentsList">
-                ${report.comments.map(c => `<p>${c.username} (${c.clinic}) [${c.timestamp}]: ${c.comment}</p>`).join("")}
+                ${report.comments.map(c => `
+                  <div class="comment-item">
+                    <div class="comment-header">
+                      <span class="username">${c.username} (${c.clinic})</span>
+                      <span class="time">${c.timestamp}</span>
+                    </div>
+                    <p>${c.comment}</p>
+                  </div>
+                `).join('')}
               </div>
               <input type="text" placeholder="Andika maoni yako" name="commentText">
               <button>Add</button>
             </div>
           `;
 
-          // Add comment functionality
           const commentBtn = card.querySelector(".comments button");
+          const commentsList = card.querySelector(".commentsList");
+
           commentBtn.addEventListener("click", async () => {
-            const commentText = card.querySelector("input[name='commentText']").value;
-            if (!commentText) {
-              alert("Andika maoni yako.");
-              return;
-            }
+            const commentInput = card.querySelector("input[name='commentText']");
+            const commentText = commentInput.value.trim();
+            if (!commentText) { alert("Andika maoni yako."); return; }
             try {
               await fetch(`/api/comments/${report.id}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ comment: commentText })
               });
-              fetchReports();
-            } catch (err) {
-              alert("Tatizo kuingiza maoni: " + err.message);
-            }
+              commentInput.value = "";
+              await fetchReports();
+            } catch (err) { alert("Tatizo kuingiza maoni: " + err.message); }
           });
 
           reportsContainer.appendChild(card);
         });
+
+        // After all cards rendered, scroll each commentsList to bottom
+        document.querySelectorAll('.commentsList').forEach(list => {
+          list.scrollTop = list.scrollHeight;
+        });
+
       } catch (err) {
         reportsContainer.innerHTML = "Tatizo kupata ripoti: " + err.message;
       }
     }
-
     fetchReports();
 
-    // Submit new report
     reportForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       formStatus.textContent = "Inatuma ripoti...";
-
       const formData = new FormData(reportForm);
       try {
         const res = await fetch("/submit", { method: "POST", body: formData });
-        if (!res.ok) {
-          formStatus.textContent = "Tatizo: " + await res.text();
-          return;
-        }
+        if (!res.ok) { formStatus.textContent = "Tatizo: " + await res.text(); return; }
         formStatus.textContent = "Ripoti imehifadhiwa!";
         reportForm.reset();
         fetchReports();
