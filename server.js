@@ -6,8 +6,8 @@ const fs = require("fs");
 const bcrypt = require("bcryptjs");
 const session = require("express-session");
 const pgSession = require("connect-pg-simple")(session);
-// ADD THIS WITH YOUR OTHER REQUIREs:
 const cloudinary = require("cloudinary").v2;
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -82,11 +82,7 @@ app.use(session({
   secret: "supersecret123!",
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax',
-    httpOnly: true
-  }
+  cookie: { maxAge: 24*60*60*1000, sameSite: 'lax', httpOnly:true }
 }));
 
 // Multer setup
@@ -94,197 +90,127 @@ const uploadDir = "reports/uploads";
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 const upload = multer({ dest: uploadDir });
 
-// Helpers
-function auth(req, res, next) {
-  if (!req.session.userId) return res.redirect("/index.html");
-  next();
-}
+// Auth helper
+function auth(req,res,next){ if(!req.session.userId) return res.redirect("/index.html"); next(); }
 
-function getTanzaniaTimestamp() {
+// Tanzania timestamp helper
+function getTanzaniaTimestamp(){
   const now = new Date();
-  return new Date(now.getTime() + (3 * 60 + now.getTimezoneOffset()) * 60000)
-    .toLocaleString("sw-TZ", {
-      day: "2-digit", month: "long", year: "numeric",
-      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
-    });
+  return new Date(now.getTime() + (3*60 + now.getTimezoneOffset())*60000)
+    .toLocaleString("sw-TZ", { day:"2-digit", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false });
 }
 
 // ========== Routes ==========
 
-// Register (case-insensitive username check)
-app.post("/register", async (req, res) => {
+// Register
+app.post("/register", async (req,res)=>{
   const { jina, ukoo, namba, kituo, password, confirmPassword } = req.body;
-  if (!jina || !ukoo || !namba || !kituo || !password || !confirmPassword)
-    return res.status(400).send("Jaza sehemu zote muhimu.");
-  if (password !== confirmPassword)
-    return res.status(400).send("Password hazifanani.");
-
-  // Ensure username not already taken (case-insensitive)
-  const exists = await pool.query(
-    "SELECT * FROM users WHERE LOWER(jina) = LOWER($1)", [jina]
-  );
-  if (exists.rows.length > 0) return res.status(400).send("Jina tayari limechukuliwa.");
-
-  const hash = await bcrypt.hash(password, 10);
-  await pool.query(
-    "INSERT INTO users(jina,ukoo,namba,kituo,password) VALUES($1,$2,$3,$4,$5)",
-    [jina, ukoo, namba, kituo, hash]
-  );
+  if(!jina||!ukoo||!namba||!kituo||!password||!confirmPassword) return res.status(400).send("Jaza sehemu zote muhimu.");
+  if(password !== confirmPassword) return res.status(400).send("Password hazifanani.");
+  const exists = await pool.query("SELECT * FROM users WHERE LOWER(jina) = LOWER($1)",[jina]);
+  if(exists.rows.length>0) return res.status(400).send("Jina tayari limechukuliwa.");
+  const hash = await bcrypt.hash(password,10);
+  await pool.query("INSERT INTO users(jina,ukoo,namba,kituo,password) VALUES($1,$2,$3,$4,$5)",[jina,ukoo,namba,kituo,hash]);
   res.redirect("/index.html");
 });
 
-// Login (case-insensitive)
-app.post("/login", async (req, res) => {
+// Login
+app.post("/login", async (req,res)=>{
   const { jina, password } = req.body;
-  if (!jina || !password) return res.status(400).send("Jaza jina na password.");
-
-  const r = await pool.query(
-    "SELECT * FROM users WHERE LOWER(jina) = LOWER($1)", [jina]
-  );
+  if(!jina||!password) return res.status(400).send("Jaza jina na password.");
+  const r = await pool.query("SELECT * FROM users WHERE LOWER(jina)=LOWER($1)",[jina]);
   const user = r.rows[0];
-  if (!user) return res.status(400).send("Jina halijarejistri.");
-
-  const ok = await bcrypt.compare(password, user.password);
-  if (!ok) return res.status(400).send("Password si sahihi.");
-
+  if(!user) return res.status(400).send("Jina halijarejistri.");
+  const ok = await bcrypt.compare(password,user.password);
+  if(!ok) return res.status(400).send("Password si sahihi.");
   req.session.userId = user.id;
-  req.session.jina = user.jina;   // preserve original case for greeting
+  req.session.jina = user.jina;
   req.session.kituo = user.kituo;
   res.redirect("/dashboard.html");
 });
 
 // Dashboard
-app.get("/dashboard.html", auth, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "dashboard.html"));
-});
+app.get("/dashboard.html", auth, (req,res)=>res.sendFile(path.join(__dirname,"public","dashboard.html")));
 
 // Logout
-app.get("/logout", (req, res) => {
-  req.session.destroy(err => {
-    if (err) return res.status(500).send("Tatizo ku-logout");
-    res.clearCookie("connect.sid");
-    res.redirect("/index.html");
-  });
-});
+app.get("/logout", (req,res)=>{ req.session.destroy(err=>{ if(err) return res.status(500).send("Tatizo ku-logout"); res.clearCookie("connect.sid"); res.redirect("/index.html"); }); });
 
-// User info for greeting
-app.get("/api/user", auth, (req, res) => {
-  res.json({ jina: req.session.jina, kituo: req.session.kituo });
-});
+// User info
+app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req.session.kituo}));
 
-// Submit report (cloudinary upload)
-app.post("/submit", auth, upload.single("image"), async (req, res) => {
+// Submit report
+app.post("/submit", auth, upload.single("image"), async (req,res)=>{
   const { title, description } = req.body;
-  if (!title || !description) return res.status(400).send("Jaza title na description.");
-
-  let imageUrl = "";
-  if (req.file) {
-    try {
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "clinic-reports"
-      });
-      imageUrl = uploadResult.secure_url;   // permanent CDN url
-    } catch (err) {
-      console.error("Cloudinary error:", err);
-    }
+  if(!title||!description) return res.status(400).send("Jaza title na description.");
+  let imageUrl="";
+  if(req.file){
+    try{ const uploadResult = await cloudinary.uploader.upload(req.file.path,{folder:"clinic-reports"}); imageUrl=uploadResult.secure_url; }
+    catch(err){ console.error("Cloudinary error:",err); }
   }
-
-  await pool.query(
-    "INSERT INTO reports(timestamp,user_id,title,description,image) VALUES($1,$2,$3,$4,$5)",
-    [getTanzaniaTimestamp(), req.session.userId, title, description, imageUrl]
-  );
+  await pool.query("INSERT INTO reports(timestamp,user_id,title,description,image) VALUES($1,$2,$3,$4,$5)",[getTanzaniaTimestamp(),req.session.userId,title,description,imageUrl]);
   res.redirect("/dashboard.html");
 });
 
-// Get all reports with pagination, filtering, search
-app.get("/api/reports", auth, async (req, res) => {
-  try {
-    let { page = 1, limit = 15, clinic, username, search } = req.query;
-    page = parseInt(page);
-    limit = parseInt(limit);
+// Get reports with filtering, pagination, search (including comments)
+app.get("/api/reports", auth, async (req,res)=>{
+  try{
+    let { page=1, limit=15, clinic, username, search } = req.query;
+    page=parseInt(page); limit=parseInt(limit);
+    let whereClauses=[]; let params=[]; let idx=1;
 
-    let whereClauses = [];
-    let params = [];
-    let idx = 1;
-
-    if (clinic) {
-      whereClauses.push(`u.kituo ILIKE $${idx++}`);
-      params.push(`%${clinic}%`);
-    }
-    if (username) {
-      whereClauses.push(`u.jina ILIKE $${idx++}`);
-      params.push(`%${username}%`);
-    }
-    if (search) {
-      whereClauses.push(`(r.title ILIKE $${idx} OR r.description ILIKE $${idx})`);
-      params.push(`%${search}%`);
-      idx++;
+    if(clinic){ whereClauses.push(`u.kituo ILIKE $${idx++}`); params.push(`%${clinic}%`); }
+    if(username){ whereClauses.push(`u.jina ILIKE $${idx++}`); params.push(`%${username}%`); }
+    if(search){ 
+      whereClauses.push(`(
+        r.title ILIKE $${idx} OR 
+        r.description ILIKE $${idx} OR
+        EXISTS (SELECT 1 FROM comments c WHERE c.report_id = r.id AND c.comment ILIKE $${idx})
+      )`);
+      params.push(`%${search}%`); idx++;
     }
 
     const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
-    // Total count for pagination
-    const countRes = await pool.query(
-      `SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id = u.id ${whereSQL}`,
-      params
-    );
+    // Count for pagination
+    const countRes = await pool.query(`SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id = u.id ${whereSQL}`, params);
     const totalReports = parseInt(countRes.rows[0].count);
-    const totalPages = Math.ceil(totalReports / limit);
-    const offset = (page - 1) * limit;
+    const totalPages = Math.ceil(totalReports/limit);
+    const offset = (page-1)*limit;
 
     // Fetch reports
     const rr = await pool.query(
       `SELECT r.*, u.jina AS username, u.kituo AS clinic
-       FROM reports r
-       JOIN users u ON r.user_id = u.id
+       FROM reports r JOIN users u ON r.user_id=u.id
        ${whereSQL}
        ORDER BY r.id DESC
        LIMIT $${idx++} OFFSET $${idx}`,
       [...params, limit, offset]
     );
 
-    const ids = rr.rows.map(r => r.id);
+    const ids = rr.rows.map(r=>r.id);
     let cc = [];
-    if (ids.length) {
+    if(ids.length){
       const ccRes = await pool.query(`
         SELECT c.*, u.jina AS username, u.kituo AS clinic
-        FROM comments c
-        JOIN users u ON c.user_id = u.id
+        FROM comments c JOIN users u ON c.user_id=u.id
         WHERE report_id = ANY($1::int[])
         ORDER BY c.id DESC
-      `, [ids]);
+      `,[ids]);
       cc = ccRes.rows;
     }
 
-    rr.rows.forEach(rp => {
-      rp.comments = cc.filter(c => c.report_id === rp.id);
-    });
+    rr.rows.forEach(rp=>{ rp.comments = cc.filter(c=>c.report_id===rp.id); });
 
-    res.json({
-      reports: rr.rows,
-      page,
-      totalPages,
-      totalReports
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Tatizo kupata ripoti");
-  }
+    res.json({ reports: rr.rows, page, totalPages, totalReports });
+  } catch(err){ console.error(err); res.status(500).send("Tatizo kupata ripoti"); }
 });
 
-
 // Add comment
-app.post("/api/comments/:id", auth, async (req, res) => {
+app.post("/api/comments/:id", auth, async (req,res)=>{
   const { comment } = req.body;
-  if (!comment) return res.status(400).send("Andika maoni.");
-
-  await pool.query(`
-    INSERT INTO comments(report_id, user_id, timestamp, comment)
-    VALUES($1,$2,$3,$4)
-  `, [req.params.id, req.session.userId, getTanzaniaTimestamp(), comment]);
-
+  if(!comment) return res.status(400).send("Andika maoni.");
+  await pool.query("INSERT INTO comments(report_id,user_id,timestamp,comment) VALUES($1,$2,$3,$4)",[req.params.id,req.session.userId,getTanzaniaTimestamp(),comment]);
   res.send("Maoni yamehifadhiwa");
 });
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, ()=>console.log(`🚀 Server running on port ${PORT}`));
