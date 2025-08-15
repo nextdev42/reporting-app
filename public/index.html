@@ -5,77 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ingia / Jisajili - Ripoti za Kliniki</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f5f5f5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .auth-container {
-      background: white;
-      padding: 30px 25px;
-      border-radius: 10px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      width: 100%;
-      max-width: 400px;
-    }
-
-    .auth-container h2 {
-      margin-top: 0;
-      text-align: center;
-      color: #4CAF50;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0 15px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      box-sizing: border-box;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.3s;
-    }
-
-    button:hover {
-      background: #45a049;
-    }
-
-    .toggle-link {
-      text-align: center;
-      margin-top: 15px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      color: #4CAF50;
-    }
-
-    .toggle-link:hover { text-decoration: underline; }
-
-    .error-message {
-      color: red;
-      font-size: 0.9rem;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-
-    @media (max-width: 450px) {
-      .auth-container { padding: 20px 15px; }
-    }
+    /* ... (keep your existing styles) ... */
   </style>
 </head>
 <body>
@@ -147,11 +77,14 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
       });
+      
       if (!res.ok) {
         errorMsg.textContent = await res.text();
         return;
       }
-      window.location.href = "/dashboard.html";
+      
+      // Redirect to dashboard route, not HTML file
+      window.location.href = "/dashboard";
     } catch (err) {
       errorMsg.textContent = "Tatizo kuingia: " + err.message;
     }
@@ -174,10 +107,12 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
       });
+      
       if (!res.ok) {
         errorMsg.textContent = await res.text();
         return;
       }
+      
       alert("Umejisajili kwa mafanikio. Ingia sasa.");
       toggleForm.click();
     } catch(err) {
@@ -185,16 +120,24 @@
     }
   });
 
-  // Auto redirect if user is already logged in
+  // Fixed session checking
   async function checkSession() {
     try {
       const res = await fetch("/api/user");
-      if (res.ok) window.location.href = "/dashboard.html";
-    } catch {}
+      
+      // Only redirect if we get a successful response (200 OK)
+      if (res.ok) {
+        // Use server-side dashboard route
+        window.location.href = "/dashboard";
+      }
+      // Otherwise, stay on login page
+    } catch {
+      // Ignore errors (user not authenticated)
+    }
   }
+  
   checkSession();
 </script>
 
 </body>
 </html>
-
