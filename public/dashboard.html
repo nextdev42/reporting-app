@@ -3,105 +3,117 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard | Pilimissana Sober House</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>Dashboard | Reporting App</title>
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
-  <nav class="navbar">
-    <div class="logo">Pilimissana</div>
-    <ul class="nav-links">
-      <li><a href="/logout">Logout</a></li>
-    </ul>
-  </nav>
+  <header>
+    <h1 id="greeting">Habari!</h1>
+    <div class="user-info">
+      <span id="user-name"></span> | <span id="user-clinic"></span>
+      <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+  </header>
 
   <main>
-    <section class="greeting">
-      <h1 id="greeting-text">Habari, <span id="username"></span>!</h1>
-      <p>Kituo chako: <span id="clinic"></span></p>
-    </section>
+    <button id="toggle-form-btn" class="btn">Tuma Ripoti Mpya</button>
 
-    <section class="report-form">
-      <h2>Tuma Ripoti</h2>
-      <form id="reportForm" action="/submit" method="POST" enctype="multipart/form-data">
-        <input type="text" name="title" placeholder="Kichwa cha ripoti" required>
-        <textarea name="description" placeholder="Maelezo ya ripoti" required></textarea>
+    <section id="report-form-section" class="hidden">
+      <form id="report-form" method="POST" action="/submit" enctype="multipart/form-data">
+        <input type="text" name="title" placeholder="Kichwa cha Ripoti" required>
+        <textarea name="description" placeholder="Maelezo ya Ripoti" required></textarea>
         <input type="file" name="image" accept="image/*">
-        <button type="submit">Tuma</button>
+        <button type="submit" class="btn">Tuma Ripoti</button>
       </form>
     </section>
 
-    <section class="reports-section">
+    <section id="reports-section">
       <h2>Ripoti Zote</h2>
       <div id="reports-container"></div>
     </section>
   </main>
 
   <script>
-    // Fetch user info
-    fetch("/api/user")
+    // Fetch user info and set greeting
+    fetch('/api/user')
       .then(res => res.json())
       .then(user => {
-        const usernameEl = document.getElementById("username");
-        const clinicEl = document.getElementById("clinic");
-        usernameEl.textContent = user.jina;
-        clinicEl.textContent = user.kituo;
-
-        // Dynamic greeting
         const now = new Date();
         const hour = now.getHours();
-        let greeting = "Habari za usiku";
-        if (hour >= 5 && hour < 12) greeting = "Habari ya asubuhi";
-        else if (hour >= 12 && hour < 17) greeting = "Habari za mchana";
-        else if (hour >= 17 && hour < 20) greeting = "Habari za jioni";
+        let greetingText = "Habari!";
+        if(hour < 12) greetingText = "Habari ya Asubuhi!";
+        else if(hour < 18) greetingText = "Habari ya Mchana!";
+        else greetingText = "Habari ya Jioni!";
 
-        document.getElementById("greeting-text").textContent = `${greeting}, ${user.jina}!`;
+        document.getElementById('greeting').textContent = greetingText;
+        document.getElementById('user-name').textContent = user.jina;
+        document.getElementById('user-clinic').textContent = user.kituo;
       });
 
-    // Fetch reports
-    function loadReports() {
-      fetch("/api/reports")
-        .then(res => res.json())
-        .then(reports => {
-          const container = document.getElementById("reports-container");
-          container.innerHTML = "";
-          reports.forEach(rep => {
-            const div = document.createElement("div");
-            div.classList.add("report-card");
-            div.innerHTML = `
-              <h3>${rep.title}</h3>
-              <p>${rep.description}</p>
-              ${rep.image ? `<img src="${rep.image}" alt="report image">` : ""}
-              <small>Imechapishwa na: ${rep.username} | ${rep.clinic} | ${rep.timestamp}</small>
-              <div class="comments">
-                <h4>Maoni</h4>
-                <div>${rep.comments.map(c => `<p><strong>${c.username}:</strong> ${c.comment}</p>`).join('')}</div>
-                <form class="commentForm" data-id="${rep.id}">
-                  <input type="text" name="comment" placeholder="Andika maoni..." required>
-                  <button type="submit">Tuma</button>
-                </form>
-              </div>
-            `;
-            container.appendChild(div);
+    // Toggle report form
+    const toggleBtn = document.getElementById('toggle-form-btn');
+    const formSection = document.getElementById('report-form-section');
+    toggleBtn.addEventListener('click', () => {
+      formSection.classList.toggle('hidden');
+    });
+
+    // Fetch and display reports with comment form
+    async function loadReports() {
+      const res = await fetch('/api/reports');
+      const reports = await res.json();
+      const container = document.getElementById('reports-container');
+      container.innerHTML = '';
+
+      if(!reports.length){
+        container.innerHTML = '<p>Hakuna ripoti zilizopo.</p>';
+        return;
+      }
+
+      reports.forEach(rep => {
+        const div = document.createElement('div');
+        div.classList.add('report');
+
+        // Sort comments: latest first
+        const sortedComments = rep.comments.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        div.innerHTML = `
+          <h3>${rep.title}</h3>
+          <p>${rep.description}</p>
+          ${rep.image ? `<img src="${rep.image}" alt="Report Image">` : ''}
+          <small>${rep.timestamp} | ${rep.username} (${rep.clinic})</small>
+          <div class="comments">
+            <h4>Maoni</h4>
+            ${sortedComments.length 
+              ? sortedComments.map(c => `<p><strong>${c.username} (${c.clinic}):</strong> ${c.comment}</p>`).join('') 
+              : '<p>Hakuna maoni bado.</p>'}
+          </div>
+          <form class="comment-form" data-report-id="${rep.id}">
+            <input type="text" name="comment" placeholder="Andika maoni..." required>
+            <button type="submit" class="btn">Tuma</button>
+          </form>
+        `;
+        container.appendChild(div);
+      });
+
+      // Add comment form submit listeners
+      document.querySelectorAll('.comment-form').forEach(form => {
+        form.addEventListener('submit', async e => {
+          e.preventDefault();
+          const reportId = form.dataset.reportId;
+          const commentInput = form.querySelector('input[name="comment"]');
+          const comment = commentInput.value.trim();
+          if(!comment) return;
+
+          await fetch(`/api/comments/${reportId}`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({comment})
           });
 
-          // Comment form submission
-          document.querySelectorAll(".commentForm").forEach(form => {
-            form.addEventListener("submit", function(e) {
-              e.preventDefault();
-              const id = this.dataset.id;
-              const comment = this.comment.value;
-              fetch(`/api/comments/${id}`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({comment})
-              }).then(() => {
-                this.comment.value = "";
-                loadReports(); // reload reports
-              });
-            });
-          });
+          commentInput.value = '';
+          loadReports(); // refresh comments
         });
+      });
     }
 
     loadReports();
