@@ -1,261 +1,231 @@
 <!DOCTYPE html>
 <html lang="sw">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashibodi ya Ripoti za Kliniki</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f5f5f5;
-      color: #333;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashibodi ya Ripoti za Kliniki</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f5f5f5; color:#333; }
+  nav { background:#4CAF50; color:white; padding:10px 20px; display:flex; justify-content:space-between; align-items:center; }
+  nav h1 { margin:0; font-size:1.5rem; }
+  nav .nav-actions { display:flex; gap:12px; align-items:center; }
+  nav button { background:white; color:#4CAF50; border:none; padding:8px 12px; cursor:pointer; border-radius:4px; font-weight:bold; }
+  nav button:hover { background:#e0e0e0; }
 
-    nav {
-      background: #4CAF50;
-      color: white;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+  .container { max-width:900px; margin:20px auto; padding:0 15px; }
+  .greeting { margin:15px 0; font-size:1.2rem; font-weight:bold; color:#333; }
 
-    nav h1 {
-      margin: 0;
-      font-size: 1.5rem;
-    }
+  .form-section, .reports-section { background:white; padding:20px; border-radius:8px; margin-bottom:20px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+  .form-section h2, .reports-section h2 { margin-top:0; color:#4CAF50; }
 
-    /* NEW: wrap nav buttons into a flex container with spacing */
-    nav .nav-actions {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
+  input, select, textarea { width:100%; padding:8px; margin:6px 0 12px 0; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; }
+  button.submit-btn { background:#4CAF50; color:white; border:none; padding:10px 15px; cursor:pointer; border-radius:4px; font-weight:bold; }
+  button.submit-btn:hover { background:#45a049; }
 
-    nav button {
-      background: white;
-      color: #4CAF50;
-      border: none;
-      padding: 8px 12px;
-      cursor: pointer;
-      border-radius: 4px;
-      font-weight: bold;
-    }
+  .filters { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:15px; }
+  .pagination { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
 
-    nav button:hover {
-      background: #e0e0e0;
-    }
+  .report-card { border:1px solid #ddd; padding:12px; margin-bottom:15px; border-radius:8px; background:#fafafa; display:flex; flex-direction:column; position:relative; }
+  .report-card img { max-width:100%; margin-top:10px; border-radius:4px; }
 
-    .container {
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 0 15px;
-    }
+  .comments { margin-top:15px; display:flex; flex-direction:column; gap:10px; }
+  .commentsList { max-height:250px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
+  .comment-item { background:#e8f5e9; padding:10px 14px; border-radius:15px; box-shadow:0 1px 3px rgba(0,0,0,0.08); word-wrap:break-word; font-size:0.9rem; }
+  .comment-header{ display:flex; justify-content:space-between; margin-bottom:4px; font-weight:600; }
+  .comment-header span.username{ color:#2e7d32; }
+  .comment-header span.time{ font-size:0.75rem; color:#555; }
 
-    .greeting {
-      margin: 15px 0;
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #333;
-    }
-
-    .form-section, .reports-section {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .form-section h2, .reports-section h2 {
-      margin-top: 0;
-      color: #4CAF50;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 8px;
-      margin: 6px 0 12px 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-
-    button.submit-btn {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      cursor: pointer;
-      border-radius: 4px;
-      font-weight: bold;
-    }
-
-    button.submit-btn:hover {
-      background: #45a049;
-    }
-
-    .report-card {
-      border: 1px solid #ddd;
-      padding: 12px;
-      margin-bottom: 15px;
-      border-radius: 8px;
-      background: #fafafa;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    .report-card img {
-      max-width: 100%;
-      margin-top: 10px;
-      border-radius: 4px;
-    }
-
-    .comments { margin-top:15px; display:flex; flex-direction:column; gap:10px; }
-    .commentsList { max-height:250px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
-    .comment-item { background:#e8f5e9; padding:10px14px; border-radius:15px; box-shadow:0 1px 3px rgba(0,0,0,0.08); word-wrap:break-word; font-size:0.9rem; }
-    .comment-header{ display:flex; justify-content:space-between; margin-bottom:4px; font-weight: 600; }
-    .comment-header span.username{ color:#2e7d32; }
-    .comment-header span.time{ font-size:0.75rem; color:#555; }
-
-    .comments input[type="text"]{
-      width:80%; padding:10px15px; border-radius:20px; border:1px solid #ccc; font-size:0.9rem;
-    }
-    .comments button{
-      width:18%; padding:10px; border-radius:20px; border:none; background:#4CAF50; color:white; font-weight:600; cursor:pointer;
-      margin-left:2%;
-    }
-    @media(max-width:600px){
-      .comments input[type="text"],.comments button{
-        width:100%; margin-bottom:6px;
-      }
-    }
-  </style>
+  .comments input[type="text"]{ width:80%; padding:10px 15px; border-radius:20px; border:1px solid #ccc; font-size:0.9rem; }
+  .comments button{ width:18%; padding:10px; border-radius:20px; border:none; background:#4CAF50; color:white; font-weight:600; cursor:pointer; margin-left:2%; }
+  @media(max-width:600px){ .comments input[type="text"],.comments button{ width:100%; margin-bottom:6px; } }
+</style>
 </head>
 <body>
-  <nav>
-    <h1>Dashibodi ya Ripoti za Kliniki</h1>
-    <div class="nav-actions"><!-- UPDATED -->
-      <button id="toggleFormBtn">Ongeza Ripoti</button>
-      <button onclick="location.href='/logout'">Toka</button>
-    </div>
-  </nav>
+<nav>
+  <h1>Dashibodi ya Ripoti za Kliniki</h1>
+  <div class="nav-actions">
+    <button id="toggleFormBtn">Ongeza Ripoti</button>
+    <button onclick="location.href='/logout'">Toka</button>
+  </div>
+</nav>
 
-  <div class="container">
-    <div class="greeting" id="greeting">Habari...</div>
+<div class="container">
+  <div class="greeting" id="greeting">Habari...</div>
 
-    <div class="form-section" id="reportFormSection" style="display:none;">
-      <h2>Ongeza Ripoti</h2>
-      <form id="reportForm">
-        <input type="text" name="title" placeholder="Kichwa" required>
-        <textarea name="description" placeholder="Maelezo" required></textarea>
-        <input type="file" name="image" accept="image/*">
-        <button type="submit" class="submit-btn">Tuma Ripoti</button>
-      </form>
-      <p id="formStatus"></p>
-    </div>
-
-    <div class="reports-section">
-      <h2>Ripoti Zilizowasilishwa</h2>
-      <div id="reportsContainer"></div>
-    </div>
+  <div class="form-section" id="reportFormSection" style="display:none;">
+    <h2>Ongeza Ripoti</h2>
+    <form id="reportForm">
+      <input type="text" name="title" placeholder="Kichwa" required>
+      <textarea name="description" placeholder="Maelezo" required></textarea>
+      <input type="file" name="image" accept="image/*">
+      <button type="submit" class="submit-btn">Tuma Ripoti</button>
+    </form>
+    <p id="formStatus"></p>
   </div>
 
-  <script>
-    const toggleFormBtn = document.getElementById("toggleFormBtn");
-    const reportFormSection = document.getElementById("reportFormSection");
-    const reportForm = document.getElementById("reportForm");
-    const formStatus = document.getElementById("formStatus");
-    const reportsContainer = document.getElementById("reportsContainer");
-    const greeting = document.getElementById("greeting");
+  <div class="reports-section">
+    <h2>Ripoti Zilizowasilishwa</h2>
+    
+    <div class="filters">
+      <input type="text" id="searchInput" placeholder="Tafuta kwa Kichwa/Maelezo">
+      <input type="text" id="clinicFilter" placeholder="Tafuta kwa Kliniki">
+      <input type="text" id="userFilter" placeholder="Tafuta kwa Mtumiaji">
+      <button id="applyFilterBtn">Tafuta</button>
+      <button id="clearFilterBtn">Ondoa Filter</button>
+    </div>
 
-    toggleFormBtn.addEventListener("click", () => {
-      reportFormSection.style.display = reportFormSection.style.display === "none" ? "block" : "none";
-      toggleFormBtn.textContent = reportFormSection.style.display === "none" ? "Ongeza Ripoti" : "Ficha Fomu";
-    });
+    <div id="reportsContainer"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
 
-    async function loadGreeting(){
-      const res = await fetch("/api/user");
-      const user = await res.json();
-      const now = new Date();
-      const t = new Date(now.getTime()+(3*60+now.getTimezoneOffset())*60000);
-      const h = t.getHours();
-      let g = "Habari";
-      if(h>=5&&h<12) g="Habari ya asubuhi";
-      else if(h>=12&&h<17) g="Habari ya mchana";
-      else if(h>=17&&h<21) g="Habari ya jioni";
-      else g="Habari usiku";
-      greeting.textContent = `${g} ${user.jina} ${user.kituo}`;
-    }
-    loadGreeting();
+<script>
+const toggleFormBtn = document.getElementById("toggleFormBtn");
+const reportFormSection = document.getElementById("reportFormSection");
+const reportForm = document.getElementById("reportForm");
+const formStatus = document.getElementById("formStatus");
+const reportsContainer = document.getElementById("reportsContainer");
+const greeting = document.getElementById("greeting");
 
-    async function fetchReports(){
-      reportsContainer.innerHTML="Inapakia ripoti...";
-      const res=await fetch("/api/reports");
-      const data=await res.json();
-      reportsContainer.innerHTML="";
-      if(!data.length){reportsContainer.innerHTML="<p>Hakuna ripoti bado.</p>";return;}
+let reportsData = [];
+let currentPage = 1;
+const pageSize = 15;
 
-      data.forEach(report=>{
-        const card=document.createElement("div");
-        card.className="report-card";
-        card.innerHTML=`
-           <p><strong>Muda:</strong> ${report.timestamp}</p>
-           <p><strong>Jina la Mtumiaji:</strong> ${report.username}</p>
-           <p><strong>Kliniki:</strong> ${report.clinic}</p>
-           <p><strong>Kichwa:</strong> ${report.title}</p>
-           <p><strong>Maelezo:</strong> ${report.description}</p>
-           ${report.image?`<img src="${report.image}" alt="Ripoti">`:""}
-           <div class="comments">
-             <h4>Maoni:</h4>
-             <div class="commentsList">
-               ${report.comments.map(c=>`
-                <div class="comment-item">
-                  <div class="comment-header">
-                    <span class="username">${c.username} (${c.clinic})</span>
-                    <span class="time">${c.timestamp}</span>
-                  </div>
-                  <p>${c.comment}</p>
-                </div>
-               `).join('')}
-             </div>
-             <input type="text" placeholder="Andika maoni yako" name="commentText">
-             <button>Add</button>
-           </div>`;
-        const commentBtn = card.querySelector(".comments button");
-        commentBtn.addEventListener("click", async () =>{
-          const inp = card.querySelector("input[name='commentText']");
-          const txt = inp.value.trim();
-          if(!txt) return alert("Andika maoni yako.");
-          await fetch(`/api/comments/${report.id}`,{
-            method:"POST",headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({comment:txt})
-          });
-          inp.value="";
-          fetchReports();
-        });
-        reportsContainer.appendChild(card);
+toggleFormBtn.addEventListener("click", () => {
+  reportFormSection.style.display = reportFormSection.style.display === "none" ? "block" : "none";
+  toggleFormBtn.textContent = reportFormSection.style.display === "none" ? "Ongeza Ripoti" : "Ficha Fomu";
+});
+
+async function loadGreeting() {
+  try {
+    const res = await fetch("/api/user");
+    const user = await res.json();
+    const now = new Date();
+    const t = new Date(now.getTime()+(3*60+now.getTimezoneOffset())*60000);
+    const h = t.getHours();
+    let g = "Habari";
+    if(h>=5&&h<12) g="Habari ya asubuhi";
+    else if(h>=12&&h<17) g="Habari ya mchana";
+    else if(h>=17&&h<21) g="Habari ya jioni";
+    else g="Habari usiku";
+    greeting.textContent = `${g} ${user.jina} ${user.kituo}`;
+  } catch {
+    greeting.textContent = "Tatizo kuonyesha habari ya mtumiaji";
+  }
+}
+loadGreeting();
+
+async function fetchReports() {
+  reportsContainer.innerHTML="Inapakia ripoti...";
+  try {
+    const res = await fetch("/api/reports");
+    reportsData = await res.json();
+    renderReports();
+  } catch {
+    reportsContainer.innerHTML="Tatizo kupakia ripoti.";
+  }
+}
+
+function renderReports() {
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const clinicFilter = document.getElementById("clinicFilter").value.toLowerCase();
+  const userFilter = document.getElementById("userFilter").value.toLowerCase();
+
+  let filtered = reportsData.filter(r => {
+    return (!search || r.title.toLowerCase().includes(search) || r.description.toLowerCase().includes(search))
+      && (!clinicFilter || r.clinic.toLowerCase().includes(clinicFilter))
+      && (!userFilter || r.username.toLowerCase().includes(userFilter));
+  });
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  if(currentPage > totalPages) currentPage = totalPages || 1;
+
+  const start = (currentPage-1)*pageSize;
+  const end = start+pageSize;
+  const pageReports = filtered.slice(start,end);
+
+  reportsContainer.innerHTML = "";
+  if(!pageReports.length){ reportsContainer.innerHTML="<p>Hakuna ripoti.</p>"; return; }
+
+  pageReports.forEach(report=>{
+    const card = document.createElement("div");
+    card.className="report-card";
+    card.innerHTML=`
+      <p><strong>Muda:</strong> ${report.timestamp}</p>
+      <p><strong>Jina la Mtumiaji:</strong> ${report.username}</p>
+      <p><strong>Kliniki:</strong> ${report.clinic}</p>
+      <p><strong>Kichwa:</strong> ${report.title}</p>
+      <p><strong>Maelezo:</strong> ${report.description}</p>
+      ${report.image ? `<img src="${report.image}" alt="Ripoti">` : ""}
+      <div class="comments">
+        <h4>Maoni:</h4>
+        <div class="commentsList">
+          ${report.comments.map(c=>`
+            <div class="comment-item">
+              <div class="comment-header">
+                <span class="username">${c.username} (${c.clinic})</span>
+                <span class="time">${c.timestamp}</span>
+              </div>
+              <p>${c.comment}</p>
+            </div>`).join('')}
+        </div>
+        <input type="text" placeholder="Andika maoni yako" name="commentText">
+        <button>Add</button>
+      </div>`;
+    const commentBtn = card.querySelector(".comments button");
+    commentBtn.addEventListener("click", async ()=>{
+      const inp = card.querySelector("input[name='commentText']");
+      const txt = inp.value.trim();
+      if(!txt) return alert("Andika maoni yako.");
+      await fetch(`/api/comments/${report.id}`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({comment:txt})
       });
-
-      document.querySelectorAll('.commentsList').forEach(list=>{
-        list.scrollTop=list.scrollHeight;
-      });
-    }
-    fetchReports();
-
-    reportForm.addEventListener("submit",async e=>{
-      e.preventDefault();
-      formStatus.textContent="Inatuma ripoti...";
-      const fd=new FormData(reportForm);
-      const res=await fetch("/submit",{method:"POST",body:fd});
-      if(!res.ok){formStatus.textContent="Tatizo: "+await res.text(); return;}
-      formStatus.textContent="Ripoti imehifadhiwa!";
-      reportForm.reset();
+      inp.value="";
       fetchReports();
     });
-  </script>
+    reportsContainer.appendChild(card);
+  });
+
+  renderPagination(totalPages);
+
+  document.querySelectorAll('.commentsList').forEach(list=>{ list.scrollTop=list.scrollHeight; });
+}
+
+function renderPagination(totalPages) {
+  const pagination = document.getElementById("pagination");
+  pagination.innerHTML = "";
+  for(let i=1;i<=totalPages;i++){
+    const btn = document.createElement("button");
+    btn.textContent=i;
+    btn.style.background=i===currentPage?"#4CAF50":"white";
+    btn.style.color=i===currentPage?"white":"#4CAF50";
+    btn.addEventListener("click",()=>{ currentPage=i; renderReports(); });
+    pagination.appendChild(btn);
+  }
+}
+
+document.getElementById("applyFilterBtn").addEventListener("click",()=>{ currentPage=1; renderReports(); });
+document.getElementById("clearFilterBtn").addEventListener("click",()=>{
+  document.getElementById("searchInput").value="";
+  document.getElementById("clinicFilter").value="";
+  document.getElementById("userFilter").value="";
+  currentPage=1; renderReports();
+});
+
+reportForm.addEventListener("submit",async e=>{
+  e.preventDefault();
+  formStatus.textContent="Inatuma ripoti...";
+  const fd = new FormData(reportForm);
+  const res = await fetch("/submit",{method:"POST",body:fd});
+  if(!res.ok){ formStatus.textContent="Tatizo: "+await res.text(); return; }
+  formStatus.textContent="Ripoti imehifadhiwa!";
+  reportForm.reset();
+  fetchReports();
+});
+
+fetchReports();
+</script>
 </body>
 </html>
