@@ -11,6 +11,8 @@
     "pg": "^8.11.1",
     "express-session": "^1.17.3",
     "bcryptjs": "^2.4.3",
-    "connect-pg-simple": "^9.0.0"
+    "connect-pg-simple": "^9.0.0",
+    "cloudinary": "^2.4.0"
+
   }
 }
