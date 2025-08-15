@@ -1,146 +1,140 @@
 const express = require("express");
 const multer = require("multer");
-const fs = require("fs");
+const { Pool } = require("pg");
 const path = require("path");
-const sqlite3 = require("sqlite3").verbose();
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve static files
-app.use(express.static("public"));
+// Connect to Postgres DB using environment variables from Render
+const pool = new Pool({
+  host: process.env.PGHOST,
+  database: process.env.PGDATABASE,
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
+  port: 5432,
+});
 
-// Serve uploaded images so they are accessible in the browser
-const uploadDir = "reports/uploads";
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-app.use("/uploads", express.static(uploadDir));
-
-// Middleware for parsing JSON and URL-encoded
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Multer setup
-const upload = multer({ dest: uploadDir });
-
-// Ensure db folder exists
-if (!fs.existsSync("db")) fs.mkdirSync("db");
-
-// Connect to SQLite
-const db = new sqlite3.Database("./db/reports.db");
-
-// Create tables if not exist
-db.serialize(() => {
-  db.run(`
+// Make sure tables exist (RUNS AUTOMATICALLY AT START)
+async function initDB() {
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS reports (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       timestamp TEXT,
       username TEXT,
       clinic TEXT,
       title TEXT,
       description TEXT,
       image TEXT
-    )
+    );
   `);
-
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS comments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      report_id INTEGER,
+      id SERIAL PRIMARY KEY,
+      report_id INTEGER REFERENCES reports(id),
       timestamp TEXT,
       username TEXT,
       clinic TEXT,
-      comment TEXT,
-      FOREIGN KEY(report_id) REFERENCES reports(id)
-    )
+      comment TEXT
+    );
   `);
-});
+  console.log("✅ Database tables ensured");
+}
+initDB();
 
-// Helper function for Tanzania timestamp
+// Serve static files and image uploads
+app.use(express.static("public"));
+app.use("/uploads", express.static("reports/uploads"));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Multer (for file upload)
+const uploadDir = "reports/uploads";
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const upload = multer({ dest: uploadDir });
+
+// Helper: Tanzania time
 function getTanzaniaTimestamp() {
   const now = new Date();
-  const tzOffset = 3 * 60; // UTC+3
-  const tanzaniaTime = new Date(now.getTime() + (tzOffset + now.getTimezoneOffset()) * 60000);
-  const options = {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  };
-  return tanzaniaTime.toLocaleString("sw-TZ", options);
+  const tzOffset = 3 * 60;
+  const tTime = new Date(now.getTime() + (tzOffset + now.getTimezoneOffset()) * 60000);
+  return tTime.toLocaleString("sw-TZ", {
+    day: "2-digit", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  });
 }
 
-// Handle report submission
-app.post("/submit", upload.single("image"), (req, res) => {
+// POST /submit  --- add a report
+app.post("/submit", upload.single("image"), async (req, res) => {
   const { username, clinic, title, description } = req.body;
-  if (!username || !clinic || !title || !description)
+  if (!username || !clinic || !title || !description) {
     return res.status(400).send("Jaza sehemu zote muhimu.");
-
-  let imagePath = "";
-  if (req.file) {
-    // Save relative path for browser access
-    const targetPath = path.join(uploadDir, req.file.originalname);
-    fs.renameSync(req.file.path, targetPath);
-    imagePath = "/uploads/" + req.file.originalname;
   }
 
-  const timestamp = getTanzaniaTimestamp();
+  let imgPath = "";
+  if (req.file) {
+    const filename = Date.now() + "_" + req.file.originalname;
+    const newPath = path.join(uploadDir, filename);
+    fs.renameSync(req.file.path, newPath);
+    imgPath = "/uploads/" + filename;
+  }
 
-  const stmt = db.prepare(
-    "INSERT INTO reports (timestamp, username, clinic, title, description, image) VALUES (?, ?, ?, ?, ?, ?)"
-  );
-  stmt.run(timestamp, username, clinic, title, description, imagePath, (err) => {
-    if (err) return res.status(500).send("Tatizo kwenye database: " + err.message);
-    res.redirect("/report.html");
-  });
-  stmt.finalize();
-});
-
-// API to fetch all reports with comments
-app.get("/api/reports", (req, res) => {
-  db.all("SELECT * FROM reports ORDER BY id DESC", (err, reports) => {
-    if (err) return res.status(500).json({ error: err.message });
-
-    const reportIds = reports.map((r) => r.id);
-    if (reportIds.length === 0) return res.json([]);
-
-    db.all(
-      `SELECT * FROM comments WHERE report_id IN (${reportIds.join(",")}) ORDER BY id ASC`,
-      (err2, comments) => {
-        if (err2) return res.status(500).json({ error: err2.message });
-
-        // Attach comments to each report
-        reports.forEach((r) => {
-          r.comments = comments.filter((c) => c.report_id === r.id);
-        });
-
-        res.json(reports);
-      }
+  const time = getTanzaniaTimestamp();
+  try {
+    await pool.query(
+      "INSERT INTO reports (timestamp, username, clinic, title, description, image) VALUES ($1,$2,$3,$4,$5,$6)",
+      [ time, username, clinic, title, description, imgPath ]
     );
-  });
+    res.redirect("/report.html");
+  } catch(err) {
+    console.error(err);
+    res.status(500).send("Tatizo kwenye database.");
+  }
 });
 
-// API to add comment to a report
-app.post("/api/comments/:reportId", (req, res) => {
-  const reportId = req.params.reportId;
+// GET /api/reports  --- fetch with comments
+app.get("/api/reports", async (req, res) => {
+  try {
+    const r = await pool.query("SELECT * FROM reports ORDER BY id DESC");
+    const reports = r.rows;
+    const ids = reports.map(x => x.id);
+    if (!ids.length) return res.json([]);
+
+    const c = await pool.query(
+      "SELECT * FROM comments WHERE report_id = ANY($1::int[]) ORDER BY id ASC", [ids]
+    );
+    const comments = c.rows;
+
+    reports.forEach(rep => {
+      rep.comments = comments.filter(cm => cm.report_id === rep.id);
+    });
+    res.json(reports);
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ error: "Tatizo kwenye DB" });
+  }
+});
+
+// POST /api/comments/:id  --- add comment
+app.post("/api/comments/:id", async (req, res) => {
+  const report_id = req.params.id;
   const { username, clinic, comment } = req.body;
   if (!username || !clinic || !comment)
     return res.status(400).send("Jaza sehemu zote za maoni.");
 
-  const timestamp = getTanzaniaTimestamp();
-  const stmt = db.prepare(
-    "INSERT INTO comments (report_id, timestamp, username, clinic, comment) VALUES (?, ?, ?, ?, ?)"
-  );
-  stmt.run(reportId, timestamp, username, clinic, comment, (err) => {
-    if (err) return res.status(500).send("Tatizo kuingiza maoni: " + err.message);
+  const t = getTanzaniaTimestamp();
+  try {
+    await pool.query(
+      "INSERT INTO comments (report_id, timestamp, username, clinic, comment) VALUES ($1,$2,$3,$4,$5)",
+      [ report_id, t, username, clinic, comment ]
+    );
     res.send("Maoni yamehifadhiwa");
-  });
-  stmt.finalize();
+  } catch(err) {
+    res.status(500).send("Tatizo kuingiza maoni");
+  }
 });
 
-// Start server
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
