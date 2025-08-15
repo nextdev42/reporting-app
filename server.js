@@ -129,6 +129,15 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.get("/api/user", auth, async (req, res) => {
+  try {
+    const r = await pool.query("SELECT jina, kituo FROM users WHERE id=$1", [req.session.userId]);
+    res.json(r.rows[0]);
+  } catch(err) {
+    res.status(500).send("Tatizo kupata user info");
+  }
+});
+
 // -------- Submit Report --------
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
   const { title, description } = req.body;
@@ -156,6 +165,8 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
     res.status(500).send("Tatizo kwenye database.");
   }
 });
+
+
 
 // -------- Fetch Reports + Comments --------
 app.get("/api/reports", auth, async (req, res) => {
