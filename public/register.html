@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jisajili</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+    .form-container { max-width: 400px; margin: 50px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    input, select { width: 100%; padding: 8px; margin: 6px 0 12px 0; border: 1px solid #ccc; border-radius: 4px; }
+    button { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #45a049; }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Jisajili</h2>
+    <form method="POST" action="/register">
+      <input type="text" name="firstName" placeholder="Jina lako" required>
+      <input type="text" name="lastName" placeholder="Jina la ukoo" required>
+      <input type="text" name="phone" placeholder="Namba ya simu" required>
+      <select name="clinic" required>
+        <option value="">Chagua Kliniki</option>
+        <option value="Mikwambe">Mikwambe</option>
+        <option value="Kibada">Kibada</option>
+        <option value="Jirambe">Jirambe</option>
+        <option value="Kisiwani">Kisiwani</option>
+      </select>
+      <input type="text" name="username" placeholder="Jina la mtumiaji" required>
+      <input type="password" name="password" placeholder="Nywila" required>
+      <input type="password" name="confirmPassword" placeholder="Thibitisha Nywila" required>
+      <button type="submit">Jisajili</button>
+    </form>
+    <p>Una akaunti? <a href="/login.html">Ingia hapa</a></p>
+  </div>
+</body>
+</html>
