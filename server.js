@@ -122,6 +122,7 @@ app.post("/login", async (req, res) => {
 
     req.session.userId = user.id;
     req.session.jina = user.jina;
+    req.session.kituo = user.kituo; // save clinic
     res.redirect("/dashboard.html");
   } catch(err) {
     console.error(err);
@@ -129,13 +130,24 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// -------- Get Current User Info --------
 app.get("/api/user", auth, async (req, res) => {
   try {
-    const r = await pool.query("SELECT jina, kituo FROM users WHERE id=$1", [req.session.userId]);
-    res.json(r.rows[0]);
+    res.json({
+      jina: req.session.jina,
+      kituo: req.session.kituo
+    });
   } catch(err) {
     res.status(500).send("Tatizo kupata user info");
   }
+});
+
+// -------- Logout --------
+app.get("/logout", auth, (req, res) => {
+  req.session.destroy(err => {
+    if (err) return res.status(500).send("Tatizo ku-logout");
+    res.redirect("/index.html");
+  });
 });
 
 // -------- Submit Report --------
@@ -166,22 +178,28 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
   }
 });
 
-
-
 // -------- Fetch Reports + Comments --------
 app.get("/api/reports", auth, async (req, res) => {
   try {
-    const r = await pool.query("SELECT r.*, u.jina AS username FROM reports r JOIN users u ON r.user_id=u.id ORDER BY r.id DESC");
+    const r = await pool.query(`
+      SELECT r.*, u.jina AS username, u.kituo AS clinic 
+      FROM reports r 
+      JOIN users u ON r.user_id=u.id 
+      ORDER BY r.id DESC
+    `);
     const reports = r.rows;
     const ids = reports.map(x => x.id);
     if (!ids.length) return res.json([]);
 
-    const c = await pool.query(
-      "SELECT c.*, u.jina AS username FROM comments c JOIN users u ON c.user_id=u.id WHERE report_id = ANY($1::int[]) ORDER BY c.id ASC",
-      [ids]
-    );
-    const comments = c.rows;
+    const c = await pool.query(`
+      SELECT c.*, u.jina AS username, u.kituo AS clinic
+      FROM comments c 
+      JOIN users u ON c.user_id=u.id 
+      WHERE report_id = ANY($1::int[]) 
+      ORDER BY c.id ASC
+    `, [ids]);
 
+    const comments = c.rows;
     reports.forEach(rep => {
       rep.comments = comments.filter(cm => cm.report_id === rep.id);
     });
