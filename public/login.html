@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ingia</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+    .form-container { max-width: 400px; margin: 50px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    input { width: 100%; padding: 8px; margin: 6px 0 12px 0; border: 1px solid #ccc; border-radius: 4px; }
+    button { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #45a049; }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Ingia</h2>
+    <form method="POST" action="/login">
+      <input type="text" name="username" placeholder="Jina la mtumiaji" required>
+      <input type="password" name="password" placeholder="Nywila" required>
+      <button type="submit">Ingia</button>
+    </form>
+    <p>Hauna akaunti? <a href="/register.html">Jisajili hapa</a></p>
+  </div>
+</body>
+</html>
