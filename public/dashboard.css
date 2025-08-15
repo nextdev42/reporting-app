@@ -1,12 +1,20 @@
-/* ========== Existing Dashboard Styles ========== */
+/* ========== GLOBAL STYLES ========== */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
   background: #f5f5f5;
   color: #333;
+  box-sizing: border-box;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+/* ========== NAVIGATION ========== */
 nav {
   background: #4CAF50;
   color: white;
@@ -21,7 +29,6 @@ nav h1 {
   font-size: 1.5rem;
 }
 
-/* Nav buttons container */
 nav .nav-actions {
   display: flex;
   gap: 12px;
@@ -36,12 +43,15 @@ nav button {
   cursor: pointer;
   border-radius: 4px;
   font-weight: bold;
+  transition: background 0.3s, transform 0.2s;
 }
 
 nav button:hover {
   background: #e0e0e0;
+  transform: translateY(-1px);
 }
 
+/* ========== CONTAINER ========== */
 .container {
   max-width: 900px;
   margin: 20px auto;
@@ -55,6 +65,7 @@ nav button:hover {
   color: #333;
 }
 
+/* ========== FORM SECTIONS ========== */
 .form-section, .reports-section {
   background: white;
   padding: 20px;
@@ -74,7 +85,6 @@ input, select, textarea {
   margin: 6px 0 12px 0;
   border: 1px solid #ccc;
   border-radius: 4px;
-  box-sizing: border-box;
 }
 
 button.submit-btn {
@@ -85,12 +95,15 @@ button.submit-btn {
   cursor: pointer;
   border-radius: 4px;
   font-weight: bold;
+  transition: background 0.3s, transform 0.2s;
 }
 
 button.submit-btn:hover {
   background: #45a049;
+  transform: translateY(-1px);
 }
 
+/* ========== REPORT CARDS ========== */
 .report-card {
   border: 1px solid #ddd;
   padding: 12px;
@@ -176,7 +189,7 @@ button.submit-btn:hover {
   }
 }
 
-/* ========== AUTH / LOGIN / REGISTER STYLES ========== */
+/* ========== AUTH / LOGIN / REGISTER ========== */
 .auth-box {
   background: white;
   padding: 30px 25px;
@@ -185,6 +198,7 @@ button.submit-btn:hover {
   text-align: center;
   max-width: 400px;
   margin: 50px auto;
+  position: relative;
 }
 
 .auth-box h2 {
@@ -207,7 +221,7 @@ button.submit-btn:hover {
   cursor: pointer;
   font-weight: bold;
   border-radius: 5px 5px 0 0;
-  transition: background 0.3s;
+  transition: background 0.3s, transform 0.2s;
 }
 
 .tabs button.active {
@@ -217,6 +231,7 @@ button.submit-btn:hover {
 
 .tabs button:hover:not(.active) {
   background: #c8e6c9;
+  transform: translateY(-1px);
 }
 
 form {
@@ -230,12 +245,12 @@ form input, form select, form button {
   border-radius: 5px;
   border: 1px solid #ccc;
   font-size: 1rem;
-  box-sizing: border-box;
 }
 
 form input:focus, form select:focus {
   border-color: #4CAF50;
   outline: none;
+  box-shadow: 0 0 5px rgba(76,175,80,0.5);
 }
 
 form button {
@@ -244,11 +259,12 @@ form button {
   border: none;
   cursor: pointer;
   font-weight: bold;
-  transition: background 0.3s;
+  transition: background 0.3s, transform 0.2s;
 }
 
 form button:hover {
   background: #45a049;
+  transform: translateY(-1px);
 }
 
 label {
@@ -258,9 +274,29 @@ label {
   display: block;
 }
 
+/* Status / error messages */
+form .status {
+  font-size: 0.9rem;
+  color: red;
+  margin-bottom: 10px;
+}
+
+/* Responsive small screens */
 @media(max-width:450px){
   .auth-box {
     padding: 20px 15px;
+  }
+  form input, form select, form button {
+    font-size: 0.95rem;
+  }
+}
+
+@media(max-width:350px){
+  .auth-box {
+    margin: 20px 10px;
+  }
+  form input, form select, form button {
+    font-size: 0.9rem;
   }
 }
 
