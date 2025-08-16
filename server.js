@@ -282,11 +282,8 @@ app.post("/api/comments/:id", auth, async (req,res)=>{
 });
 
 // React to report
-app.post("/api/reports/:id/react", auth, async (req,res)=>{
-  const { type } = req.body;
-  if(!['up','down'].includes(type)) return res.status(400
 
-      // React to report (thumb up / thumb down)
+// React to report (thumb up / thumb down)
 app.post("/api/reports/:id/react", auth, async (req, res) => {
   const { type } = req.body; // 'up' or 'down'
   if (!['up', 'down'].includes(type)) return res.status(400).send("Invalid reaction type.");
