@@ -1,3 +1,4 @@
+// server.js
 const express = require("express");
 const multer = require("multer");
 const { Pool } = require("pg");
@@ -26,7 +27,7 @@ const pool = new Pool({
   port: 5432,
 });
 
-// Ensure tables exist
+// ====== Ensure tables exist ======
 async function initTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -50,7 +51,7 @@ async function initTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS reports (
       id SERIAL PRIMARY KEY,
-      timestamp TEXT,
+      timestamp TIMESTAMPTZ DEFAULT now(),
       user_id INTEGER REFERENCES users(id),
       title TEXT,
       description TEXT,
@@ -63,7 +64,7 @@ async function initTables() {
       id SERIAL PRIMARY KEY,
       report_id INTEGER REFERENCES reports(id),
       user_id INTEGER REFERENCES users(id),
-      timestamp TEXT,
+      timestamp TIMESTAMPTZ DEFAULT now(),
       comment TEXT
     );
   `);
@@ -82,7 +83,7 @@ async function initTables() {
 }
 initTables();
 
-// Middleware
+// ====== Middleware ======
 app.use(express.static("public"));
 app.use("/uploads", express.static("reports/uploads"));
 app.use(express.json());
@@ -100,17 +101,16 @@ const uploadDir = "reports/uploads";
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 const upload = multer({ dest: uploadDir });
 
-// Auth helper
+// ====== Auth helper ======
 function auth(req,res,next){ if(!req.session.userId) return res.redirect("/index.html"); next(); }
 
-// Tanzania timestamp helper
+// ====== Tanzania timestamp helper ======
 function getTanzaniaTimestamp(){
   const now = new Date();
-  return new Date(now.getTime() + (3*60 + now.getTimezoneOffset())*60000)
-    .toLocaleString("sw-TZ", { day:"2-digit", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false });
+  return new Date(now.getTime() + (3*60 + now.getTimezoneOffset())*60000);
 }
 
-// ========== Routes ==========
+// ====== Routes ======
 
 // Register
 app.post("/register", async (req,res)=>{
@@ -166,89 +166,64 @@ app.post("/submit", auth, upload.single("image"), async (req,res)=>{
     }
     catch(err){ console.error("Cloudinary error:",err); }
   }
-  await pool.query("INSERT INTO reports(timestamp,user_id,title,description,image) VALUES($1,$2,$3,$4,$5)",[getTanzaniaTimestamp(),req.session.userId,title,description,imageUrl]);
+  await pool.query(
+    "INSERT INTO reports(timestamp,user_id,title,description,image) VALUES($1,$2,$3,$4,$5)",
+    [getTanzaniaTimestamp(), req.session.userId, title, description, imageUrl]
+  );
   res.redirect("/dashboard.html");
 });
 
-// Get reports with filtering, pagination, search (including comments and reactions)
-
-// Get reports with pagination, filtering, search, comments, reactions
-
-
-
-    // Get reports with pagination, filtering, search, comments, reactions
-app.get("/api/reports", auth, async (req, res) => {
+// Get reports with filtering, search, pagination, comments, reactions
+app.get("/api/reports", auth, async (req,res)=>{
   try {
-    let { page = 1, limit = 15, clinic, username, search, startDate, endDate } = req.query;
-    page = parseInt(page);
-    limit = parseInt(limit);
-    if (page < 1) page = 1;
+    let { page=1, limit=15, clinic, username, search, startDate, endDate } = req.query;
+    page = parseInt(page); limit = parseInt(limit);
+    if(page<1) page=1;
 
-    let whereClauses = [];
-    let params = [];
-    let idx = 1;
+    let whereClauses=[]; let params=[]; let idx=1;
 
-    if (clinic) {
-      whereClauses.push(`u.kituo ILIKE $${idx++}`);
-      params.push(`%${clinic}%`);
-    }
-    if (username) {
-      whereClauses.push(`u.jina ILIKE $${idx++}`);
-      params.push(`%${username}%`);
-    }
-    if (search) {
+    if(clinic){ whereClauses.push(`u.kituo ILIKE $${idx++}`); params.push(`%${clinic}%`); }
+    if(username){ whereClauses.push(`u.jina ILIKE $${idx++}`); params.push(`%${username}%`); }
+    if(search){ 
       whereClauses.push(`(
         r.title ILIKE $${idx} OR 
         r.description ILIKE $${idx} OR
-        EXISTS (SELECT 1 FROM comments c WHERE c.report_id = r.id AND c.comment ILIKE $${idx})
+        EXISTS (SELECT 1 FROM comments c WHERE c.report_id=r.id AND c.comment ILIKE $${idx})
       )`);
-      params.push(`%${search}%`);
-      idx++;
+      params.push(`%${search}%`); idx++;
     }
-
-    // ===== Date filtering =====
-    if (startDate) {
-      whereClauses.push(`r.timestamp >= $${idx++}`);
-      params.push(new Date(startDate));
-    }
-    if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999); // include the full end date
-      whereClauses.push(`r.timestamp <= $${idx++}`);
-      params.push(end);
-    }
+    // Date filtering
+    if(startDate){ whereClauses.push(`r.timestamp >= $${idx++}`); params.push(new Date(startDate)); }
+    if(endDate){ const end = new Date(endDate); end.setHours(23,59,59,999); whereClauses.push(`r.timestamp <= $${idx++}`); params.push(end); }
 
     const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
-    // Total count for pagination
-    const countRes = await pool.query(
-      `SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id = u.id ${whereSQL}`, 
-      params
-    );
+    // Total count
+    const countRes = await pool.query(`SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id=u.id ${whereSQL}`, params);
     const totalReports = parseInt(countRes.rows[0].count);
-    const totalPages = Math.ceil(totalReports / limit);
-    const offset = (page - 1) * limit;
+    const totalPages = Math.ceil(totalReports/limit);
+    const offset = (page-1)*limit;
 
     // Fetch reports
     const reportRes = await pool.query(
       `SELECT r.*, u.jina AS username, u.kituo AS clinic
        FROM reports r
-       JOIN users u ON r.user_id = u.id
+       JOIN users u ON r.user_id=u.id
        ${whereSQL}
        ORDER BY r.id DESC
        LIMIT $${idx++} OFFSET $${idx}`,
       [...params, limit, offset]
     );
 
-    const reportIds = reportRes.rows.map(r => r.id);
+    const reportIds = reportRes.rows.map(r=>r.id);
 
     // Fetch comments
     let comments = [];
-    if (reportIds.length) {
+    if(reportIds.length){
       const commentRes = await pool.query(
         `SELECT c.*, u.jina AS username, u.kituo AS clinic
          FROM comments c
-         JOIN users u ON c.user_id = u.id
+         JOIN users u ON c.user_id=u.id
          WHERE report_id = ANY($1::int[])
          ORDER BY c.id DESC`,
         [reportIds]
@@ -258,7 +233,7 @@ app.get("/api/reports", auth, async (req, res) => {
 
     // Fetch reactions
     let reactions = [];
-    if (reportIds.length) {
+    if(reportIds.length){
       const reactRes = await pool.query(
         `SELECT report_id,
                 COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
@@ -271,47 +246,50 @@ app.get("/api/reports", auth, async (req, res) => {
       reactions = reactRes.rows;
     }
 
-    // Attach comments, reactions, and format timestamp
-    reportRes.rows.forEach(r => {
-      r.comments = comments.filter(c => c.report_id === r.id);
-      const react = reactions.find(re => re.report_id === r.id);
+    // Attach comments, reactions, format timestamp
+    reportRes.rows.forEach(r=>{
+      r.comments = comments.filter(c=>c.report_id===r.id);
+      const react = reactions.find(re=>re.report_id===r.id);
       r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
       r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
 
-      // Format timestamp for frontend
-      r.timestamp = new Date(r.timestamp).toLocaleString("sw-TZ", { 
+      // Format timestamp Tanzania
+      const tzOffset = 3*60; // UTC+3
+      const localTime = new Date(new Date(r.timestamp).getTime() + tzOffset*60*1000);
+      r.timestamp = localTime.toLocaleString("sw-TZ", { 
         day:"2-digit", month:"long", year:"numeric",
         hour:"2-digit", minute:"2-digit", second:"2-digit",
         hour12:false
       });
     });
 
-    res.json({ 
-      reports: reportRes.rows, 
-      page, 
-      totalPages, 
-      totalReports, 
-      limit 
-    });
-  } catch (err) {
+    res.json({ reports: reportRes.rows, page, totalPages, totalReports, limit });
+  } catch(err){
     console.error(err);
     res.status(500).send("Tatizo kupata ripoti");
   }
 });
 
-    
 // Add comment
 app.post("/api/comments/:id", auth, async (req,res)=>{
   const { comment } = req.body;
   if(!comment) return res.status(400).send("Andika maoni.");
-  await pool.query("INSERT INTO comments(report_id,user_id,timestamp,comment) VALUES($1,$2,$3,$4)",[req.params.id,req.session.userId,getTanzaniaTimestamp(),comment]);
+  await pool.query(
+    "INSERT INTO comments(report_id,user_id,timestamp,comment) VALUES($1,$2,$3,$4)",
+    [req.params.id, req.session.userId, getTanzaniaTimestamp(), comment]
+  );
   res.send("Maoni yamehifadhiwa");
 });
 
-// React to report (thumb up / thumb down)
+// React to report
 app.post("/api/reports/:id/react", auth, async (req,res)=>{
+  const { type } = req.body;
+  if(!['up','down'].includes(type)) return res.status(400
+
+      // React to report (thumb up / thumb down)
+app.post("/api/reports/:id/react", auth, async (req, res) => {
   const { type } = req.body; // 'up' or 'down'
-  if(!['up','down'].includes(type)) return res.status(400).send("Invalid reaction type.");
+  if (!['up', 'down'].includes(type)) return res.status(400).send("Invalid reaction type.");
 
   const reportId = req.params.id;
   const userId = req.session.userId;
@@ -320,25 +298,33 @@ app.post("/api/reports/:id/react", auth, async (req,res)=>{
     // Insert or update reaction
     await pool.query(`
       INSERT INTO reactions(report_id, user_id, type)
-      VALUES($1,$2,$3)
+      VALUES ($1, $2, $3)
       ON CONFLICT (report_id, user_id)
       DO UPDATE SET type = EXCLUDED.type
-    `,[reportId, userId, type]);
+    `, [reportId, userId, type]);
 
-    // Get updated counts
-    const counts = await pool.query(`
+    // Fetch updated reaction counts
+    const countsRes = await pool.query(`
       SELECT 
         COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
         COUNT(*) FILTER (WHERE type='down') AS thumbs_down
       FROM reactions
       WHERE report_id = $1
-    `,[reportId]);
+    `, [reportId]);
 
-    res.json({ thumbs_up: parseInt(counts.rows[0].thumbs_up), thumbs_down: parseInt(counts.rows[0].thumbs_down) });
-  } catch(err){
+    const counts = countsRes.rows[0];
+    res.json({
+      thumbs_up: parseInt(counts.thumbs_up, 10),
+      thumbs_down: parseInt(counts.thumbs_down, 10)
+    });
+  } catch (err) {
     console.error(err);
     res.status(500).send("Tatizo kuhifadhi reaction");
   }
 });
 
-app.listen(PORT, ()=>console.log(`🚀 Server running on port ${PORT}`));
+// ====== START SERVER ======
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
+                                                
