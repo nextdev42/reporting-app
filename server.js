@@ -347,34 +347,41 @@ app.post("/api/reports/:id/react", auth, async (req, res) => {
 });
 
 // POST /api/reactions/:reportId
-app.post("/api/reactions/:reportId", async (req, res) => {
+
+
+  // React to report (thumb up / thumb down) with validation
+app.post("/api/reactions/:reportId", auth, async (req, res) => {
   const { reportId } = req.params;
   const { type } = req.body; // "up" or "down"
   const userId = req.session.userId;
 
-  // Ensure type is valid
-  if (!["up","down"].includes(type)) return res.status(400).send("Invalid type");
+  if (!["up","down"].includes(type)) return res.status(400).send("Invalid reaction type.");
 
   try {
-    // Check if user already reacted
+    // Check if the report exists and get its author
+    const reportRes = await pool.query("SELECT user_id FROM reports WHERE id=$1", [reportId]);
+    if (!reportRes.rows.length) return res.status(404).send("Ripoti haipo.");
+
+    const authorId = reportRes.rows[0].user_id;
+
+    // Prevent author from reacting to their own report
+    if (authorId === userId) return res.status(403).send("Huwezi kutoa thumbs kwenye ripoti yako.");
+
+    // Check if the user already reacted
     const existing = await pool.query(
       "SELECT * FROM reactions WHERE report_id=$1 AND user_id=$2",
       [reportId, userId]
     );
 
     if (existing.rows.length) {
-      // Update existing reaction
-      await pool.query(
-        "UPDATE reactions SET type=$1 WHERE report_id=$2 AND user_id=$3",
-        [type, reportId, userId]
-      );
-    } else {
-      // Insert new reaction
-      await pool.query(
-        "INSERT INTO reactions(report_id, user_id, type) VALUES($1,$2,$3)",
-        [reportId, userId, type]
-      );
+      return res.status(400).send("Umesha toa thumbs kwenye ripoti hii.");
     }
+
+    // Insert new reaction
+    await pool.query(
+      "INSERT INTO reactions(report_id, user_id, type) VALUES($1,$2,$3)",
+      [reportId, userId, type]
+    );
 
     // Get updated thumbs count
     const thumbs = await pool.query(
@@ -385,12 +392,19 @@ app.post("/api/reactions/:reportId", async (req, res) => {
       [reportId]
     );
 
-    res.json({ thumbs_up: parseInt(thumbs.rows[0].thumbs_up)||0, thumbs_down: parseInt(thumbs.rows[0].thumbs_down)||0 });
+    res.json({ 
+      thumbs_up: parseInt(thumbs.rows[0].thumbs_up) || 0, 
+      thumbs_down: parseInt(thumbs.rows[0].thumbs_down) || 0 
+    });
+
   } catch (err) {
     console.error(err);
-    res.status(500).send("Server error");
+    res.status(500).send("Tatizo ku-react");
   }
 });
+  
+
+    
 
 
 // ====== START SERVER ======
