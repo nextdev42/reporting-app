@@ -168,6 +168,7 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
       console.error("Cloudinary error:", err);
     }
   }
+  }); 
 // Get reports with filtering, search, pagination, comments, reactions
 app.get("/api/reports", auth, async (req,res)=>{
   try {
