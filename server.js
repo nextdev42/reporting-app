@@ -173,9 +173,10 @@ app.post("/submit", auth, upload.single("image"), async (req,res)=>{
 // Get reports with filtering, pagination, search (including comments and reactions)
 
 // Get reports with pagination, filtering, search, comments, reactions
+
 app.get("/api/reports", auth, async (req, res) => {
   try {
-    let { page = 1, limit = 15, clinic, username, search } = req.query;
+    let { page = 1, limit = 15, clinic, username, search, startDate, endDate } = req.query;
     page = parseInt(page);
     limit = parseInt(limit);
     if (page < 1) page = 1;
@@ -200,6 +201,16 @@ app.get("/api/reports", auth, async (req, res) => {
       )`);
       params.push(`%${search}%`);
       idx++;
+    }
+
+    // ===== Date filtering =====
+    if (startDate) {
+      whereClauses.push(`TO_DATE(r.timestamp,'DD-MM-YYYY') >= $${idx++}`);
+      params.push(startDate);
+    }
+    if (endDate) {
+      whereClauses.push(`TO_DATE(r.timestamp,'DD-MM-YYYY') <= $${idx++}`);
+      params.push(endDate);
     }
 
     const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
