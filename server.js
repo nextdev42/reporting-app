@@ -155,6 +155,8 @@ app.get("/logout", (req,res)=>{
 app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req.session.kituo}));
 
 // ====== Submit report ======
+
+// ====== Submit report ======
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
   const { title, description } = req.body;
   if (!title || !description) return res.status(400).send("Jaza title na description.");
@@ -169,14 +171,17 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
     }
   }
 
-  // Save report to database
+  // Manually set timestamp in UTC+3 (Tanzania)
+  const timestamp = getTanzaniaTimestamp();
+
   await pool.query(
-    "INSERT INTO reports(user_id, title, description, image) VALUES($1,$2,$3,$4)",
-    [req.session.userId, title, description, imageUrl]
+    "INSERT INTO reports(timestamp, user_id, title, description, image) VALUES($1,$2,$3,$4,$5)",
+    [timestamp, req.session.userId, title, description, imageUrl]
   );
 
-  res.redirect("/dashboard.html"); // redirect after successful submission
+  res.redirect("/dashboard.html");
 });
+
 
 // Get reports with filtering, search, pagination, comments, reactions
 
