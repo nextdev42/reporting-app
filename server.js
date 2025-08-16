@@ -73,8 +73,9 @@ function tTime(){
 // -------- TEMP RESET ROUTE (run one time only!) --------
 app.get("/reset-tables", async(req,res)=>{
   try{
-    await pool.query(`DROP TABLE IF EXISTS comments;`);
-    await pool.query(`DROP TABLE IF EXISTS reports;`);
+    await pool.query(`DROP TABLE IF EXISTS comments CASCADE;`);
+    await pool.query(`DROP TABLE IF EXISTS reports CASCADE;`);
+
     await pool.query(`
       CREATE TABLE reports (
         id SERIAL PRIMARY KEY,
@@ -85,6 +86,7 @@ app.get("/reset-tables", async(req,res)=>{
         image TEXT
       );
     `);
+
     await pool.query(`
       CREATE TABLE comments (
         id SERIAL PRIMARY KEY,
@@ -94,12 +96,14 @@ app.get("/reset-tables", async(req,res)=>{
         comment TEXT
       );
     `);
+
     res.send("Reset OK ✅");
   }catch(err){
     console.error(err);
     res.status(500).send("Reset failed ❌");
   }
 });
+
 // -------- END TEMP ROUTE --------
 
 
