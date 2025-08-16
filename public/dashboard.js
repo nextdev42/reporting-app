@@ -47,20 +47,19 @@ async function loadGreeting() {
 }
 loadGreeting();
 
-// ====== SWAHILI DATE PARSER ======
-function parseSwahiliDate(str) {
-  if (!str) return null;
-  const months = {
-    "Januari": 0, "Februari": 1, "Machi": 2, "Aprili": 3, "Mei": 4,
-    "Juni": 5, "Julai": 6, "Agosti": 7, "Septemba": 8, "Oktoba": 9,
-    "Novemba": 10, "Desemba": 11
-  };
-  const match = str.match(/(\d{1,2}) (\w+) (\d{4}), (\d{2}):(\d{2}):(\d{2})/);
-  if (!match) return null;
-  const [ , day, monthStr, year, hour, minute, second ] = match;
-  const month = months[monthStr];
-  if (month === undefined) return null;
-  return new Date(year, month, day, hour, minute, second);
+// ====== FORMAT DATE ======
+function formatDate(timestamp) {
+  if (!timestamp) return "Haijulikani";
+  const date = new Date(timestamp);
+  return date.toLocaleString("sw-TZ", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
 }
 
 // ====== FETCH REPORTS ======
@@ -74,10 +73,10 @@ async function fetchReports(page = 1) {
       username: usernameFilter.value.trim(),
       search: searchFilter.value.trim(),
       startDate: startDateFilter.value ? new Date(startDateFilter.value).toISOString() : "",
-      endDate: endDateFilter.value ? (() => { 
-        const d = new Date(endDateFilter.value); 
-        d.setHours(23, 59, 59, 999); 
-        return d.toISOString(); 
+      endDate: endDateFilter.value ? (() => {
+        const d = new Date(endDateFilter.value);
+        d.setHours(23, 59, 59, 999);
+        return d.toISOString();
       })() : "",
       page,
       limit: 15
@@ -110,16 +109,7 @@ function renderReportCard(report) {
   const card = document.createElement("div");
   card.className = "report-card";
 
-  const reportDate = parseSwahiliDate(report.timestamp);
-  const formattedDate = reportDate ? reportDate.toLocaleString("sw-TZ", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
-  }) : "Haijulikani";
+  const formattedDate = formatDate(report.timestamp);
 
   card.innerHTML = `
     <p><strong>Muda:</strong> ${formattedDate}</p>
@@ -135,7 +125,7 @@ function renderReportCard(report) {
           <div class="comment-item">
             <div class="comment-header">
               <span class="username">${c.username} (${c.clinic})</span>
-              <span class="time">${c.timestamp}</span>
+              <span class="time">${formatDate(c.timestamp)}</span>
             </div>
             <p>${c.comment}</p>
           </div>`).join('')}
@@ -158,15 +148,31 @@ function renderReportCard(report) {
     const txt = inp.value.trim();
     if (!txt) return alert("Andika maoni yako.");
 
-    await fetch(`/api/comments/${report.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comment: txt })
-    });
-
+    // Optimistically append comment
+    const now = new Date().toISOString();
+    const newCommentDiv = document.createElement("div");
+    newCommentDiv.className = "comment-item";
+    newCommentDiv.innerHTML = `
+      <div class="comment-header">
+        <span class="username">Wewe</span>
+        <span class="time">${formatDate(now)}</span>
+      </div>
+      <p>${txt}</p>
+    `;
+    commentsList.appendChild(newCommentDiv);
+    commentsList.scrollTop = commentsList.scrollHeight;
     inp.value = "";
-    await fetchReports(currentPage);
-    if (commentsList) commentsList.scrollTop = commentsList.scrollHeight;
+
+    try {
+      await fetch(`/api/comments/${report.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment: txt })
+      });
+    } catch (err) {
+      alert("Tatizo ku-post comment");
+      newCommentDiv.remove();
+    }
   });
 
   // ===== THUMBS UP/DOWN =====
@@ -174,12 +180,39 @@ function renderReportCard(report) {
   const thumbDownBtn = card.querySelector(".thumb-down");
 
   thumbUpBtn.addEventListener("click", async () => {
-    await fetch(`/api/reactions/${report.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "up" }) });
-    await fetchReports(currentPage);
+    let count = parseInt(thumbUpBtn.textContent.split(" ")[1]) || 0;
+    count++;
+    thumbUpBtn.textContent = `👍 ${count}`;
+
+    try {
+      await fetch(`/api/reactions/${report.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "up" })
+      });
+    } catch (err) {
+      count--;
+      thumbUpBtn.textContent = `👍 ${count}`;
+      alert("Tatizo ku-update thumbs up");
+    }
   });
+
   thumbDownBtn.addEventListener("click", async () => {
-    await fetch(`/api/reactions/${report.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "down" }) });
-    await fetchReports(currentPage);
+    let count = parseInt(thumbDownBtn.textContent.split(" ")[1]) || 0;
+    count++;
+    thumbDownBtn.textContent = `👎 ${count}`;
+
+    try {
+      await fetch(`/api/reactions/${report.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "down" })
+      });
+    } catch (err) {
+      count--;
+      thumbDownBtn.textContent = `👎 ${count}`;
+      alert("Tatizo ku-update thumbs down");
+    }
   });
 
   reportsContainer.appendChild(card);
