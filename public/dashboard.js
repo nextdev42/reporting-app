@@ -43,8 +43,6 @@ async function loadGreeting() {
 loadGreeting();
 
 // ====== FETCH REPORTS ======
-
-// ====== FETCH REPORTS ======
 async function fetchReports(page = 1) {
   if (fetchTimeout) clearTimeout(fetchTimeout);
   fetchTimeout = setTimeout(async () => {
@@ -60,7 +58,7 @@ async function fetchReports(page = 1) {
     if (startDate) startDate = new Date(startDate).toISOString();
     if (endDate) {
       const end = new Date(endDate);
-      end.setHours(23,59,59,999); // include the whole day
+      end.setHours(23, 59, 59, 999); // include the full day
       endDate = end.toISOString();
     }
 
@@ -91,14 +89,30 @@ async function fetchReports(page = 1) {
   }, 300);
 }
 
-    
-
 // ====== RENDER REPORT CARD ======
 function renderReportCard(report) {
   const card = document.createElement("div");
   card.className = "report-card";
+
+  // Format the timestamp
+  let formattedDate = "Haijulikani";
+  if (report.timestamp) {
+    const reportDate = new Date(report.timestamp);
+    if (!isNaN(reportDate)) {
+      formattedDate = reportDate.toLocaleString("sw-TZ", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
+    }
+  }
+
   card.innerHTML = `
-    <p><strong>Muda:</strong> ${report.timestamp}</p>
+    <p><strong>Muda:</strong> ${formattedDate}</p>
     <p><strong>Jina la Mtumiaji:</strong> ${report.username}</p>
     <p><strong>Kliniki:</strong> ${report.clinic}</p>
     <p><strong>Kichwa:</strong> ${report.title}</p>
@@ -136,7 +150,6 @@ function renderReportCard(report) {
   });
 
   reportsContainer.appendChild(card);
-  // Scroll comments to bottom
   card.querySelector(".commentsList").scrollTop = card.querySelector(".commentsList").scrollHeight;
 }
 
