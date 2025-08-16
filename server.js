@@ -107,7 +107,20 @@ function auth(req,res,next){ if(!req.session.userId) return res.redirect("/index
 // ====== Tanzania timestamp helper ======
 function getTanzaniaTimestamp(){
   const now = new Date();
-  return new Date(now.getTime() + (3*60 + now.getTimezoneOffset())*60000);
+  const tzOffsetMinutes = 3 * 60; // UTC+3
+  return new Date(now.getTime() + (tzOffsetMinutes - now.getTimezoneOffset())*60000);
+}
+
+// Format timestamp for display
+function formatTanzaniaTime(date) {
+  const ts = new Date(date);
+  return !isNaN(ts) 
+    ? ts.toLocaleString("sw-TZ", {
+        day:"2-digit", month:"long", year:"numeric",
+        hour:"2-digit", minute:"2-digit", second:"2-digit",
+        hour12:false
+      })
+    : "Haijulikani";
 }
 
 // ====== Routes ======
@@ -155,8 +168,6 @@ app.get("/logout", (req,res)=>{
 app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req.session.kituo}));
 
 // ====== Submit report ======
-
-// ====== Submit report ======
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
   const { title, description } = req.body;
   if (!title || !description) return res.status(400).send("Jaza title na description.");
@@ -171,22 +182,15 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
     }
   }
 
-  // Manually set timestamp in UTC+3 (Tanzania)
-  const timestamp = getTanzaniaTimestamp();
-
   await pool.query(
     "INSERT INTO reports(timestamp, user_id, title, description, image) VALUES($1,$2,$3,$4,$5)",
-    [timestamp, req.session.userId, title, description, imageUrl]
+    [getTanzaniaTimestamp(), req.session.userId, title, description, imageUrl]
   );
 
   res.redirect("/dashboard.html");
 });
 
-
-// Get reports with filtering, search, pagination, comments, reactions
-
-    
-// Get reports with filtering, search, pagination, comments, reactions
+// ====== Get reports ======
 app.get("/api/reports", auth, async (req,res)=>{
   try {
     let { page=1, limit=15, clinic, username, search, startDate, endDate } = req.query;
@@ -205,19 +209,16 @@ app.get("/api/reports", auth, async (req,res)=>{
       )`);
       params.push(`%${search}%`); idx++;
     }
-    // Date filtering
     if(startDate){ whereClauses.push(`r.timestamp >= $${idx++}`); params.push(new Date(startDate)); }
     if(endDate){ const end = new Date(endDate); end.setHours(23,59,59,999); whereClauses.push(`r.timestamp <= $${idx++}`); params.push(end); }
 
     const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
-    // Total count
     const countRes = await pool.query(`SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id=u.id ${whereSQL}`, params);
     const totalReports = parseInt(countRes.rows[0].count);
     const totalPages = Math.ceil(totalReports/limit);
     const offset = (page - 1) * limit;
 
-    // Fetch reports
     const reportRes = await pool.query(
       `SELECT r.*, u.jina AS username, u.kituo AS clinic
        FROM reports r
@@ -230,7 +231,6 @@ app.get("/api/reports", auth, async (req,res)=>{
 
     const reportIds = reportRes.rows.map(r=>r.id);
 
-    // Fetch comments
     let comments = [];
     if(reportIds.length){
       const commentRes = await pool.query(
@@ -244,7 +244,6 @@ app.get("/api/reports", auth, async (req,res)=>{
       comments = commentRes.rows;
     }
 
-    // Fetch reactions
     let reactions = [];
     if(reportIds.length){
       const reactRes = await pool.query(
@@ -259,30 +258,16 @@ app.get("/api/reports", auth, async (req,res)=>{
       reactions = reactRes.rows;
     }
 
-    // Attach comments, reactions, safely format timestamp
     reportRes.rows.forEach(r=>{
-      r.comments = comments.filter(c=>c.report_id===r.id);
+      r.comments = comments
+        .filter(c=>c.report_id===r.id)
+        .map(c=>({...c, timestamp: formatTanzaniaTime(c.timestamp)}));
+
       const react = reactions.find(re=>re.report_id===r.id);
       r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
       r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
 
-      // === SAFE TIMESTAMP FORMAT ===
-      if (r.timestamp) {
-        const ts = new Date(r.timestamp);
-        if (!isNaN(ts)) {
-          const tzOffsetMinutes = 3 * 60;
-          const localTime = new Date(ts.getTime() + tzOffsetMinutes*60000);
-          r.timestamp = localTime.toLocaleString("sw-TZ", {
-            day:"2-digit", month:"long", year:"numeric",
-            hour:"2-digit", minute:"2-digit", second:"2-digit",
-            hour12:false
-          });
-        } else {
-          r.timestamp = "Haijulikani";
-        }
-      } else {
-        r.timestamp = "Haijulikani";
-      }
+      r.timestamp = formatTanzaniaTime(r.timestamp);
     });
 
     res.json({ reports: reportRes.rows, page, totalPages, totalReports, limit });
@@ -292,11 +277,7 @@ app.get("/api/reports", auth, async (req,res)=>{
   }
 });
 
-    
-
-    
-
-// Add comment
+// ====== Add comment ======
 app.post("/api/comments/:id", auth, async (req,res)=>{
   const { comment } = req.body;
   if(!comment) return res.status(400).send("Andika maoni.");
@@ -307,83 +288,32 @@ app.post("/api/comments/:id", auth, async (req,res)=>{
   res.send("Maoni yamehifadhiwa");
 });
 
-// React to report
-
-// React to report (thumb up / thumb down)
-app.post("/api/reports/:id/react", auth, async (req, res) => {
-  const { type } = req.body; // 'up' or 'down'
-  if (!['up', 'down'].includes(type)) return res.status(400).send("Invalid reaction type.");
-
-  const reportId = req.params.id;
-  const userId = req.session.userId;
-
-  try {
-    // Insert or update reaction
-    await pool.query(`
-      INSERT INTO reactions(report_id, user_id, type)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (report_id, user_id)
-      DO UPDATE SET type = EXCLUDED.type
-    `, [reportId, userId, type]);
-
-    // Fetch updated reaction counts
-    const countsRes = await pool.query(`
-      SELECT 
-        COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
-        COUNT(*) FILTER (WHERE type='down') AS thumbs_down
-      FROM reactions
-      WHERE report_id = $1
-    `, [reportId]);
-
-    const counts = countsRes.rows[0];
-    res.json({
-      thumbs_up: parseInt(counts.thumbs_up, 10),
-      thumbs_down: parseInt(counts.thumbs_down, 10)
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Tatizo kuhifadhi reaction");
-  }
-});
-
-// POST /api/reactions/:reportId
-
-
-  // React to report (thumb up / thumb down) with validation
+// ====== React to report (with validation) ======
 app.post("/api/reactions/:reportId", auth, async (req, res) => {
   const { reportId } = req.params;
-  const { type } = req.body; // "up" or "down"
+  const { type } = req.body;
   const userId = req.session.userId;
 
   if (!["up","down"].includes(type)) return res.status(400).send("Invalid reaction type.");
 
   try {
-    // Check if the report exists and get its author
     const reportRes = await pool.query("SELECT user_id FROM reports WHERE id=$1", [reportId]);
     if (!reportRes.rows.length) return res.status(404).send("Ripoti haipo.");
 
     const authorId = reportRes.rows[0].user_id;
-
-    // Prevent author from reacting to their own report
     if (authorId === userId) return res.status(403).send("Huwezi kutoa thumbs kwenye ripoti yako.");
 
-    // Check if the user already reacted
     const existing = await pool.query(
       "SELECT * FROM reactions WHERE report_id=$1 AND user_id=$2",
       [reportId, userId]
     );
+    if (existing.rows.length) return res.status(400).send("Umesha toa thumbs kwenye ripoti hii.");
 
-    if (existing.rows.length) {
-      return res.status(400).send("Umesha toa thumbs kwenye ripoti hii.");
-    }
-
-    // Insert new reaction
     await pool.query(
       "INSERT INTO reactions(report_id, user_id, type) VALUES($1,$2,$3)",
       [reportId, userId, type]
     );
 
-    // Get updated thumbs count
     const thumbs = await pool.query(
       `SELECT
          SUM(CASE WHEN type='up' THEN 1 ELSE 0 END) AS thumbs_up,
@@ -402,13 +332,8 @@ app.post("/api/reactions/:reportId", auth, async (req, res) => {
     res.status(500).send("Tatizo ku-react");
   }
 });
-  
 
-    
-
-
-// ====== START SERVER ======
+// ====== Start server ======
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-                                                
