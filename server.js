@@ -171,21 +171,51 @@ app.post("/submit", auth, upload.single("image"), async (req,res)=>{
 });
 
 // Get reports with filtering, pagination, search (including comments and reactions)
+// Get reports with filtering, pagination, search (including comments and reactions)
 app.get("/api/reports", auth, async (req,res)=>{
   try{
-    let { page=1, limit=15, clinic, username, search } = req.query;
-    page=parseInt(page); limit=parseInt(limit);
-    let whereClauses=[]; let params=[]; let idx=1;
+    let {
+      page = 1,
+      limit = 15,
+      clinic,
+      username,
+      search,
+      startDate,
+      endDate
+    } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
 
-    if(clinic){ whereClauses.push(`u.kituo ILIKE $${idx++}`); params.push(`%${clinic}%`); }
-    if(username){ whereClauses.push(`u.jina ILIKE $${idx++}`); params.push(`%${username}%`); }
-    if(search){ 
+    let whereClauses = [];
+    let params = [];
+    let idx = 1;
+
+    if (clinic) {
+      whereClauses.push(`u.kituo ILIKE $${idx++}`);
+      params.push(`%${clinic}%`);
+    }
+    if (username) {
+      whereClauses.push(`u.jina ILIKE $${idx++}`);
+      params.push(`%${username}%`);
+    }
+    if (search) {
       whereClauses.push(`(
         r.title ILIKE $${idx} OR 
         r.description ILIKE $${idx} OR
         EXISTS (SELECT 1 FROM comments c WHERE c.report_id = r.id AND c.comment ILIKE $${idx})
       )`);
-      params.push(`%${search}%`); idx++;
+      params.push(`%${search}%`);
+      idx++;
+    }
+
+    // new date filter for timestamp range
+    if (startDate) {
+      whereClauses.push(`r.timestamp >= $${idx++}`);
+      params.push(startDate);
+    }
+    if (endDate) {
+      whereClauses.push(`r.timestamp <= $${idx++}`);
+      params.push(endDate);
     }
 
     const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
@@ -234,7 +264,7 @@ app.get("/api/reports", auth, async (req,res)=>{
       reactions = reactRes.rows;
     }
 
-    // Attach comments and reactions to reports
+    // Attach comments + reactions
     rr.rows.forEach(rp=>{
       rp.comments = cc.filter(c=>c.report_id===rp.id);
       const react = reactions.find(r=>r.report_id===rp.id);
@@ -242,8 +272,17 @@ app.get("/api/reports", auth, async (req,res)=>{
       rp.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
     });
 
-    res.json({ reports: rr.rows, page, totalPages, totalReports });
-  } catch(err){ console.error(err); res.status(500).send("Tatizo kupata ripoti"); }
+    res.json({
+      reports: rr.rows,
+      page,
+      totalPages,
+      totalReports,
+      hasMore: page < totalPages     // <== KEY for frontend
+    });
+  } catch(err){
+    console.error(err);
+    res.status(500).send("Tatizo kupata ripoti");
+  }
 });
 
 // Add comment
