@@ -179,6 +179,9 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
 });
 
 // Get reports with filtering, search, pagination, comments, reactions
+
+    
+// Get reports with filtering, search, pagination, comments, reactions
 app.get("/api/reports", auth, async (req,res)=>{
   try {
     let { page=1, limit=15, clinic, username, search, startDate, endDate } = req.query;
@@ -207,7 +210,7 @@ app.get("/api/reports", auth, async (req,res)=>{
     const countRes = await pool.query(`SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id=u.id ${whereSQL}`, params);
     const totalReports = parseInt(countRes.rows[0].count);
     const totalPages = Math.ceil(totalReports/limit);
-    const offset = (page-1)*limit;
+    const offset = (page - 1) * limit;
 
     // Fetch reports
     const reportRes = await pool.query(
@@ -251,21 +254,30 @@ app.get("/api/reports", auth, async (req,res)=>{
       reactions = reactRes.rows;
     }
 
-    // Attach comments, reactions, format timestamp
+    // Attach comments, reactions, safely format timestamp
     reportRes.rows.forEach(r=>{
       r.comments = comments.filter(c=>c.report_id===r.id);
       const react = reactions.find(re=>re.report_id===r.id);
       r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
       r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
 
-      // Format timestamp Tanzania
-      const tzOffset = 3*60; // UTC+3
-      const localTime = new Date(new Date(r.timestamp).getTime() + tzOffset*60*1000);
-      r.timestamp = localTime.toLocaleString("sw-TZ", { 
-        day:"2-digit", month:"long", year:"numeric",
-        hour:"2-digit", minute:"2-digit", second:"2-digit",
-        hour12:false
-      });
+      // === SAFE TIMESTAMP FORMAT ===
+      if (r.timestamp) {
+        const ts = new Date(r.timestamp);
+        if (!isNaN(ts)) {
+          const tzOffsetMinutes = 3 * 60;
+          const localTime = new Date(ts.getTime() + tzOffsetMinutes*60000);
+          r.timestamp = localTime.toLocaleString("sw-TZ", {
+            day:"2-digit", month:"long", year:"numeric",
+            hour:"2-digit", minute:"2-digit", second:"2-digit",
+            hour12:false
+          });
+        } else {
+          r.timestamp = "Haijulikani";
+        }
+      } else {
+        r.timestamp = "Haijulikani";
+      }
     });
 
     res.json({ reports: reportRes.rows, page, totalPages, totalReports, limit });
@@ -274,6 +286,10 @@ app.get("/api/reports", auth, async (req,res)=>{
     res.status(500).send("Tatizo kupata ripoti");
   }
 });
+
+    
+
+    
 
 // Add comment
 app.post("/api/comments/:id", auth, async (req,res)=>{
