@@ -166,19 +166,84 @@ app.post("/submit", auth, upload.single("image"), async (req,res)=>{
   res.redirect("/dashboard.html");
 });
 
-// Get all reports (dashboard) with votes
-app.get("/api/reports", auth, async (req,res)=>{
-  try{
+// Get all reports (dashboard) with votes and pagination
+app.get("/api/reports", auth, async (req, res) => {
+  try {
+    let { page = 1, limit = 10, clinic = "", username = "", search = "" } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+    const offset = (page - 1) * limit;
+
+    // Build dynamic WHERE conditions
+    const conditions = [];
+    const params = [];
+    let idx = 1;
+
+    if (clinic) {
+      conditions.push(`LOWER(u.kituo) = LOWER($${idx++})`);
+      params.push(clinic);
+    }
+
+    if (username) {
+      conditions.push(`LOWER(u.jina) LIKE LOWER($${idx++})`);
+      params.push(`%${username}%`);
+    }
+
+    if (search) {
+      conditions.push(`(LOWER(r.title) LIKE LOWER($${idx++}) OR LOWER(r.description) LIKE LOWER($${idx++}))`);
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    const whereSQL = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    // Count total matching reports
+    const countRes = await pool.query(
+      `SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id=u.id ${whereSQL}`,
+      params
+    );
+    const totalReports = parseInt(countRes.rows[0].count);
+    const totalPages = Math.ceil(totalReports / limit);
+
+    // Fetch reports with votes
     const rr = await pool.query(`
       SELECT r.*, u.jina AS username, u.kituo AS clinic,
         COALESCE((SELECT SUM(CASE WHEN vote=1 THEN 1 ELSE 0 END) FROM votes v WHERE v.report_id=r.id),0) AS thumbs_up,
         COALESCE((SELECT SUM(CASE WHEN vote=-1 THEN 1 ELSE 0 END) FROM votes v WHERE v.report_id=r.id),0) AS thumbs_down
       FROM reports r
       JOIN users u ON r.user_id=u.id
+      ${whereSQL}
       ORDER BY r.id DESC
-    `);
-    res.json(rr.rows);
-  } catch(err){ console.error(err); res.status(500).send("Tatizo kupata ripoti"); }
+      LIMIT $${idx++} OFFSET $${idx}
+    `, [...params, limit, offset]);
+
+    // Fetch comments for these reports
+    const reportIds = rr.rows.map(r => r.id);
+    let comments = [];
+    if (reportIds.length) {
+      const ccRes = await pool.query(`
+        SELECT c.*, u.jina AS username, u.kituo AS clinic
+        FROM comments c JOIN users u ON c.user_id=u.id
+        WHERE report_id = ANY($1::int[])
+        ORDER BY c.id DESC
+      `, [reportIds]);
+      comments = ccRes.rows;
+    }
+
+    rr.rows.forEach(rp => {
+      rp.comments = comments.filter(c => c.report_id === rp.id);
+    });
+
+    res.json({
+      reports: rr.rows,
+      page,
+      totalPages,
+      totalReports
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Tatizo kupata ripoti");
+  }
 });
 
 // Thumbs up / down
