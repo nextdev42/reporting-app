@@ -48,10 +48,31 @@ async function loadGreeting() {
 }
 loadGreeting();
 
+// ====== PARSE SWAHILI DATE ======
+function parseSwahiliDate(str) {
+  if (!str) return null;
+  const months = {
+    "Januari": 0, "Februari": 1, "Machi": 2, "Aprili": 3, "Mei": 4,
+    "Juni": 5, "Julai": 6, "Agosti": 7, "Septemba": 8, "Oktoba": 9,
+    "Novemba": 10, "Desemba": 11
+  };
+  const match = str.match(/(\d{1,2}) (\w+) (\d{4}), (\d{2}):(\d{2}):(\d{2})/);
+  if (!match) return null;
+  const [ , day, monthStr, year, hour, minute, second ] = match;
+  const month = months[monthStr];
+  if (month === undefined) return null;
+  return new Date(year, month, day, hour, minute, second);
+}
+
 // ====== FORMAT DATE ======
 function formatDate(timestamp) {
   if (!timestamp) return "Haijulikani";
-  const date = new Date(timestamp);
+  let date = new Date(timestamp);
+  if (isNaN(date)) {
+    // Try Swahili parse if normal Date fails
+    date = parseSwahiliDate(timestamp);
+  }
+  if (!date) return "Haijulikani";
   return date.toLocaleString("sw-TZ", {
     day: "2-digit",
     month: "long",
@@ -98,7 +119,12 @@ async function fetchReports(page = 1) {
       totalPages = data.totalPages;
 
       // Sort newest first
-      const sortedReports = data.reports.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      const sortedReports = data.reports.sort((a, b) => {
+        const dateA = parseSwahiliDate(a.timestamp) || new Date(a.timestamp);
+        const dateB = parseSwahiliDate(b.timestamp) || new Date(b.timestamp);
+        return dateB - dateA;
+      });
+
       sortedReports.forEach(renderReportCard);
       renderPagination();
     } catch (err) {
@@ -152,7 +178,6 @@ function renderReportCard(report) {
     const txt = inp.value.trim();
     if (!txt) return alert("Andika maoni yako.");
 
-    // Optimistically append comment
     const now = new Date().toISOString();
     const newCommentDiv = document.createElement("div");
     newCommentDiv.className = "comment-item";
@@ -190,7 +215,6 @@ function renderReportCard(report) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "up" })
       });
-      // Update display
       report.thumbs_up = (report.thumbs_up || 0) + 1;
       thumbUpBtn.textContent = `👍 ${report.thumbs_up}`;
     } catch (err) {
@@ -205,7 +229,6 @@ function renderReportCard(report) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "down" })
       });
-      // Update display
       report.thumbs_down = (report.thumbs_down || 0) + 1;
       thumbDownBtn.textContent = `👎 ${report.thumbs_down}`;
     } catch (err) {
