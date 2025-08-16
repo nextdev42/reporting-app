@@ -210,6 +210,65 @@ app.get("/api/user/:username/reports", auth, async (req,res)=>{
   } catch(err){ console.error(err); res.status(500).send("Tatizo kupata ripoti za mtumiaji huyo"); }
 });
 
+
+// Get reports by logged-in user with optional date filtering and pagination
+app.get("/api/user/reports", auth, async (req, res) => {
+  try {
+    let { page = 1, limit = 10, start, end } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+    let where = [`r.user_id = $1`];
+    let params = [req.session.userId];
+    let idx = 2;
+
+    if (start) {
+      where.push(`r.timestamp >= $${idx++}`);
+      params.push(start);
+    }
+    if (end) {
+      where.push(`r.timestamp <= $${idx++}`);
+      params.push(end);
+    }
+
+    const whereSQL = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
+    // Count total reports
+    const countRes = await pool.query(`SELECT COUNT(*) FROM reports r ${whereSQL}`, params);
+    const totalReports = parseInt(countRes.rows[0].count);
+    const totalPages = Math.ceil(totalReports / limit);
+    const offset = (page - 1) * limit;
+
+    // Fetch reports with comments
+    const rr = await pool.query(`
+      SELECT r.* 
+      FROM reports r
+      ${whereSQL}
+      ORDER BY r.id DESC
+      LIMIT $${idx++} OFFSET $${idx}
+    `, [...params, limit, offset]);
+
+    const reportIds = rr.rows.map(r => r.id);
+    let comments = [];
+    if (reportIds.length) {
+      const ccRes = await pool.query(`
+        SELECT c.*, u.jina AS username, u.kituo AS clinic
+        FROM comments c JOIN users u ON c.user_id=u.id
+        WHERE report_id = ANY($1::int[])
+        ORDER BY c.id DESC
+      `, [reportIds]);
+      comments = ccRes.rows;
+    }
+
+    rr.rows.forEach(rp => {
+      rp.comments = comments.filter(c => c.report_id === rp.id);
+    });
+
+    res.json({ reports: rr.rows, page, totalPages, totalReports });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Tatizo kupata ripoti zako");
+  }
+});
 // Add comment
 app.post("/api/comments/:id", auth, async (req,res)=>{
   const { comment } = req.body;
