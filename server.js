@@ -293,13 +293,84 @@ app.get("/api/reports", auth, async (req,res)=>{
 
     const ids = rr.rows.map(r => r.id);
 
+// Get reports with filtering, pagination, search (including comments and reactions)
+app.get("/api/reports", auth, async (req,res)=>{
+  try {
+    let {
+      page = 1,
+      limit = 15,
+      clinic,
+      username,
+      search,
+      startDate,
+      endDate
+    } = req.query;
+
+    page  = parseInt(page);
+    limit = parseInt(limit);
+
+    let whereClauses = [];
+    let params = [];
+    let idx = 1;
+
+    if (clinic) {
+      whereClauses.push(`u.kituo ILIKE $${idx++}`);
+      params.push(`%${clinic}%`);
+    }
+    if (username) {
+      whereClauses.push(`u.jina ILIKE $${idx++}`);
+      params.push(`%${username}%`);
+    }
+    if (search) {
+      whereClauses.push(`(
+        r.title ILIKE $${idx} OR 
+        r.description ILIKE $${idx} OR
+        EXISTS (SELECT 1 FROM comments c WHERE c.report_id = r.id AND c.comment ILIKE $${idx})
+      )`);
+      params.push(`%${search}%`);
+      idx++;
+    }
+
+    // ✅ Date filters — convert plain text timestamp into date for proper comparison
+    if (startDate) {
+      whereClauses.push(`TO_TIMESTAMP(r.timestamp, 'DD Month YYYY, HH24:MI:SS') >= $${idx++}`);
+      params.push(startDate);
+    }
+    if (endDate) {
+      whereClauses.push(`TO_TIMESTAMP(r.timestamp, 'DD Month YYYY, HH24:MI:SS') <= $${idx++}`);
+      params.push(endDate);
+    }
+
+    const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+    // Count for pagination
+    const countRes = await pool.query(
+      `SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id = u.id ${whereSQL}`,
+      params
+    );
+    const totalReports = parseInt(countRes.rows[0].count);
+    const totalPages   = Math.ceil(totalReports / limit);
+    const offset       = (page - 1) * limit;
+
+    // Pull page of reports
+    const rr = await pool.query(
+      `SELECT r.*, u.jina AS username, u.kituo AS clinic
+       FROM reports r
+       JOIN users u ON r.user_id = u.id
+       ${whereSQL}
+       ORDER BY r.id DESC
+       LIMIT $${idx++} OFFSET $${idx}`,
+      [...params, limit, offset]
+    );
+
+    const ids = rr.rows.map(r => r.id);
+
     // Fetch comments
     let cc = [];
     if (ids.length) {
       const ccRes = await pool.query(
         `SELECT c.*, u.jina AS username, u.kituo AS clinic
-         FROM comments c
-         JOIN users u ON c.user_id = u.id
+         FROM comments c JOIN users u ON c.user_id = u.id
          WHERE report_id = ANY($1::int[])
          ORDER BY c.id DESC`,
         [ids]
@@ -321,20 +392,21 @@ app.get("/api/reports", auth, async (req,res)=>{
       reactions = reactRes.rows;
     }
 
-    // Attach comments & reactions
+    // Attach comments & reactions to reports
     rr.rows.forEach(rp => {
-      rp.comments = cc.filter(c => c.report_id === rp.id);
-      const react = reactions.find(r => r.report_id === rp.id);
-      rp.thumbs_up   = react ? parseInt(react.thumbs_up)   : 0;
-      rp.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
+      rp.comments     = cc.filter(c => c.report_id === rp.id);
+      const react     = reactions.find(r => r.report_id === rp.id);
+      rp.thumbs_up    = react ? parseInt(react.thumbs_up)   : 0;
+      rp.thumbs_down  = react ? parseInt(react.thumbs_down) : 0;
     });
 
+    // ✅ Respond to client
     res.json({
       reports: rr.rows,
       page,
       totalPages,
       totalReports,
-      hasMore: page < totalPages        // IMPORTANT for dashboard.js
+      hasMore: page < totalPages   // <== dashboard.js uses this to enable "next page"
     });
   } catch (err) {
     console.error(err);
