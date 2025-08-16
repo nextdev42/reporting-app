@@ -168,9 +168,10 @@ app.get("/logout", (req,res)=>{
 app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req.session.kituo}));
 
 // ====== Submit report ======
+
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
   const { title, description } = req.body;
-  if (!title || !description) return res.status(400).send("Jaza title na description.");
+  if (!title || !description) return res.status(400).json({ error: "Jaza title na description." });
 
   let imageUrl = "";
   if (req.file) {
@@ -182,13 +183,30 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
     }
   }
 
-  await pool.query(
-    "INSERT INTO reports(timestamp, user_id, title, description, image) VALUES($1,$2,$3,$4,$5)",
-    [getTanzaniaTimestamp(), req.session.userId, title, description, imageUrl]
-  );
+  try {
+    const result = await pool.query(
+      "INSERT INTO reports(timestamp, user_id, title, description, image) VALUES($1,$2,$3,$4,$5) RETURNING *",
+      [getTanzaniaTimestamp(), req.session.userId, title, description, imageUrl]
+    );
 
-  res.redirect("/dashboard.html");
+    const report = result.rows[0];
+
+    // Add username, clinic, thumbs, comments
+    report.username = req.session.jina;
+    report.clinic = req.session.kituo;
+    report.thumbs_up = 0;
+    report.thumbs_down = 0;
+    report.comments = [];
+    report.timestamp = formatTanzaniaTime(report.timestamp);
+
+    res.json(report); // <-- return JSON instead of redirect
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Tatizo ku-hifadhi ripoti" });
+  }
 });
+
+  
 
 // ====== Get reports ======
 app.get("/api/reports", auth, async (req,res)=>{
