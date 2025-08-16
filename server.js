@@ -26,7 +26,7 @@ const pool = new Pool({
   port: 5432,
 });
 
-// Ensure tables
+// Ensure tables exist
 async function initTables(){
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -69,13 +69,9 @@ async function initTables(){
       id SERIAL PRIMARY KEY,
       report_id INTEGER REFERENCES reports(id),
       user_id INTEGER REFERENCES users(id),
-      vote SMALLINT CHECK (vote IN (1, -1))
+      vote SMALLINT CHECK (vote IN (1, -1)),
+      UNIQUE(report_id, user_id)
     );`);
-
-  await pool.query(`
-    ALTER TABLE votes
-    ADD CONSTRAINT IF NOT EXISTS unique_user_vote UNIQUE(report_id, user_id);
-  `);
 
   console.log("✅ All tables ensured");
 }
@@ -159,14 +155,17 @@ app.post("/submit", auth, upload.single("image"), async (req,res)=>{
   if(!title||!description) return res.status(400).send("Jaza title na description.");
   let imageUrl="";
   if(req.file){
-    try{ const uploadResult = await cloudinary.uploader.upload(req.file.path,{folder:"clinic-reports"}); imageUrl=uploadResult.secure_url; }
-    catch(err){ console.error("Cloudinary error:",err); }
+    try{ 
+      const uploadResult = await cloudinary.uploader.upload(req.file.path,{folder:"clinic-reports"});
+      imageUrl=uploadResult.secure_url; 
+    } catch(err){ console.error("Cloudinary error:",err); }
   }
-  await pool.query("INSERT INTO reports(timestamp,user_id,title,description,image) VALUES($1,$2,$3,$4,$5)",[getTanzaniaTimestamp(),req.session.userId,title,description,imageUrl]);
+  await pool.query("INSERT INTO reports(timestamp,user_id,title,description,image) VALUES($1,$2,$3,$4,$5)",
+    [getTanzaniaTimestamp(),req.session.userId,title,description,imageUrl]);
   res.redirect("/dashboard.html");
 });
 
-// Get all reports with filters, pagination, search (including comments)
+// Get reports with filtering, pagination, search
 app.get("/api/reports", auth, async (req,res)=>{
   try{
     let { page=1, limit=15, clinic, username, search } = req.query;
@@ -186,13 +185,11 @@ app.get("/api/reports", auth, async (req,res)=>{
 
     const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
-    // Count for pagination
     const countRes = await pool.query(`SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id = u.id ${whereSQL}`, params);
     const totalReports = parseInt(countRes.rows[0].count);
     const totalPages = Math.ceil(totalReports/limit);
     const offset = (page-1)*limit;
 
-    // Fetch reports
     const rr = await pool.query(
       `SELECT r.*, u.jina AS username, u.kituo AS clinic
        FROM reports r JOIN users u ON r.user_id=u.id
@@ -216,17 +213,6 @@ app.get("/api/reports", auth, async (req,res)=>{
 
     rr.rows.forEach(rp=>{ rp.comments = cc.filter(c=>c.report_id===rp.id); });
 
-    // Get votes counts
-    for(let r of rr.rows){
-      const votesRes = await pool.query(`
-        SELECT SUM(CASE WHEN vote=1 THEN 1 ELSE 0 END) AS thumbs_up,
-               SUM(CASE WHEN vote=-1 THEN 1 ELSE 0 END) AS thumbs_down
-        FROM votes WHERE report_id=$1
-      `,[r.id]);
-      r.thumbs_up = votesRes.rows[0].thumbs_up || 0;
-      r.thumbs_down = votesRes.rows[0].thumbs_down || 0;
-    }
-
     res.json({ reports: rr.rows, page, totalPages, totalReports });
   } catch(err){ console.error(err); res.status(500).send("Tatizo kupata ripoti"); }
 });
@@ -235,36 +221,74 @@ app.get("/api/reports", auth, async (req,res)=>{
 app.post("/api/comments/:id", auth, async (req,res)=>{
   const { comment } = req.body;
   if(!comment) return res.status(400).send("Andika maoni.");
-  await pool.query("INSERT INTO comments(report_id,user_id,timestamp,comment) VALUES($1,$2,$3,$4)",[req.params.id,req.session.userId,getTanzaniaTimestamp(),comment]);
+  await pool.query("INSERT INTO comments(report_id,user_id,timestamp,comment) VALUES($1,$2,$3,$4)",
+    [req.params.id,req.session.userId,getTanzaniaTimestamp(),comment]);
   res.send("Maoni yamehifadhiwa");
 });
 
-// Vote (thumbs up / thumbs down)
+// Thumbs up / down
 app.post("/api/vote/:id", auth, async (req,res)=>{
   const { vote } = req.body; // vote = 1 or -1
-  if (![1,-1].includes(parseInt(vote))) return res.status(400).send("Vote si sahihi.");
+  if(![1,-1].includes(parseInt(vote))) return res.status(400).send("Invalid vote");
   try{
     await pool.query(`
       INSERT INTO votes(report_id,user_id,vote)
       VALUES($1,$2,$3)
-      ON CONFLICT (report_id,user_id) DO UPDATE SET vote=EXCLUDED.vote
-    `,[req.params.id, req.session.userId, vote]);
-    res.send("Vote imehifadhiwa");
+      ON CONFLICT(report_id,user_id) DO UPDATE SET vote=EXCLUDED.vote
+    `,[req.params.id,req.session.userId,vote]);
+    res.send("Vote saved");
   } catch(err){ console.error(err); res.status(500).send("Tatizo ku-save vote"); }
 });
 
-// Get all reports by a user, optional date filter
+
+// Get all reports by a specific user (by username), optional date filter
+app.get("/api/user/:username/reports", auth, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const { start, end } = req.query; // optional date filters
+
+    let where = [`LOWER(u.jina) = LOWER($1)`];
+    let params = [username];
+    let idx = 2;
+
+    if (start) {
+      where.push(`r.timestamp >= $${idx++}`);
+      params.push(start);
+    }
+    if (end) {
+      where.push(`r.timestamp <= $${idx++}`);
+      params.push(end);
+    }
+
+    const rr = await pool.query(`
+      SELECT r.*,
+        (SELECT SUM(CASE WHEN vote=1 THEN 1 ELSE 0 END) FROM votes v WHERE v.report_id = r.id) AS thumbs_up,
+        (SELECT SUM(CASE WHEN vote=-1 THEN 1 ELSE 0 END) FROM votes v WHERE v.report_id = r.id) AS thumbs_down
+      FROM reports r
+      JOIN users u ON r.user_id = u.id
+      WHERE ${where.join(" AND ")}
+      ORDER BY r.id DESC
+    `, params);
+
+    res.json(rr.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Tatizo kupata ripoti za mtumiaji huyo");
+  }
+});
+// Get reports by user with optional date filtering
 app.get("/api/user/reports", auth, async (req,res)=>{
   try{
-    const { start, end } = req.query;
-    let where = [`r.user_id=$1`];
+    const { start, end } = req.query; // optional date filters
+    let where = [`r.user_id = $1`];
     let params = [req.session.userId];
-    let idx=2;
+    let idx = 2;
+
     if(start){ where.push(`r.timestamp >= $${idx++}`); params.push(start); }
     if(end){ where.push(`r.timestamp <= $${idx++}`); params.push(end); }
 
     const rr = await pool.query(`
-      SELECT r.*,
+      SELECT r.*, 
         (SELECT SUM(CASE WHEN vote=1 THEN 1 ELSE 0 END) FROM votes v WHERE v.report_id = r.id) AS thumbs_up,
         (SELECT SUM(CASE WHEN vote=-1 THEN 1 ELSE 0 END) FROM votes v WHERE v.report_id = r.id) AS thumbs_down
       FROM reports r
