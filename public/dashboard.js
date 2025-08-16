@@ -124,7 +124,7 @@ async function fetchReports(page = 1) {
         return dateB - dateA;
       });
 
-      sortedReports.forEach(renderReportCard);
+      sortedReports.forEach(r => reportsContainer.appendChild(renderReportCard(r)));
       renderPagination();
     } catch (err) {
       reportsContainer.innerHTML = "<p>Tatizo kupakua ripoti.</p>";
@@ -206,7 +206,6 @@ function renderReportCard(report) {
   });
 
   // ===== THUMBS UP/DOWN =====
-  // Disable thumbs if this is user's own report
   if (report.username === currentUser.jina && report.clinic === currentUser.kituo) {
     thumbUpBtn.disabled = true;
     thumbDownBtn.disabled = true;
@@ -246,8 +245,7 @@ function renderReportCard(report) {
     });
   }
 
-  reportsContainer.appendChild(card);
-  commentsList.scrollTop = commentsList.scrollHeight;
+  return card;
 }
 
 // ====== RENDER PAGINATION ======
@@ -304,12 +302,12 @@ reportForm.addEventListener("submit", async e => {
   try {
     const res = await fetch("/submit", { method: "POST", body: fd });
     if (!res.ok) throw new Error(await res.text());
-    const newReport = await res.json(); // <-- JSON from server
+    const newReport = await res.json();
     formStatus.textContent = "Ripoti imehifadhiwa!";
     reportForm.reset();
 
     // Render new report on top
-    renderReportCard(newReport);
+    reportsContainer.prepend(renderReportCard(newReport));
     reportsContainer.scrollTop = 0;
   } catch (err) {
     formStatus.textContent = "Tatizo: " + err.message;
