@@ -47,10 +47,35 @@ async function loadGreeting() {
 }
 loadGreeting();
 
+// ====== DATE PARSER ======
+function parseAnyDate(str) {
+  if (!str) return null;
+
+  // Try ISO format first
+  let date = new Date(str);
+  if (!isNaN(date)) return date;
+
+  // Try Swahili format: 16 Agosti 2025, 22:59:53
+  const months = {
+    "Januari":0,"Februari":1,"Machi":2,"Aprili":3,"Mei":4,
+    "Juni":5,"Julai":6,"Agosti":7,"Septemba":8,"Oktoba":9,
+    "Novemba":10,"Desemba":11
+  };
+  const match = str.match(/(\d{1,2}) (\w+) (\d{4}), (\d{2}):(\d{2}):(\d{2})/);
+  if (!match) return null;
+
+  const [ , day, monthStr, year, hour, minute, second ] = match;
+  const month = months[monthStr];
+  if (month === undefined) return null;
+
+  return new Date(year, month, parseInt(day), hour, minute, second);
+}
+
 // ====== FORMAT DATE ======
 function formatDate(timestamp) {
-  if (!timestamp) return "Haijulikani";
-  const date = new Date(timestamp);
+  const date = parseAnyDate(timestamp);
+  if (!date || isNaN(date)) return "Haijulikani";
+
   return date.toLocaleString("sw-TZ", {
     day: "2-digit",
     month: "long",
@@ -148,7 +173,6 @@ function renderReportCard(report) {
     const txt = inp.value.trim();
     if (!txt) return alert("Andika maoni yako.");
 
-    // Optimistically append comment
     const now = new Date().toISOString();
     const newCommentDiv = document.createElement("div");
     newCommentDiv.className = "comment-item";
