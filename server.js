@@ -171,81 +171,110 @@ app.post("/submit", auth, upload.single("image"), async (req,res)=>{
 });
 
 // Get reports with filtering, pagination, search (including comments and reactions)
-app.get("/api/reports", auth, async (req,res)=>{
-  try{
-    let { page=1, limit=15, clinic, username, search } = req.query;
-    page=parseInt(page); limit=parseInt(limit);
-    let whereClauses=[]; let params=[]; let idx=1;
 
-    if(clinic){ whereClauses.push(`u.kituo ILIKE $${idx++}`); params.push(`%${clinic}%`); }
-    if(username){ whereClauses.push(`u.jina ILIKE $${idx++}`); params.push(`%${username}%`); }
-    if(search){ 
+// Get reports with pagination, filtering, search, comments, reactions
+app.get("/api/reports", auth, async (req, res) => {
+  try {
+    let { page = 1, limit = 15, clinic, username, search } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+    if (page < 1) page = 1;
+
+    let whereClauses = [];
+    let params = [];
+    let idx = 1;
+
+    if (clinic) {
+      whereClauses.push(`u.kituo ILIKE $${idx++}`);
+      params.push(`%${clinic}%`);
+    }
+    if (username) {
+      whereClauses.push(`u.jina ILIKE $${idx++}`);
+      params.push(`%${username}%`);
+    }
+    if (search) {
       whereClauses.push(`(
         r.title ILIKE $${idx} OR 
         r.description ILIKE $${idx} OR
         EXISTS (SELECT 1 FROM comments c WHERE c.report_id = r.id AND c.comment ILIKE $${idx})
       )`);
-      params.push(`%${search}%`); idx++;
+      params.push(`%${search}%`);
+      idx++;
     }
 
     const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
-    // Count for pagination
-    const countRes = await pool.query(`SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id = u.id ${whereSQL}`, params);
+    // Total count for pagination
+    const countRes = await pool.query(
+      `SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id = u.id ${whereSQL}`, 
+      params
+    );
     const totalReports = parseInt(countRes.rows[0].count);
-    const totalPages = Math.ceil(totalReports/limit);
-    const offset = (page-1)*limit;
+    const totalPages = Math.ceil(totalReports / limit);
+    const offset = (page - 1) * limit;
 
     // Fetch reports
-    const rr = await pool.query(
+    const reportRes = await pool.query(
       `SELECT r.*, u.jina AS username, u.kituo AS clinic
-       FROM reports r JOIN users u ON r.user_id=u.id
+       FROM reports r
+       JOIN users u ON r.user_id = u.id
        ${whereSQL}
        ORDER BY r.id DESC
        LIMIT $${idx++} OFFSET $${idx}`,
       [...params, limit, offset]
     );
 
-    const ids = rr.rows.map(r=>r.id);
+    const reportIds = reportRes.rows.map(r => r.id);
 
     // Fetch comments
-    let cc = [];
-    if(ids.length){
-      const ccRes = await pool.query(`
-        SELECT c.*, u.jina AS username, u.kituo AS clinic
-        FROM comments c JOIN users u ON c.user_id=u.id
-        WHERE report_id = ANY($1::int[])
-        ORDER BY c.id DESC
-      `,[ids]);
-      cc = ccRes.rows;
+    let comments = [];
+    if (reportIds.length) {
+      const commentRes = await pool.query(
+        `SELECT c.*, u.jina AS username, u.kituo AS clinic
+         FROM comments c
+         JOIN users u ON c.user_id = u.id
+         WHERE report_id = ANY($1::int[])
+         ORDER BY c.id DESC`,
+        [reportIds]
+      );
+      comments = commentRes.rows;
     }
 
     // Fetch reactions
     let reactions = [];
-    if(ids.length){
-      const reactRes = await pool.query(`
-        SELECT report_id,
-               COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
-               COUNT(*) FILTER (WHERE type='down') AS thumbs_down
-        FROM reactions
-        WHERE report_id = ANY($1::int[])
-        GROUP BY report_id
-      `,[ids]);
+    if (reportIds.length) {
+      const reactRes = await pool.query(
+        `SELECT report_id,
+                COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
+                COUNT(*) FILTER (WHERE type='down') AS thumbs_down
+         FROM reactions
+         WHERE report_id = ANY($1::int[])
+         GROUP BY report_id`,
+        [reportIds]
+      );
       reactions = reactRes.rows;
     }
 
-    // Attach comments and reactions to reports
-    rr.rows.forEach(rp=>{
-      rp.comments = cc.filter(c=>c.report_id===rp.id);
-      const react = reactions.find(r=>r.report_id===rp.id);
-      rp.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
-      rp.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
+    // Attach comments and reactions
+    reportRes.rows.forEach(r => {
+      r.comments = comments.filter(c => c.report_id === r.id);
+      const react = reactions.find(re => re.report_id === r.id);
+      r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
+      r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
     });
 
-    res.json({ reports: rr.rows, page, totalPages, totalReports });
-  } catch(err){ console.error(err); res.status(500).send("Tatizo kupata ripoti"); }
+    res.json({ 
+      reports: reportRes.rows, 
+      page, 
+      totalPages, 
+      totalReports, 
+      limit 
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Tatizo kupata ripoti");
+  }
 });
-
 // Add comment
 app.post("/api/comments/:id", auth, async (req,res)=>{
   const { comment } = req.body;
