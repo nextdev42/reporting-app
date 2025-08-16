@@ -39,6 +39,23 @@ async function initTables() {
     );
   `);
 
+  // 👉 ADD THIS BLOCK RIGHT HERE:
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS votes (
+      id SERIAL PRIMARY KEY,
+      report_id INTEGER REFERENCES reports(id),
+      user_id INTEGER REFERENCES users(id),
+      vote SMALLINT CHECK (vote IN (1, -1))
+    );
+  `);
+
+  await pool.query(`
+    ALTER TABLE votes
+    ADD CONSTRAINT IF NOT EXISTS unique_user_vote UNIQUE(report_id, user_id);
+  `);
+
+  console.log("✅ Tables ensured");
+}
   await pool.query(`
     CREATE TABLE IF NOT EXISTS session (
       sid VARCHAR(255) PRIMARY KEY NOT NULL,
