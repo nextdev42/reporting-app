@@ -9,6 +9,8 @@ const greetingEl = document.getElementById("greeting");
 const clinicFilter = document.getElementById("clinicFilter");
 const usernameFilter = document.getElementById("usernameFilter");
 const searchFilter = document.getElementById("searchFilter");
+const startDateFilter = document.getElementById("startDate");
+const endDateFilter = document.getElementById("endDate");
 
 // ====== STATE ======
 let currentPage = 1;
@@ -45,13 +47,25 @@ async function fetchReports(page = 1) {
   if (fetchTimeout) clearTimeout(fetchTimeout);
   fetchTimeout = setTimeout(async () => {
     currentPage = page;
+
     const clinic = clinicFilter.value;
     const username = usernameFilter.value.trim();
     const search = searchFilter.value.trim();
+    const startDate = startDateFilter.value;
+    const endDate = endDateFilter.value;
 
     reportsContainer.innerHTML = "Inapakia ripoti...";
 
-    const params = new URLSearchParams({ clinic, username, search, page, limit: 15 });
+    const params = new URLSearchParams({ 
+      clinic, 
+      username, 
+      search, 
+      startDate, 
+      endDate, 
+      page, 
+      limit: 15 
+    });
+
     const res = await fetch(`/api/reports?${params.toString()}`);
     const data = await res.json();
 
@@ -152,7 +166,7 @@ function renderPagination() {
 }
 
 // ====== FILTER EVENTS ======
-[clinicFilter, usernameFilter, searchFilter].forEach(el => {
+[clinicFilter, usernameFilter, searchFilter, startDateFilter, endDateFilter].forEach(el => {
   el.addEventListener("input", () => fetchReports(1));
 });
 
