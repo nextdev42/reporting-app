@@ -168,7 +168,16 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
       console.error("Cloudinary error:", err);
     }
   }
-  }); 
+
+  // Save report to database
+  await pool.query(
+    "INSERT INTO reports(user_id, title, description, image) VALUES($1,$2,$3,$4)",
+    [req.session.userId, title, description, imageUrl]
+  );
+
+  res.redirect("/dashboard.html"); // redirect after successful submission
+});
+
 // Get reports with filtering, search, pagination, comments, reactions
 app.get("/api/reports", auth, async (req,res)=>{
   try {
