@@ -296,15 +296,32 @@ app.get("/api/reports", auth, async (req,res)=>{
 });
 
 // ====== Add comment ======
+// ====== Add comment ======
 app.post("/api/comments/:id", auth, async (req,res)=>{
   const { comment } = req.body;
-  if(!comment) return res.status(400).send("Andika maoni.");
-  await pool.query(
-    "INSERT INTO comments(report_id,user_id,timestamp,comment) VALUES($1,$2,$3,$4)",
-    [req.params.id, req.session.userId, getTanzaniaTimestamp(), comment]
-  );
-  res.send("Maoni yamehifadhiwa");
+  if(!comment) return res.status(400).json({ error: "Andika maoni." });
+
+  try {
+    // Insert comment
+    const result = await pool.query(
+      "INSERT INTO comments(report_id,user_id,timestamp,comment) VALUES($1,$2,$3,$4) RETURNING *",
+      [req.params.id, req.session.userId, getTanzaniaTimestamp(), comment]
+    );
+
+    const newComment = result.rows[0];
+
+    // Add username, clinic, formatted timestamp
+    newComment.username = req.session.jina;
+    newComment.clinic = req.session.kituo;
+    newComment.timestamp = formatTanzaniaTime(newComment.timestamp);
+
+    res.json(newComment); // <-- frontend can now render immediately
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Tatizo ku-hifadhi comment" });
+  }
 });
+
 
 // ====== React to report (with validation) ======
 app.post("/api/reactions/:reportId", auth, async (req, res) => {
