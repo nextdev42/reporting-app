@@ -174,6 +174,9 @@ app.post("/submit", auth, upload.single("image"), async (req,res)=>{
 
 // Get reports with pagination, filtering, search, comments, reactions
 
+
+
+    // Get reports with pagination, filtering, search, comments, reactions
 app.get("/api/reports", auth, async (req, res) => {
   try {
     let { page = 1, limit = 15, clinic, username, search, startDate, endDate } = req.query;
@@ -205,12 +208,14 @@ app.get("/api/reports", auth, async (req, res) => {
 
     // ===== Date filtering =====
     if (startDate) {
-      whereClauses.push(`TO_DATE(r.timestamp,'DD-MM-YYYY') >= $${idx++}`);
-      params.push(startDate);
+      whereClauses.push(`r.timestamp >= $${idx++}`);
+      params.push(new Date(startDate));
     }
     if (endDate) {
-      whereClauses.push(`TO_DATE(r.timestamp,'DD-MM-YYYY') <= $${idx++}`);
-      params.push(endDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // include the full end date
+      whereClauses.push(`r.timestamp <= $${idx++}`);
+      params.push(end);
     }
 
     const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
@@ -266,12 +271,19 @@ app.get("/api/reports", auth, async (req, res) => {
       reactions = reactRes.rows;
     }
 
-    // Attach comments and reactions
+    // Attach comments, reactions, and format timestamp
     reportRes.rows.forEach(r => {
       r.comments = comments.filter(c => c.report_id === r.id);
       const react = reactions.find(re => re.report_id === r.id);
       r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
       r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
+
+      // Format timestamp for frontend
+      r.timestamp = new Date(r.timestamp).toLocaleString("sw-TZ", { 
+        day:"2-digit", month:"long", year:"numeric",
+        hour:"2-digit", minute:"2-digit", second:"2-digit",
+        hour12:false
+      });
     });
 
     res.json({ 
@@ -286,6 +298,8 @@ app.get("/api/reports", auth, async (req, res) => {
     res.status(500).send("Tatizo kupata ripoti");
   }
 });
+
+    
 // Add comment
 app.post("/api/comments/:id", auth, async (req,res)=>{
   const { comment } = req.body;
