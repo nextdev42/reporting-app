@@ -346,6 +346,53 @@ app.post("/api/reports/:id/react", auth, async (req, res) => {
   }
 });
 
+// POST /api/reactions/:reportId
+app.post("/api/reactions/:reportId", async (req, res) => {
+  const { reportId } = req.params;
+  const { type } = req.body; // "up" or "down"
+  const userId = req.session.userId;
+
+  // Ensure type is valid
+  if (!["up","down"].includes(type)) return res.status(400).send("Invalid type");
+
+  try {
+    // Check if user already reacted
+    const existing = await pool.query(
+      "SELECT * FROM reactions WHERE report_id=$1 AND user_id=$2",
+      [reportId, userId]
+    );
+
+    if (existing.rows.length) {
+      // Update existing reaction
+      await pool.query(
+        "UPDATE reactions SET type=$1 WHERE report_id=$2 AND user_id=$3",
+        [type, reportId, userId]
+      );
+    } else {
+      // Insert new reaction
+      await pool.query(
+        "INSERT INTO reactions(report_id, user_id, type) VALUES($1,$2,$3)",
+        [reportId, userId, type]
+      );
+    }
+
+    // Get updated thumbs count
+    const thumbs = await pool.query(
+      `SELECT
+         SUM(CASE WHEN type='up' THEN 1 ELSE 0 END) AS thumbs_up,
+         SUM(CASE WHEN type='down' THEN 1 ELSE 0 END) AS thumbs_down
+       FROM reactions WHERE report_id=$1`,
+      [reportId]
+    );
+
+    res.json({ thumbs_up: parseInt(thumbs.rows[0].thumbs_up)||0, thumbs_down: parseInt(thumbs.rows[0].thumbs_down)||0 });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+
 // ====== START SERVER ======
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
