@@ -102,12 +102,15 @@ async function fetchReports(page = 1){
       pagination.appendChild(prevBtn);
     }
     for(let i=1;i<=totalPages;i++){
-      const btn = document.createElement("button");
-      btn.textContent = i;
-      if(i===currentPage) btn.disabled = true;
-      btn.addEventListener("click", ()=>fetchReports(i));
-      pagination.appendChild(btn);
-    }
+  const btn = document.createElement("button");
+  btn.textContent = i;
+  if(i===currentPage){
+    btn.classList.add("current"); // Add this class
+    btn.disabled = true;          // Optional: keep disabled
+  }
+  btn.addEventListener("click", ()=>fetchReports(i));
+  pagination.appendChild(btn);
+}
     if(currentPage < totalPages){
       const nextBtn = document.createElement("button");
       nextBtn.textContent = "Next";
