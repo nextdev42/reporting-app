@@ -47,6 +47,22 @@ async function loadGreeting() {
 }
 loadGreeting();
 
+// ====== SWAHILI DATE PARSER ======
+function parseSwahiliDate(str) {
+  if (!str) return null;
+  const months = {
+    "Januari": 0, "Februari": 1, "Machi": 2, "Aprili": 3, "Mei": 4,
+    "Juni": 5, "Julai": 6, "Agosti": 7, "Septemba": 8, "Oktoba": 9,
+    "Novemba": 10, "Desemba": 11
+  };
+  const match = str.match(/(\d{1,2}) (\w+) (\d{4}), (\d{2}):(\d{2}):(\d{2})/);
+  if (!match) return null;
+  const [ , day, monthStr, year, hour, minute, second ] = match;
+  const month = months[monthStr];
+  if (month === undefined) return null;
+  return new Date(year, month, day, hour, minute, second);
+}
+
 // ====== FETCH REPORTS ======
 async function fetchReports(page = 1) {
   if (fetchTimeout) clearTimeout(fetchTimeout);
@@ -94,7 +110,8 @@ function renderReportCard(report) {
   const card = document.createElement("div");
   card.className = "report-card";
 
-  const formattedDate = report.timestamp ? new Date(report.timestamp).toLocaleString("sw-TZ", {
+  const reportDate = parseSwahiliDate(report.timestamp);
+  const formattedDate = reportDate ? reportDate.toLocaleString("sw-TZ", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -126,9 +143,15 @@ function renderReportCard(report) {
       <input type="text" placeholder="Andika maoni yako" name="commentText">
       <button>Add</button>
     </div>
+    <div class="thumbs">
+      <button class="thumb-up">👍 ${report.thumbs_up || 0}</button>
+      <button class="thumb-down">👎 ${report.thumbs_down || 0}</button>
+    </div>
   `;
 
   const commentsList = card.querySelector(".commentsList");
+
+  // ===== COMMENTS =====
   const commentBtn = card.querySelector(".comments button");
   commentBtn.addEventListener("click", async () => {
     const inp = card.querySelector("input[name='commentText']");
@@ -143,11 +166,20 @@ function renderReportCard(report) {
 
     inp.value = "";
     await fetchReports(currentPage);
-    const firstReportCard = reportsContainer.querySelector(".report-card");
-    if (firstReportCard) {
-      const newCommentsList = firstReportCard.querySelector(".commentsList");
-      if (newCommentsList) newCommentsList.scrollTop = newCommentsList.scrollHeight;
-    }
+    if (commentsList) commentsList.scrollTop = commentsList.scrollHeight;
+  });
+
+  // ===== THUMBS UP/DOWN =====
+  const thumbUpBtn = card.querySelector(".thumb-up");
+  const thumbDownBtn = card.querySelector(".thumb-down");
+
+  thumbUpBtn.addEventListener("click", async () => {
+    await fetch(`/api/reactions/${report.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "up" }) });
+    await fetchReports(currentPage);
+  });
+  thumbDownBtn.addEventListener("click", async () => {
+    await fetch(`/api/reactions/${report.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "down" }) });
+    await fetchReports(currentPage);
   });
 
   reportsContainer.appendChild(card);
