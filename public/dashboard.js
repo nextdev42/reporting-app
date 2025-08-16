@@ -1,33 +1,34 @@
-const toggleFormBtn = document.getElementById("toggleFormBtn");
-const reportFormSection = document.getElementById("reportFormSection");
-const reportForm = document.getElementById("reportForm");
-const formStatus = document.getElementById("formStatus");
+const toggleFormBtn    = document.getElementById("toggleFormBtn");
+const reportFormSection= document.getElementById("reportFormSection");
+const reportForm       = document.getElementById("reportForm");
+const formStatus       = document.getElementById("formStatus");
 const reportsContainer = document.getElementById("reportsContainer");
-const greeting = document.getElementById("greeting");
+const greeting         = document.getElementById("greeting");
 
-const clinicFilter = document.getElementById("clinicFilter");
-const usernameFilter = document.getElementById("usernameFilter");
-const searchFilter = document.getElementById("searchFilter");
-const startDateFilter = document.getElementById("startDate");
-const endDateFilter = document.getElementById("endDate");
+const clinicFilter     = document.getElementById("clinicFilter");
+const usernameFilter   = document.getElementById("usernameFilter");
+const searchFilter     = document.getElementById("searchFilter");
+const startDateFilter  = document.getElementById("startDate");
+const endDateFilter    = document.getElementById("endDate");
 
 toggleFormBtn.addEventListener("click", () => {
-  reportFormSection.style.display = reportFormSection.style.display === "none" ? "block" : "none";
-  toggleFormBtn.textContent = reportFormSection.style.display === "none" ? "Ongeza Ripoti" : "Ficha Fomu";
+  const show = reportFormSection.style.display === "none";
+  reportFormSection.style.display = show ? "block" : "none";
+  toggleFormBtn.textContent = show ? "Ficha Fomu" : "Ongeza Ripoti";
 });
 
 // Greeting
-async function loadGreeting() {
+async function loadGreeting(){
   const res = await fetch("/api/user");
-  const user = await res.json();
+  const user= await res.json();
   const now = new Date();
-  const t = new Date(now.getTime() + (3 * 60 + now.getTimezoneOffset()) * 60000);
-  const h = t.getHours();
-  let g = "Habari";
-  if (h >= 5 && h < 12) g = "Habari ya asubuhi";
-  else if (h >= 12 && h < 17) g = "Habari ya mchana";
-  else if (h >= 17 && h < 21) g = "Habari ya jioni";
-  else g = "Habari usiku";
+  const t   = new Date(now.getTime() + (3*60 + now.getTimezoneOffset())*60000);
+  const h   = t.getHours();
+  let g     = "Habari";
+  if(h>=5 && h<12) g="Habari ya asubuhi";
+  else if(h>=12 && h<17) g="Habari ya mchana";
+  else if(h>=17 && h<21) g="Habari ya jioni";
+  else g="Habari usiku";
   greeting.textContent = `${g} ${user.jina} ${user.kituo}`;
 }
 loadGreeting();
@@ -35,27 +36,33 @@ loadGreeting();
 let currentPage = 1;
 const reportsPerPage = 15;
 
-async function fetchReports(page = 1) {
+async function fetchReports(page = 1){
   currentPage = page;
-  const clinic = clinicFilter.value;
-  const username = usernameFilter.value.trim();
-  const search = searchFilter.value.trim();
+  
+  const clinic    = clinicFilter.value;
+  const username  = usernameFilter.value.trim();
+  const search    = searchFilter.value.trim();
   const startDate = startDateFilter.value;
-  const endDate = endDateFilter.value;
+  const endDate   = endDateFilter.value;
 
   reportsContainer.innerHTML = "Inapakia ripoti...";
 
-  const params = new URLSearchParams({ clinic, username, search, startDate, endDate, page, limit: reportsPerPage });
-  const res = await fetch("/api/reports?" + params.toString());
+  const params = new URLSearchParams({
+    clinic, username, search, startDate, endDate,
+    page, limit: reportsPerPage
+  });
+
+  const res  = await fetch("/api/reports?" + params.toString());
   const data = await res.json();
+
   reportsContainer.innerHTML = "";
 
-  if (!data.reports.length) {
-    reportsContainer.innerHTML = "<p>Hakuna ripoti bado.</p>";
+  if(!data.reports.length){
+    reportsContainer.innerHTML="<p>Hakuna ripoti bado.</p>";
     return;
   }
 
-  data.reports.forEach(report => {
+  data.reports.forEach(report=>{
     const card = document.createElement("div");
     card.className = "report-card";
     card.innerHTML = `
@@ -72,103 +79,103 @@ async function fetchReports(page = 1) {
       <div class="comments">
         <h4>Maoni:</h4>
         <div class="commentsList">
-          ${report.comments.map(c => `
-            <div class="comment-item">
-              <div class="comment-header">
-                <span class="username">${c.username} (${c.clinic})</span>
-                <span class="time">${c.timestamp}</span>
-              </div>
-              <p>${c.comment}</p>
-            </div>`).join('')}
+          ${report.comments.map(c=>`
+           <div class="comment-item">
+            <div class="comment-header">
+               <span class="username">${c.username} (${c.clinic})</span>
+               <span class="time">${c.timestamp}</span>
+            </div>
+            <p>${c.comment}</p>
+           </div>`).join('')}
         </div>
-        <input type="text" placeholder="Andika maoni yako" name="commentText">
-        <button>Add</button>
+        <input type="text" name="commentText" placeholder="Andika maoni yako">
+        <button>Tuma</button>
       </div>
     `;
-
-    // Thumbs up/down events
-    card.querySelector(".thumb-up").addEventListener("click", async () => {
-      const res = await fetch(`/api/reports/${report.id}/react`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "up" })
+  
+    // thumbs events
+    card.querySelector(".thumb-up").onclick  = async ()=>{
+      const r = await fetch(`/api/reports/${report.id}/react`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({type:"up"})
       });
-      const data = await res.json();
-      card.querySelector(".thumb-up span").textContent = data.thumbs_up;
-      card.querySelector(".thumb-down span").textContent = data.thumbs_down;
-    });
-
-    card.querySelector(".thumb-down").addEventListener("click", async () => {
-      const res = await fetch(`/api/reports/${report.id}/react`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "down" })
+      const d=await r.json();
+      card.querySelector(".thumb-up span").textContent = d.thumbs_up;
+      card.querySelector(".thumb-down span").textContent= d.thumbs_down;
+    };
+    card.querySelector(".thumb-down").onclick= async ()=>{
+      const r = await fetch(`/api/reports/${report.id}/react`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({type:"down"})
       });
-      const data = await res.json();
-      card.querySelector(".thumb-up span").textContent = data.thumbs_up;
-      card.querySelector(".thumb-down span").textContent = data.thumbs_down;
-    });
+      const d=await r.json();
+      card.querySelector(".thumb-up span").textContent = d.thumbs_up;
+      card.querySelector(".thumb-down span").textContent= d.thumbs_down;
+    };
 
-    // Comment event
-    const commentBtn = card.querySelector(".comments button");
-    commentBtn.addEventListener("click", async () => {
+    // comment event
+    card.querySelector(".comments button").onclick = async ()=>{
       const inp = card.querySelector("input[name='commentText']");
       const txt = inp.value.trim();
-      if (!txt) return alert("Andika maoni yako.");
-      await fetch(`/api/comments/${report.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comment: txt })
+      if(!txt) return alert("Andika maoni yako.");
+      await fetch(`/api/comments/${report.id}`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({comment:txt})
       });
-      inp.value = "";
+      inp.value="";
       fetchReports(currentPage);
-    });
+    };
 
     reportsContainer.appendChild(card);
   });
 
-  // Pagination
+  // ===== Pagination =====
   const pagination = document.createElement("div");
-  pagination.className = "pagination";
-
-  if (currentPage > 1) {
-    const prevBtn = document.createElement("button");
-    prevBtn.textContent = "<<< Kurasa ya Awali";
-    prevBtn.onclick = () => fetchReports(currentPage - 1);
-    pagination.appendChild(prevBtn);
+  pagination.className="pagination";
+  // previous
+  if(currentPage>1){
+    const prev = document.createElement("button");
+    prev.textContent="<<< Awali";
+    prev.onclick=()=>fetchReports(currentPage-1);
+    pagination.appendChild(prev);
   }
+  // show current page
+  const counter = document.createElement("span");
+  counter.textContent= ` Uk. ${currentPage} `;
+  pagination.appendChild(counter);
 
-  if (data.hasMore) {
-    const nextBtn = document.createElement("button");
-    nextBtn.textContent = "Kurasa Ifuatayo >>>";
-    nextBtn.onclick = () => fetchReports(currentPage + 1);
-    pagination.appendChild(nextBtn);
+  // next
+  if(data.hasMore){
+    const next = document.createElement("button");
+    next.textContent="Ifuatayo >>>";
+    next.onclick=()=>fetchReports(currentPage+1);
+    pagination.appendChild(next);
   }
 
   reportsContainer.appendChild(pagination);
 }
 
-// Filters
-clinicFilter.addEventListener("change", () => fetchReports(1));
-usernameFilter.addEventListener("input", () => fetchReports(1));
-searchFilter.addEventListener("input", () => fetchReports(1));
-startDateFilter.addEventListener("change", () => fetchReports(1));
-endDateFilter.addEventListener("change", () => fetchReports(1));
+// Filters trigger refresh
+clinicFilter.addEventListener("change", ()=>fetchReports(1));
+usernameFilter.addEventListener("input", ()=>fetchReports(1));
+searchFilter.addEventListener("input", ()=>fetchReports(1));
+startDateFilter.addEventListener("change", ()=>fetchReports(1));
+endDateFilter.addEventListener("change", ()=>fetchReports(1));
 
-// Submit new report
-reportForm.addEventListener("submit", async e => {
+// submit form
+reportForm.addEventListener("submit", async(e)=>{
   e.preventDefault();
-  formStatus.textContent = "Inatuma ripoti...";
+  formStatus.textContent="Inatuma ripoti...";
   const fd = new FormData(reportForm);
-  const res = await fetch("/submit", { method: "POST", body: fd });
-  if (!res.ok) {
-    formStatus.textContent = "Tatizo: " + await res.text();
+  const r  = await fetch("/submit",{method:"POST",body:fd});
+  if(!r.ok){
+    formStatus.textContent="Tatizo : "+await r.text();
     return;
   }
-  formStatus.textContent = "Ripoti imehifadhiwa!";
+  formStatus.textContent="Imehifadhiwa!";
   reportForm.reset();
   fetchReports(currentPage);
 });
 
-// Initial fetch
+// initial
 fetchReports();
