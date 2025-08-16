@@ -68,7 +68,9 @@ function parseSwahiliDate(str) {
 function formatDate(timestamp) {
   if (!timestamp) return "Haijulikani";
   let date = new Date(timestamp);
-  if (isNaN(date)) date = parseSwahiliDate(timestamp);
+  if (isNaN(date)) {
+    date = parseSwahiliDate(timestamp);
+  }
   if (!date) return "Haijulikani";
   return date.toLocaleString("sw-TZ", {
     day: "2-digit",
@@ -115,6 +117,7 @@ async function fetchReports(page = 1) {
 
       totalPages = data.totalPages;
 
+      // Sort newest first
       const sortedReports = data.reports.sort((a, b) => {
         const dateA = parseSwahiliDate(a.timestamp) || new Date(a.timestamp);
         const dateB = parseSwahiliDate(b.timestamp) || new Date(b.timestamp);
@@ -166,9 +169,11 @@ function renderReportCard(report) {
   `;
 
   const commentsList = card.querySelector(".commentsList");
+  const commentBtn = card.querySelector(".comments button");
+  const thumbUpBtn = card.querySelector(".thumb-up");
+  const thumbDownBtn = card.querySelector(".thumb-down");
 
   // ===== COMMENTS =====
-  const commentBtn = card.querySelector(".comments button");
   commentBtn.addEventListener("click", async () => {
     const inp = card.querySelector("input[name='commentText']");
     const txt = inp.value.trim();
@@ -184,7 +189,8 @@ function renderReportCard(report) {
       </div>
       <p>${txt}</p>
     `;
-    commentsList.prepend(newCommentDiv);
+    commentsList.appendChild(newCommentDiv);
+    commentsList.scrollTop = commentsList.scrollHeight;
     inp.value = "";
 
     try {
@@ -200,48 +206,48 @@ function renderReportCard(report) {
   });
 
   // ===== THUMBS UP/DOWN =====
-  const thumbUpBtn = card.querySelector(".thumb-up");
-  const thumbDownBtn = card.querySelector(".thumb-down");
-
-  if (report.username === currentUser.jina) {
+  // Disable thumbs if this is user's own report
+  if (report.username === currentUser.jina && report.clinic === currentUser.kituo) {
     thumbUpBtn.disabled = true;
     thumbDownBtn.disabled = true;
   } else {
     thumbUpBtn.addEventListener("click", async () => {
-      report.thumbs_up = (report.thumbs_up || 0) + 1;
-      thumbUpBtn.textContent = `👍 ${report.thumbs_up}`;
       try {
-        await fetch(`/api/reactions/${report.id}`, {
+        const res = await fetch(`/api/reactions/${report.id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ type: "up" })
         });
+        const data = await res.json();
+        report.thumbs_up = data.thumbs_up;
+        report.thumbs_down = data.thumbs_down;
+        thumbUpBtn.textContent = `👍 ${report.thumbs_up}`;
+        thumbDownBtn.textContent = `👎 ${report.thumbs_down}`;
       } catch (err) {
         alert("Tatizo ku-update thumbs up");
-        report.thumbs_up--;
-        thumbUpBtn.textContent = `👍 ${report.thumbs_up}`;
       }
     });
 
     thumbDownBtn.addEventListener("click", async () => {
-      report.thumbs_down = (report.thumbs_down || 0) + 1;
-      thumbDownBtn.textContent = `👎 ${report.thumbs_down}`;
       try {
-        await fetch(`/api/reactions/${report.id}`, {
+        const res = await fetch(`/api/reactions/${report.id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ type: "down" })
         });
+        const data = await res.json();
+        report.thumbs_up = data.thumbs_up;
+        report.thumbs_down = data.thumbs_down;
+        thumbUpBtn.textContent = `👍 ${report.thumbs_up}`;
+        thumbDownBtn.textContent = `👎 ${report.thumbs_down}`;
       } catch (err) {
         alert("Tatizo ku-update thumbs down");
-        report.thumbs_down--;
-        thumbDownBtn.textContent = `👎 ${report.thumbs_down}`;
       }
     });
   }
 
-  // Prepend report to top if new
-  reportsContainer.prepend(card);
+  reportsContainer.appendChild(card);
+  commentsList.scrollTop = commentsList.scrollHeight;
 }
 
 // ====== RENDER PAGINATION ======
@@ -298,12 +304,12 @@ reportForm.addEventListener("submit", async e => {
   try {
     const res = await fetch("/submit", { method: "POST", body: fd });
     if (!res.ok) throw new Error(await res.text());
-
-    const newReport = await res.json(); // assume API returns saved report object
-    renderReportCard(newReport);
-
+    const newReport = await res.json(); // <-- JSON from server
     formStatus.textContent = "Ripoti imehifadhiwa!";
     reportForm.reset();
+
+    // Render new report on top
+    renderReportCard(newReport);
     reportsContainer.scrollTop = 0;
   } catch (err) {
     formStatus.textContent = "Tatizo: " + err.message;
