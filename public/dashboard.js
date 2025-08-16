@@ -43,6 +43,8 @@ async function loadGreeting() {
 loadGreeting();
 
 // ====== FETCH REPORTS ======
+
+// ====== FETCH REPORTS ======
 async function fetchReports(page = 1) {
   if (fetchTimeout) clearTimeout(fetchTimeout);
   fetchTimeout = setTimeout(async () => {
@@ -51,8 +53,16 @@ async function fetchReports(page = 1) {
     const clinic = clinicFilter.value;
     const username = usernameFilter.value.trim();
     const search = searchFilter.value.trim();
-    const startDate = startDateFilter.value;
-    const endDate = endDateFilter.value;
+    let startDate = startDateFilter.value;
+    let endDate = endDateFilter.value;
+
+    // Format dates to ISO if provided
+    if (startDate) startDate = new Date(startDate).toISOString();
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23,59,59,999); // include the whole day
+      endDate = end.toISOString();
+    }
 
     reportsContainer.innerHTML = "Inapakia ripoti...";
 
@@ -80,6 +90,8 @@ async function fetchReports(page = 1) {
     renderPagination();
   }, 300);
 }
+
+    
 
 // ====== RENDER REPORT CARD ======
 function renderReportCard(report) {
