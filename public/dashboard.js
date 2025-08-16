@@ -1,4 +1,3 @@
-// public/dashboard.js
 const toggleFormBtn = document.getElementById("toggleFormBtn");
 const reportFormSection = document.getElementById("reportFormSection");
 const reportForm = document.getElementById("reportForm");
@@ -9,6 +8,9 @@ const greeting = document.getElementById("greeting");
 const clinicFilter = document.getElementById("clinicFilter");
 const usernameFilter = document.getElementById("usernameFilter");
 const searchFilter = document.getElementById("searchFilter");
+
+let currentPage = 1;
+let totalPages = 1;
 
 toggleFormBtn.addEventListener("click", () => {
   reportFormSection.style.display = reportFormSection.style.display==="none"?"block":"none";
@@ -31,18 +33,24 @@ async function loadGreeting(){
 loadGreeting();
 
 let fetchTimeout;
-async function fetchReports(){
+async function fetchReports(page = 1){
   if(fetchTimeout) clearTimeout(fetchTimeout);
   fetchTimeout = setTimeout(async ()=>{
+    currentPage = page;
     const clinic = clinicFilter.value;
     const username = usernameFilter.value.trim();
     const search = searchFilter.value.trim();
     reportsContainer.innerHTML = "Inapakia ripoti...";
-    const params = new URLSearchParams({clinic, username, search});
+    const params = new URLSearchParams({clinic, username, search, page, limit:15});
     const res = await fetch("/api/reports?"+params.toString());
     const data = await res.json();
     reportsContainer.innerHTML = "";
-    if(!data.reports.length){ reportsContainer.innerHTML="<p>Hakuna ripoti bado.</p>"; return; }
+    if(!data.reports.length){ 
+      reportsContainer.innerHTML="<p>Hakuna ripoti bado.</p>"; 
+      return; 
+    }
+
+    totalPages = data.totalPages;
 
     data.reports.forEach(report=>{
       const card = document.createElement("div");
@@ -76,19 +84,45 @@ async function fetchReports(){
         if(!txt) return alert("Andika maoni yako.");
         await fetch(`/api/comments/${report.id}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({comment:txt}) });
         inp.value="";
-        fetchReports();
+        fetchReports(currentPage);
       });
       reportsContainer.appendChild(card);
     });
 
+    // Scroll comments to bottom
     document.querySelectorAll('.commentsList').forEach(list=>{ list.scrollTop=list.scrollHeight; });
-  }, 300); // 300ms debounce
+
+    // Add pagination
+    const pagination = document.createElement("div");
+    pagination.className = "pagination";
+    if(currentPage > 1){
+      const prevBtn = document.createElement("button");
+      prevBtn.textContent = "Prev";
+      prevBtn.addEventListener("click", ()=>fetchReports(currentPage-1));
+      pagination.appendChild(prevBtn);
+    }
+    for(let i=1;i<=totalPages;i++){
+      const btn = document.createElement("button");
+      btn.textContent = i;
+      if(i===currentPage) btn.disabled = true;
+      btn.addEventListener("click", ()=>fetchReports(i));
+      pagination.appendChild(btn);
+    }
+    if(currentPage < totalPages){
+      const nextBtn = document.createElement("button");
+      nextBtn.textContent = "Next";
+      nextBtn.addEventListener("click", ()=>fetchReports(currentPage+1));
+      pagination.appendChild(nextBtn);
+    }
+    reportsContainer.appendChild(pagination);
+
+  }, 300);
 }
 
 // Live filter events
-clinicFilter.addEventListener("change", fetchReports);
-usernameFilter.addEventListener("input", fetchReports);
-searchFilter.addEventListener("input", fetchReports);
+clinicFilter.addEventListener("change", ()=>fetchReports(1));
+usernameFilter.addEventListener("input", ()=>fetchReports(1));
+searchFilter.addEventListener("input", ()=>fetchReports(1));
 
 fetchReports();
 
@@ -100,5 +134,5 @@ reportForm.addEventListener("submit", async e=>{
   if(!res.ok){ formStatus.textContent="Tatizo: "+await res.text(); return; }
   formStatus.textContent="Ripoti imehifadhiwa!";
   reportForm.reset();
-  fetchReports();
+  fetchReports(currentPage);
 });
