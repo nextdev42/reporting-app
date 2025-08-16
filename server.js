@@ -76,13 +76,14 @@ async function initDatabase() {
     `);
 
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS reactions (
-        id SERIAL PRIMARY KEY,
-        report_id INTEGER REFERENCES reports(id) ON DELETE CASCADE,
-        user_id INTEGER REFERENCES users(id),
-        type TEXT CHECK(type IN ('up','down')),
-        UNIQUE(report_id, user_id)
-    `);
+  CREATE TABLE IF NOT EXISTS reactions (
+    id SERIAL PRIMARY KEY,
+    report_id INTEGER REFERENCES reports(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id),
+    type TEXT CHECK(type IN ('up','down')),
+    UNIQUE(report_id, user_id)
+  );
+`);
 
     console.log("✅ Database initialized");
   } catch (err) {
