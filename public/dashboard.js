@@ -180,6 +180,8 @@ function renderReportCard(report) {
     if (!txt) return alert("Andika maoni yako.");
 
     const now = new Date().toISOString();
+
+    // Optimistically append comment
     const newCommentDiv = document.createElement("div");
     newCommentDiv.className = "comment-item";
     newCommentDiv.innerHTML = `
@@ -194,11 +196,21 @@ function renderReportCard(report) {
     inp.value = "";
 
     try {
-      await fetch(`/api/comments/${report.id}`, {
+      // Send to server
+      const res = await fetch(`/api/comments/${report.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ comment: txt })
       });
+      if (!res.ok) throw new Error(await res.text());
+
+      // Update local report.comments array
+      const savedComment = await res.json();
+      report.comments.push(savedComment);
+
+      // Optionally, update DOM timestamp if server differs
+      newCommentDiv.querySelector(".time").textContent = formatDate(savedComment.timestamp);
+
     } catch (err) {
       alert("Tatizo ku-post comment");
       newCommentDiv.remove();
