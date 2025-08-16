@@ -1,26 +1,39 @@
 // dashboard.js
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
   const greetingEl = document.getElementById("greeting");
   const reportsContainer = document.getElementById("reportsContainer");
   const reportFormSection = document.getElementById("reportFormSection");
   const toggleFormBtn = document.getElementById("toggleFormBtn");
 
-  // Toggle report form
+  // Toggle report form visibility
   toggleFormBtn.addEventListener("click", () => {
     reportFormSection.style.display = reportFormSection.style.display === "none" ? "block" : "none";
   });
 
-  // Format timestamp for Swahili TZ
+  // Load dynamic greeting
+  async function loadGreeting(){
+    const res = await fetch("/api/user");
+    const user = await res.json();
+    const now = new Date();
+    const t = new Date(now.getTime() + (3*60 + now.getTimezoneOffset())*60000); // Tanzania +3
+    const h = t.getHours();
+    let g = "Habari";
+    if(h>=5&&h<12) g="Habari ya asubuhi";
+    else if(h>=12&&h<17) g="Habari ya mchana";
+    else if(h>=17&&h<21) g="Habari ya jioni";
+    else g="Habari usiku";
+    greetingEl.textContent = `${g} ${user.jina} ${user.kituo}`;
+  }
+  loadGreeting();
+
+  // Format timestamp
   function formatTimestamp(ts){
     const date = new Date(ts);
-    const options = { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit', second:'2-digit', hour12:false };
-    return date.toLocaleString('sw-TZ', options);
+    return date.toLocaleString('sw-TZ', { 
+      day:'2-digit', month:'long', year:'numeric', 
+      hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false 
+    });
   }
-
-  // Fetch user info
-  const userRes = await fetch("/api/user");
-  const user = await userRes.json();
-  greetingEl.textContent = `Habari ${user.jina} kutoka ${user.kituo}`;
 
   // Fetch and display reports
   async function fetchReports() {
@@ -28,10 +41,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const username = document.getElementById("usernameFilter").value;
     const search = document.getElementById("searchFilter").value;
 
-    const url = `/api/reports?clinic=${clinic}&username=${username}&search=${search}`;
-    const res = await fetch(url);
+    const res = await fetch(`/api/reports?clinic=${clinic}&username=${username}&search=${search}`);
     const data = await res.json();
-
     reportsContainer.innerHTML = "";
 
     data.reports.forEach(report => {
@@ -64,21 +75,19 @@ document.addEventListener("DOMContentLoaded", async () => {
           <button class="comment-btn">Tuma</button>
         </div>
       `;
-
       reportsContainer.appendChild(div);
     });
 
     attachEventListeners();
   }
 
-  // Attach event listeners for thumbs and comments
+  // Event listeners for thumbs and comments
   function attachEventListeners() {
     document.querySelectorAll(".thumb-up, .thumb-down").forEach(btn => {
       btn.onclick = async e => {
         const reportEl = e.target.closest(".report");
         const reportId = reportEl.dataset.id;
         const type = btn.classList.contains("thumb-up") ? 'up' : 'down';
-
         const res = await fetch(`/api/reports/${reportId}/react`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -96,7 +105,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const reportId = reportEl.dataset.id;
         const input = reportEl.querySelector(".comment-input");
         const comment = input.value.trim();
-        if (!comment) return;
+        if(!comment) return;
 
         await fetch(`/api/comments/${reportId}`, {
           method: "POST",
