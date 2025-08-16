@@ -16,6 +16,7 @@ const endDateFilter = document.getElementById("endDate");
 let currentPage = 1;
 let totalPages = 1;
 let fetchTimeout;
+let currentUser = {};
 
 // ====== TOGGLE REPORT FORM ======
 toggleFormBtn.addEventListener("click", () => {
@@ -24,11 +25,11 @@ toggleFormBtn.addEventListener("click", () => {
   toggleFormBtn.textContent = isHidden ? "Ficha Fomu" : "Ongeza Ripoti";
 });
 
-// ====== GREETING ======
+// ====== GREETING & CURRENT USER ======
 async function loadGreeting() {
   try {
     const res = await fetch("/api/user");
-    const user = await res.json();
+    currentUser = await res.json();
 
     const now = new Date();
     const localTime = new Date(now.getTime() + (3 * 60 + now.getTimezoneOffset()) * 60000);
@@ -40,42 +41,17 @@ async function loadGreeting() {
     else if (hour >= 17 && hour < 21) greeting = "Habari ya jioni";
     else greeting = "Habari usiku";
 
-    greetingEl.textContent = `${greeting} ${user.jina} ${user.kituo}`;
+    greetingEl.textContent = `${greeting} ${currentUser.jina} ${currentUser.kituo}`;
   } catch (err) {
     console.error("Error loading greeting:", err);
   }
 }
 loadGreeting();
 
-// ====== DATE PARSER ======
-function parseAnyDate(str) {
-  if (!str) return null;
-
-  // Try ISO format first
-  let date = new Date(str);
-  if (!isNaN(date)) return date;
-
-  // Try Swahili format: 16 Agosti 2025, 22:59:53
-  const months = {
-    "Januari":0,"Februari":1,"Machi":2,"Aprili":3,"Mei":4,
-    "Juni":5,"Julai":6,"Agosti":7,"Septemba":8,"Oktoba":9,
-    "Novemba":10,"Desemba":11
-  };
-  const match = str.match(/(\d{1,2}) (\w+) (\d{4}), (\d{2}):(\d{2}):(\d{2})/);
-  if (!match) return null;
-
-  const [ , day, monthStr, year, hour, minute, second ] = match;
-  const month = months[monthStr];
-  if (month === undefined) return null;
-
-  return new Date(year, month, parseInt(day), hour, minute, second);
-}
-
 // ====== FORMAT DATE ======
 function formatDate(timestamp) {
-  const date = parseAnyDate(timestamp);
-  if (!date || isNaN(date)) return "Haijulikani";
-
+  if (!timestamp) return "Haijulikani";
+  const date = new Date(timestamp);
   return date.toLocaleString("sw-TZ", {
     day: "2-digit",
     month: "long",
@@ -120,7 +96,10 @@ async function fetchReports(page = 1) {
       }
 
       totalPages = data.totalPages;
-      data.reports.forEach(renderReportCard);
+
+      // Sort newest first
+      const sortedReports = data.reports.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      sortedReports.forEach(renderReportCard);
       renderPagination();
     } catch (err) {
       reportsContainer.innerHTML = "<p>Tatizo kupakua ripoti.</p>";
@@ -173,12 +152,13 @@ function renderReportCard(report) {
     const txt = inp.value.trim();
     if (!txt) return alert("Andika maoni yako.");
 
+    // Optimistically append comment
     const now = new Date().toISOString();
     const newCommentDiv = document.createElement("div");
     newCommentDiv.className = "comment-item";
     newCommentDiv.innerHTML = `
       <div class="comment-header">
-        <span class="username">Wewe</span>
+        <span class="username">Wewe (${currentUser.kituo})</span>
         <span class="time">${formatDate(now)}</span>
       </div>
       <p>${txt}</p>
@@ -204,43 +184,37 @@ function renderReportCard(report) {
   const thumbDownBtn = card.querySelector(".thumb-down");
 
   thumbUpBtn.addEventListener("click", async () => {
-    let count = parseInt(thumbUpBtn.textContent.split(" ")[1]) || 0;
-    count++;
-    thumbUpBtn.textContent = `👍 ${count}`;
-
     try {
       await fetch(`/api/reactions/${report.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "up" })
       });
+      // Update display
+      report.thumbs_up = (report.thumbs_up || 0) + 1;
+      thumbUpBtn.textContent = `👍 ${report.thumbs_up}`;
     } catch (err) {
-      count--;
-      thumbUpBtn.textContent = `👍 ${count}`;
       alert("Tatizo ku-update thumbs up");
     }
   });
 
   thumbDownBtn.addEventListener("click", async () => {
-    let count = parseInt(thumbDownBtn.textContent.split(" ")[1]) || 0;
-    count++;
-    thumbDownBtn.textContent = `👎 ${count}`;
-
     try {
       await fetch(`/api/reactions/${report.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "down" })
       });
+      // Update display
+      report.thumbs_down = (report.thumbs_down || 0) + 1;
+      thumbDownBtn.textContent = `👎 ${report.thumbs_down}`;
     } catch (err) {
-      count--;
-      thumbDownBtn.textContent = `👎 ${count}`;
       alert("Tatizo ku-update thumbs down");
     }
   });
 
   reportsContainer.appendChild(card);
-  if (commentsList) commentsList.scrollTop = commentsList.scrollHeight;
+  commentsList.scrollTop = commentsList.scrollHeight;
 }
 
 // ====== RENDER PAGINATION ======
@@ -299,7 +273,7 @@ reportForm.addEventListener("submit", async e => {
     if (!res.ok) throw new Error(await res.text());
     formStatus.textContent = "Ripoti imehifadhiwa!";
     reportForm.reset();
-    await fetchReports(1);
+    await fetchReports(1); // newest report on top
     reportsContainer.scrollTop = 0;
   } catch (err) {
     formStatus.textContent = "Tatizo: " + err.message;
