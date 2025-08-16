@@ -174,48 +174,50 @@ function renderReportCard(report) {
   const thumbDownBtn = card.querySelector(".thumb-down");
 
   // ===== COMMENTS =====
-  commentBtn.addEventListener("click", async () => {
-    const inp = card.querySelector("input[name='commentText']");
-    const txt = inp.value.trim();
-    if (!txt) return alert("Andika maoni yako.");
+  
 
-    const now = new Date().toISOString();
+    // ===== COMMENTS (prepend newest at top) =====
+commentBtn.addEventListener("click", async () => {
+  const inp = card.querySelector("input[name='commentText']");
+  const txt = inp.value.trim();
+  if (!txt) return alert("Andika maoni yako.");
 
-    // Optimistically append comment
-    const newCommentDiv = document.createElement("div");
-    newCommentDiv.className = "comment-item";
-    newCommentDiv.innerHTML = `
-      <div class="comment-header">
-        <span class="username">Wewe (${currentUser.kituo})</span>
-        <span class="time">${formatDate(now)}</span>
-      </div>
-      <p>${txt}</p>
-    `;
-    commentsList.appendChild(newCommentDiv);
-    commentsList.scrollTop = commentsList.scrollHeight;
-    inp.value = "";
+  // Optimistically insert placeholder (at the top)
+  const tempDiv = document.createElement("div");
+  tempDiv.className = "comment-item";
+  tempDiv.innerHTML = `
+    <div class="comment-header">
+      <span class="username">Wewe (${currentUser.kituo})</span>
+      <span class="time">${formatDate(new Date().toISOString())}</span>
+    </div>
+    <p>${txt}</p>
+  `;
+  commentsList.prepend(tempDiv);
+  inp.value = "";
 
-    try {
-      // Send to server
-      const res = await fetch(`/api/comments/${report.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comment: txt })
-      });
-      if (!res.ok) throw new Error(await res.text());
+  try {
+    const res = await fetch(`/api/comments/${report.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment: txt })
+    });
+    if (!res.ok) throw new Error(await res.text());
 
-      // Update local report.comments array
-      const savedComment = await res.json();
-      report.comments.push(savedComment);
+    // Server should respond with new comment (id, username, clinic, timestamp, ...)
+    const saved = await res.json();
 
-      // Optionally, update DOM timestamp if server differs
-      newCommentDiv.querySelector(".time").textContent = formatDate(savedComment.timestamp);
+    // Update timestamp & username in DOM
+    tempDiv.querySelector(".username").textContent = `${saved.username} (${saved.clinic})`;
+    tempDiv.querySelector(".time").textContent = formatDate(saved.timestamp);
 
-    } catch (err) {
-      alert("Tatizo ku-post comment");
-      newCommentDiv.remove();
-    }
-  });
+    // keep local in-sync
+    report.comments.unshift(saved);
+  } catch (err) {
+    alert("Tatizo ku-post comment");
+    tempDiv.remove();
+  }
+});
+
 
   // ===== THUMBS UP/DOWN =====
   if (report.username === currentUser.jina && report.clinic === currentUser.kituo) {
