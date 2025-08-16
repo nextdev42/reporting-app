@@ -1,59 +1,60 @@
 <!DOCTYPE html>
 <html lang="sw">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashibodi ya Ripoti za Kliniki</title>
-  <link rel="stylesheet" href="dashboard.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashibodi ya Ripoti za Kliniki</title>
+<link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
-  <!-- NAVIGATION -->
-  <nav>
-    <h1>Dashibodi ya Ripoti za Kliniki</h1>
-    <div class="nav-actions">
-      <button id="toggleFormBtn">Ongeza Ripoti</button>
-      <button onclick="location.href='/logout'">Toka</button>
-    </div>
-  </nav>
+<nav>
+  <h1>Dashibodi ya Ripoti za Kliniki</h1>
+  <div class="nav-actions">
+    <button id="toggleFormBtn">Ongeza Ripoti</button>
+    <button onclick="location.href='/logout'">Toka</button>
+  </div>
+</nav>
 
-  <!-- MAIN CONTAINER -->
-  <div class="container">
-    <!-- GREETING -->
-    <div class="greeting" id="greeting">Habari...</div>
+<div class="container">
+  <div class="greeting" id="greeting">Habari...</div>
 
-    <!-- ADD REPORT FORM -->
-    <div class="form-section" id="reportFormSection" style="display:none;">
-      <h2>Ongeza Ripoti</h2>
-      <form id="reportForm">
-        <input type="text" name="title" placeholder="Kichwa" required>
-        <textarea name="description" placeholder="Maelezo" required></textarea>
-        <input type="file" name="image" accept="image/*">
-        <button type="submit" class="submit-btn">Tuma Ripoti</button>
-      </form>
-      <p id="formStatus"></p>
-    </div>
-
-    <!-- FILTERS -->
-    <div class="form-section">
-      <h2>Chuja na Tafuta</h2>
-      <select id="clinicFilter">
-        <option value="">Onyesha Zote</option>
-        <option value="Kisiwani">Kisiwani</option>
-        <option value="Mikwambe">Mikwambe</option>
-        <option value="Jirambe">Jirambe</option>
-        <option value="Kibada">Kibada</option>
-      </select>
-      <input type="text" id="usernameFilter" placeholder="Tafuta jina la mtumiaji">
-      <input type="text" id="searchFilter" placeholder="Tafuta maneno (kichwa, maelezo, maoni)">
-    </div>
-
-    <!-- REPORTS SECTION -->
-    <div class="reports-section">
-      <h2>Ripoti Zilizowasilishwa</h2>
-      <div id="reportsContainer"></div>
-    </div>
+  <!-- Report Form -->
+  <div class="form-section" id="reportFormSection" style="display:none;">
+    <h2>Ongeza Ripoti</h2>
+    <form id="reportForm">
+      <input type="text" name="title" placeholder="Kichwa" required>
+      <textarea name="description" placeholder="Maelezo" required></textarea>
+      <input type="file" name="image" accept="image/*">
+      <button type="submit" class="submit-btn">Tuma Ripoti</button>
+    </form>
+    <p id="formStatus"></p>
   </div>
 
-  <script src="dashboard.js"></script>
+  <!-- Filters -->
+  <div class="form-section">
+    <h2>Chuja na Tafuta</h2>
+    <select id="clinicFilter">
+      <option value="">Onyesha Zote</option>
+      <option value="Kisiwani">Kisiwani</option>
+      <option value="Mikwambe">Mikwambe</option>
+      <option value="Jirambe">Jirambe</option>
+      <option value="Kibada">Kibada</option>
+    </select>
+    <input type="text" id="usernameFilter" placeholder="Tafuta jina la mtumiaji">
+    <input type="text" id="searchFilter" placeholder="Tafuta maneno (kichwa, maelezo, maoni)">
+    <label for="startDate">Tarehe Kuanzia:</label>
+    <input type="date" id="startDate">
+    <label for="endDate">Tarehe Hadi:</label>
+    <input type="date" id="endDate">
+  </div>
+
+  <!-- Reports -->
+  <div class="reports-section">
+    <h2>Ripoti Zilizowasilishwa</h2>
+    <div id="reportsContainer"></div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
 </body>
 </html>
