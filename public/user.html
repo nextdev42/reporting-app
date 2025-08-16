@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8">
+  <title>Taarifa Zangu</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+<nav>
+  <h1>Ripoti Zangu</h1>
+  <div class="nav-actions">
+    <button onclick="location.href='/dashboard.html'">Dashboard</button>
+    <button onclick="location.href='/logout'">Toka</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="greeting" id="greeting">Habari...</div>
+
+  <div class="form-section">
+    <label>Toka (YYYY-MM-DD) <input type="date" id="start"/></label>
+    <label>Mpaka <input type="date" id="end"/></label>
+    <button onclick="fetchMine()">Tafuta</button>
+  </div>
+  <div id="myReports"></div>
+</div>
+
+<script>
+async function fetchMine(){
+  const s=document.getElementById('start').value;
+  const e=document.getElementById('end').value;
+  const res=await fetch(`/api/user/reports?start=${s}&end=${e}`);
+  const data=await res.json();
+  const wrap=document.getElementById('myReports');
+  wrap.innerHTML="";
+  if(!data.length){wrap.innerHTML="<p>Hakuna ripoti zako.</p>";return;}
+  data.forEach(r=>{
+    const div=document.createElement('div');
+    div.className="report-card";
+    div.innerHTML=`
+      <p><strong>Muda:</strong> ${r.timestamp}</p>
+      <p><strong>Kichwa:</strong> ${r.title}</p>
+      <p><strong>Maelezo:</strong> ${r.description}</p>
+      <p>👍 ${r.thumbs_up||0}  👎 ${r.thumbs_down||0}</p>
+      ${r.image?`<img src="${r.image}" />`:""}`;
+    wrap.appendChild(div);
+  });
+}
+
+async function loadGreeting(){
+  const r=await fetch("/api/user");const user=await r.json();
+  document.getElementById("greeting").textContent=`Ripoti za ${user.jina} (${user.kituo})`;
+}
+loadGreeting();
+fetchMine();
+</script>
+</body>
+</html>
