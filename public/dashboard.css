@@ -312,3 +312,151 @@ form .status {
   position: absolute;
   width: 100%;
 }
+
+/* ========== THUMBS UP / DOWN STYLES ========== */
+.report .thumb-up,
+.report .thumb-down {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  margin-right: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f0f0f0;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.report .thumb-up:hover {
+  background: #c8e6c9;
+  transform: translateY(-1px);
+}
+
+.report .thumb-down:hover {
+  background: #ffcdd2;
+  transform: translateY(-1px);
+}
+
+.report .thumb-up .count,
+.report .thumb-down .count {
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ========== REPORT CARD ENHANCEMENTS ========== */
+.report {
+  background: #ffffff;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.2s, box-shadow 0.3s;
+}
+
+.report:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+}
+
+.report h3 {
+  margin: 0 0 6px 0;
+  color: #2e7d32;
+}
+
+.report p {
+  margin: 4px 0;
+  line-height: 1.4;
+  color: #555;
+}
+
+.report img.report-img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+/* COMMENTS SECTION */
+.comments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.commentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 6px;
+}
+
+.comment-item {
+  background: #e8f5e9;
+  padding: 10px 14px;
+  border-radius: 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  font-size: 0.9rem;
+}
+
+.comment-input, .comment-btn {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+}
+
+.comment-input {
+  flex: 1;
+}
+
+.comment-btn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  margin-left: 6px;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.comment-btn:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+}
+
+.comments form {
+  display: flex;
+  gap: 6px;
+}
+
+/* RESPONSIVE */
+@media (max-width:600px){
+  .report {
+    padding: 15px;
+  }
+
+  .thumb-up, .thumb-down {
+    padding: 5px 8px;
+    font-size: 0.9rem;
+  }
+
+  .comments input[type="text"], .comments button {
+    width: 100%;
+    margin-bottom: 6px;
+  }
+
+  .comments form {
+    flex-direction: column;
+  }
+
+  .comment-btn {
+    margin-left: 0;
+  }
+}
