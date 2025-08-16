@@ -1,54 +1,172 @@
-<!-- dashboard.html -->
 <!DOCTYPE html>
 <html lang="sw">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashibodi ya Ripoti za Kliniki</title>
-<link rel="stylesheet" href="dashboard.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashibodi ya Ripoti za Kliniki</title>
+  <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
-<nav>
-  <h1>Dashibodi ya Ripoti za Kliniki</h1>
-  <div class="nav-actions">
-    <button id="toggleFormBtn">Ongeza Ripoti</button>
-    <button onclick="location.href='/logout'">Toka</button>
+  <nav>
+    <h1>Dashibodi ya Ripoti za Kliniki</h1>
+    <div class="nav-actions">
+      <button onclick="window.location='/user.html'">Ripoti Zangu</button>
+      <button id="toggleFormBtn">Ongeza Ripoti</button>
+      <button onclick="location.href='/logout'">Toka</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="greeting" id="greeting">Habari...</div>
+
+    <!-- FILTERS -->
+    <div class="form-section">
+      <label>
+         Kituo:
+         <select id="clinicFilter">
+           <option value="">Onesha zote</option>
+           <option value="Mikwambe">Mikwambe</option>
+           <option value="Jirambe">Jirambe</option>
+           <option value="Kibada">Kibada</option>
+           <option value="Kisiwani">Kisiwani</option>
+         </select>
+      </label>
+      <label>
+         Mtumiaji:
+         <input type="text" id="nameFilter" placeholder="mf: Faraja">
+      </label>
+      <label>
+         Tafuta:
+         <input type="text" id="searchFilter" placeholder="tafuta kichwa/maelezo/maoni...">
+      </label>
+      <button onclick="fetchReports()">Tafuta</button>
+    </div>
+
+    <!-- Add Report Form -->
+    <div class="form-section" id="reportFormSection" style="display:none;">
+      <h2>Ongeza Ripoti</h2>
+      <form id="reportForm">
+        <input type="text" name="title" placeholder="Kichwa" required>
+        <textarea name="description" placeholder="Maelezo" required></textarea>
+        <input type="file" name="image" accept="image/*">
+        <button type="submit" class="submit-btn">Tuma Ripoti</button>
+      </form>
+      <p id="formStatus"></p>
+    </div>
+
+    <div class="reports-section">
+      <h2>Ripoti Zilizowasilishwa</h2>
+      <div id="reportsContainer"></div>
+      <div id="pagination"></div>
+    </div>
   </div>
-</nav>
 
-<div class="container">
-  <div class="greeting" id="greeting">Habari...</div>
+  <script>
+    const toggleFormBtn=document.getElementById("toggleFormBtn");
+    const reportFormSection=document.getElementById("reportFormSection");
+    toggleFormBtn.addEventListener("click",()=>{
+      reportFormSection.style.display=reportFormSection.style.display==="none"?"block":"none";
+      toggleFormBtn.textContent= reportFormSection.style.display==="none"?"Ongeza Ripoti":"Ficha Fomu";
+    });
 
-  <div class="form-section" id="reportFormSection" style="display:none;">
-    <h2>Ongeza Ripoti</h2>
-    <form id="reportForm">
-      <input type="text" name="title" placeholder="Kichwa" required>
-      <textarea name="description" placeholder="Maelezo" required></textarea>
-      <input type="file" name="image" accept="image/*">
-      <button type="submit" class="submit-btn">Tuma Ripoti</button>
-    </form>
-    <p id="formStatus"></p>
-  </div>
+    async function loadGreeting(){
+      const r=await fetch("/api/user");const user=await r.json();
+      const now=new Date();const t=new Date(now.getTime()+(3*60+now.getTimezoneOffset())*60000);
+      const h=t.getHours();let text="Habari";if(h>=5&&h<12)text="Habari ya asubuhi";else if(h>=12&&h<17)text="Habari ya mchana";else if(h>=17&&h<21)text="Habari ya jioni";else text="Habari usiku";
+      document.getElementById("greeting").textContent=`${text} ${user.jina} ${user.kituo}`;
+    }loadGreeting();
 
-  <div class="form-section">
-    <h2>Chuja na Tafuta</h2>
-    <select id="clinicFilter">
-      <option value="">Onyesha Zote</option>
-      <option value="Kisiwani">Kisiwani</option>
-      <option value="Mikwambe">Mikwambe</option>
-      <option value="Jirambe">Jirambe</option>
-      <option value="Kibada">Kibada</option>
-    </select>
-    <input type="text" id="usernameFilter" placeholder="Tafuta jina la mtumiaji">
-    <input type="text" id="searchFilter" placeholder="Tafuta maneno (kichwa, maelezo, maoni)">
-  </div>
+    let currentPage=1;
+    async function fetchReports(page=1){
+      currentPage=page;
+      const clinic=document.getElementById("clinicFilter").value;
+      const username=document.getElementById("nameFilter").value;
+      const search=document.getElementById("searchFilter").value;
 
-  <div class="reports-section">
-    <h2>Ripoti Zilizowasilishwa</h2>
-    <div id="reportsContainer"></div>
-  </div>
-</div>
+      const res = await fetch(`/api/reports?page=${page}&clinic=${clinic}&username=${username}&search=${search}`);
+      const data = await res.json();
+      const container=document.getElementById("reportsContainer");
+      container.innerHTML="";
 
-<script src="dashboard.js"></script>
+      if(!data.reports.length){ container.innerHTML="<p>Hakuna ripoti...</p>"; return;}
+
+      data.reports.forEach(r=>{
+        const div=document.createElement("div");
+        div.className="report-card";
+        div.innerHTML=`
+          <p><strong>Muda:</strong> ${r.timestamp}</p>
+          <p><strong>Mtumiaji:</strong> ${r.username}</p>
+          <p><strong>Kituo:</strong> ${r.clinic}</p>
+          <p><strong>Kichwa:</strong> ${r.title}</p>
+          <p><strong>Maelezo:</strong> ${r.description}</p>
+          ${r.image?`<img src="${r.image}">`:""}
+          <div>
+             <button onclick="vote(${r.id},1)">👍 ${r.thumbs_up||0}</button>
+             <button onclick="vote(${r.id},-1)">👎 ${r.thumbs_down||0}</button>
+          </div>
+          <div class="comments">
+            <h4>Maoni:</h4>
+            <div class="commentsList">
+              ${r.comments.map(c=>`
+                <div class="comment-item">
+                  <div class="comment-header">
+                    <span class="username">${c.username} (${c.clinic})</span>
+                    <span class="time">${c.timestamp}</span>
+                  </div>
+                  <p>${c.comment}</p>
+                </div>`).join("")}
+            </div>
+            <input type="text" name="commentText" placeholder="Andika maoni yako">
+            <button onclick="addComment(${r.id}, this)">Tuma</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      // pagination
+      const pag=document.getElementById("pagination");
+      pag.innerHTML="";
+      for(let p=1;p<=data.totalPages;p++){
+        const b=document.createElement("button");
+        b.textContent=p;
+        b.style.fontWeight=p===data.page?"bold":"normal";
+        b.onclick=()=>fetchReports(p);
+        pag.appendChild(b);
+      }
+    }
+    fetchReports();
+
+    async function addComment(reportId, btn){
+      const card=btn.closest(".report-card");
+      const input=card.querySelector("input[name='commentText']");
+      const val=input.value.trim();
+      if(!val) return alert("Andika maoni.");
+      await fetch(`/api/comments/${reportId}`,{
+        method:"POST",
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({comment:val})
+      });
+      input.value="";
+      fetchReports(currentPage);
+    }
+
+    async function vote(id,v){
+      await fetch(`/api/vote/${id}`,{
+        method:"POST",
+        headers:{'Content-Type':'application/json'}, body:JSON.stringify({vote:v})
+      });
+      fetchReports(currentPage);
+    }
+
+    // submit report
+    const reportForm=document.getElementById("reportForm");
+    reportForm.addEventListener("submit",async e=>{
+      e.preventDefault();
+      const fd=new FormData(reportForm);
+      const r=await fetch("/submit",{method:"POST",body:fd});
+      reportForm.reset();
+      fetchReports(1);
+    });
+  </script>
 </body>
 </html>
