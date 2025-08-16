@@ -154,25 +154,20 @@ app.get("/logout", (req,res)=>{
 // User info
 app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req.session.kituo}));
 
-// Submit report
-app.post("/submit", auth, upload.single("image"), async (req,res)=>{
+// ====== Submit report ======
+app.post("/submit", auth, upload.single("image"), async (req, res) => {
   const { title, description } = req.body;
-  if(!title||!description) return res.status(400).send("Jaza title na description.");
-  let imageUrl="";
-  if(req.file){
-    try{ 
-      const uploadResult = await cloudinary.uploader.upload(req.file.path,{folder:"clinic-reports"}); 
-      imageUrl=uploadResult.secure_url; 
-    }
-    catch(err){ console.error("Cloudinary error:",err); }
-  }
-  await pool.query(
-    "INSERT INTO reports(timestamp,user_id,title,description,image) VALUES($1,$2,$3,$4,$5)",
-    [getTanzaniaTimestamp(), req.session.userId, title, description, imageUrl]
-  );
-  res.redirect("/dashboard.html");
-});
+  if (!title || !description) return res.status(400).send("Jaza title na description.");
 
+  let imageUrl = "";
+  if (req.file) {
+    try {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, { folder: "clinic-reports" });
+      imageUrl = uploadResult.secure_url;
+    } catch (err) {
+      console.error("Cloudinary error:", err);
+    }
+  }
 // Get reports with filtering, search, pagination, comments, reactions
 app.get("/api/reports", auth, async (req,res)=>{
   try {
