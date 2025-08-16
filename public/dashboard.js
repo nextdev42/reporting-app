@@ -275,7 +275,7 @@ reportForm.addEventListener("submit", async e => {
     if (!res.ok) throw new Error(await res.text());
     formStatus.textContent = "Ripoti imehifadhiwa!";
     reportForm.reset();
-    await fetchReports(1); // show newest report first
+    await fetchReports(1);
     reportsContainer.scrollTop = 0;
   } catch (err) {
     formStatus.textContent = "Tatizo: " + err.message;
