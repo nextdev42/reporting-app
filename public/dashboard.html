@@ -30,8 +30,12 @@
     <p id="formStatus"></p>
   </div>
 
-  <div class="form-section">
-    <h2>Chuja na Tafuta</h2>
+<div class="form-section" id="filterSection">
+  <h2>
+    Chuja na Tafuta
+    <button id="toggleFilterBtn" class="toggle-btn">Onyesha/Zificha</button>
+  </h2>
+  <div id="filtersContent">
     <select id="clinicFilter">
       <option value="">Onyesha Zote</option>
       <option value="Kisiwani">Kisiwani</option>
@@ -41,13 +45,14 @@
     </select>
     <input type="text" id="usernameFilter" placeholder="Tafuta jina la mtumiaji">
     <input type="text" id="searchFilter" placeholder="Tafuta maneno (kichwa, maelezo, maoni)">
-
-      <!-- DATE FILTERS -->
-  <label for="startDate">Kuanzia:</label>
-  <input type="date" id="startDate">
-  <label for="endDate">Hadi:</label>
-  <input type="date" id="endDate">
+    <!-- DATE FILTERS -->
+    <label for="startDate">Kuanzia:</label>
+    <input type="date" id="startDate">
+    <label for="endDate">Hadi:</label>
+    <input type="date" id="endDate">
   </div>
+</div>
+
 
   <div class="reports-section">
     <h2>Ripoti Zilizowasilishwa</h2>
