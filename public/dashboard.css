@@ -8,9 +8,7 @@ body {
   box-sizing: border-box;
 }
 
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: inherit;
 }
 
@@ -61,33 +59,9 @@ nav button:hover {
   margin: 15px 0;
   font-size: 1.2rem;
   font-weight: bold;
-  color: #333;
 }
 
-.toggle-btn {
-  background: #4CAF50;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  font-size: 0.85rem;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 10px;
-}
-
-.toggle-btn:hover {
-  background: #45a049;
-}
-.filters-wrapper {
-  overflow: hidden;
-  transition: max-height 0.35s ease;
-  max-height: 600px; /* fully open height */
-}
-.filters-wrapper.collapsed {
-  max-height: 0;
-}
-
-/* ========== FORM SECTIONS ========== */
+/* ========== FORM & FILTERS ========== */
 .form-section, .reports-section {
   background: white;
   padding: 20px;
@@ -96,11 +70,11 @@ nav button:hover {
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
-.form-section h2, .reports-section h2 {
-  margin-top: 0;
-  color: #4CAF50;
+input, select, textarea, button {
+  font-family: inherit;
 }
 
+/* Inputs */
 input, select, textarea {
   width: 100%;
   padding: 10px;
@@ -109,6 +83,7 @@ input, select, textarea {
   border-radius: 8px;
 }
 
+/* Buttons */
 button.submit-btn {
   background: #4CAF50;
   color: white;
@@ -136,7 +111,7 @@ button.submit-btn:hover {
   flex-direction: column;
 }
 
-/* Header: avatar + username + clinic */
+/* Header */
 .report-header {
   display: flex;
   align-items: center;
@@ -149,7 +124,7 @@ button.submit-btn:hover {
   height: 40px;
   border-radius: 50%;
   background: #ccc;
-  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .report-header .user-info {
@@ -160,6 +135,7 @@ button.submit-btn:hover {
 .report-header .username {
   font-weight: bold;
   color: #333;
+  cursor: pointer;
 }
 
 .report-header .clinic {
@@ -183,11 +159,12 @@ button.submit-btn:hover {
   word-wrap: break-word;
 }
 
-/* Actions (thumbs, comment) */
+/* Actions */
 .report-actions {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   padding: 6px 12px;
+  align-items: center;
 }
 
 .report-actions button {
@@ -202,7 +179,26 @@ button.submit-btn:hover {
   transform: scale(1.1);
 }
 
-/* Comments */
+/* Chat icon toggle */
+.comment-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.2s;
+  font-size: 1.3rem;
+  color: #444;
+}
+
+.comment-toggle:hover {
+  background: rgba(0,0,0,0.08);
+  transform: scale(1.1);
+}
+
+/* ========== COMMENTS SECTION ========== */
 .comments-section {
   padding: 8px 12px 12px 12px;
   display: flex;
@@ -216,27 +212,27 @@ button.submit-btn:hover {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-right: 4px;
 }
 
 .comment-item {
   background: #e8f5e9;
   padding: 8px 12px;
   border-radius: 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
   font-size: 0.9rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
   word-wrap: break-word;
 }
 
 .comment-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 4px;
   font-weight: 600;
+  margin-bottom: 4px;
 }
 
 .comment-header .username {
   color: #2e7d32;
+  cursor: pointer;
 }
 
 .comment-header .time {
@@ -244,76 +240,34 @@ button.submit-btn:hover {
   color: #555;
 }
 
-/* Comment input */
-/* --- Comment input (hidden until chat icon clicked) --- */
+/* Comment input (hidden until toggled) */
 .comment-input {
-  display:none;
-  margin-top:6px;
-  gap:6px;
+  display: none;
+  margin-top: 8px;
+  gap: 6px;
   align-items: center;
 }
 
-/* Textbox inside comment input */
-.comment-input input[type="text"]{
-  flex:1;
-  padding:8px 14px;
-  border-radius:20px;
-  border:1px solid #ccc;
-  font-size:0.9rem;
-}
-
-/* Send button */
-.comment-input button{
-  background:#4CAF50;
-  color:#fff;
-  border:none;
-  padding:8px 16px;
-  border-radius:20px;
-  cursor:pointer;
-  font-weight:600;
-  transition: background .25s, transform .2s;
-}
-
-.comment-input button:hover{
-  background:#45a049;
-  transform:translateY(-1px);
-}
-
-/* --- Chat icon (toggle input) like threads/instagram --- */
-.comment-toggle {
-  width:32px;
-  height:32px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  transition:background .25s, transform .2s;
-  font-size:1.3rem;
-  color:#444;
-}
-
-/* hover state */
-.comment-toggle:hover {
-  background:rgba(0,0,0,0.08);
-  transform:scale(1.1);
-}
-
-
-.comments-section button {
-  margin-top: 4px;
-  align-self: flex-end;
-  background: #4CAF50;
-  color: white;
-  font-weight: 600;
-  border: none;
+.comment-input input[type="text"] {
+  flex: 1;
+  padding: 8px 14px;
   border-radius: 20px;
-  padding: 6px 12px;
-  cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
 }
 
-.comments-section button:hover {
+.comment-input button {
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.25s, transform 0.2s;
+}
+
+.comment-input button:hover {
   background: #45a049;
   transform: translateY(-1px);
 }
@@ -322,7 +276,6 @@ button.submit-btn:hover {
 .mentionBox {
   max-height: 200px;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   border: 1px solid #ccc;
   background: #fff;
   position: absolute;
@@ -340,6 +293,7 @@ button.submit-btn:hover {
   background-color: #f0f0f0;
 }
 
+/* Mentions highlight */
 .mention {
   color: #1e88e5;
   font-weight: 600;
@@ -362,11 +316,11 @@ button.submit-btn:hover {
     font-size: 1rem;
   }
 
-  .comments-section .comment-item {
+  .comment-item {
     font-size: 0.85rem;
   }
 
-  .comments-section input[type="text"] {
+  .comment-input input[type="text"] {
     font-size: 0.85rem;
   }
 }
