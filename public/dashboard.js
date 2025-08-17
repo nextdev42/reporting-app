@@ -42,9 +42,6 @@ toggleFilterBtn.addEventListener("click", () => {
   toggleFilterBtn.textContent = isHidden ? "Zificha" : "Onyesha";
 });
 
-
-
-
 // ====== GREETING & CURRENT USER ======
 async function loadGreeting() {
   const res = await fetch("/api/user");
@@ -153,6 +150,7 @@ async function fetchReports(page=1) {
     <div class="report-actions">
       <button class="thumb-up">👍 ${report.thumbs_up || 0}</button>
       <button class="thumb-down">👎 ${report.thumbs_down || 0}</button>
+      <span class="openComment" style="margin-left:8px;cursor:pointer;">💬</span>
     </div>
 
     <div class="comments-section">
@@ -167,162 +165,115 @@ async function fetchReports(page=1) {
           </div>
         `).join('')}
       </div>
-      <input type="text" placeholder="Andika maoni yako" name="commentText">
-      <div class="mentionBox" style="display:none;"></div>
-      <button>Add</button>
+      <div class="comment-input" style="display:none;margin-top:8px;">
+        <input type="text" placeholder="Andika maoni yako" name="commentText">
+        <div class="mentionBox" style="display:none;"></div>
+        <button class="sendCommentBtn">Tuma</button>
+      </div>
     </div>
   `;
 
   const commentsList = card.querySelector(".commentsList");
-  const inp = card.querySelector("input[name='commentText']");
-  const mentionBox = card.querySelector(".mentionBox");
-  const commentBtn = card.querySelector(".comments-section button");
+  const inpDiv      = card.querySelector(".comment-input");
+  const inp         = inpDiv.querySelector("input[name='commentText']");
+  const mentionBox  = inpDiv.querySelector(".mentionBox");
+  const sendBtn     = inpDiv.querySelector(".sendCommentBtn");
+  const openBtn     = card.querySelector(".openComment");
+
+  // ===== Toggle box =====
+  openBtn.addEventListener("click", () => {
+    const isHidden = inpDiv.style.display === "none";
+    inpDiv.style.display = isHidden ? "flex" : "none";
+    if(isHidden) inp.focus();
+  });
 
   // ===== Mention Suggest =====
-// ===== Mention Suggest =====
-inp.addEventListener("keyup", () => {
-  const match = inp.value.match(/@(\w*)$/);
-  if (match) {
-    const q = match[1].toLowerCase();
-    const suggest = Array.from(new Set(allUsers.filter(u => u.toLowerCase().startsWith(q))));
-    if (suggest.length) {
-      mentionBox.innerHTML = suggest.map(u => `<div class="sItem">${u}</div>`).join('');
-      mentionBox.style.display = 'block';
-
-      // Smooth scroll for mention dropdown
-      mentionBox.scrollTop = 0; // reset scroll to top
-      mentionBox.style.scrollBehavior = 'smooth';
+  inp.addEventListener("keyup", () => {
+    const match = inp.value.match(/@(\w*)$/);
+    if(match){
+      const q = match[1].toLowerCase();
+      const suggest = [...new Set(allUsers.filter(u=>u.toLowerCase().startsWith(q)))];
+      if(suggest.length){
+        mentionBox.innerHTML = suggest.map(u=>`<div class="sItem">${u}</div>`).join('');
+        mentionBox.style.display = 'block';
+      }else mentionBox.style.display='none';
     } else {
-      mentionBox.style.display = 'none';
+      mentionBox.style.display='none';
     }
-  } else {
-    mentionBox.style.display = 'none';
-  }
-});
+  });
 
-  // Click on mention item
-mentionBox.addEventListener("click", (e) => {
-  if (e.target.classList.contains("sItem")) {
-    inp.value = inp.value.replace(/@(\w*)$/, '@' + e.target.innerText + ' ');
-    mentionBox.style.display = 'none';
-    inp.focus();
-  }
-});
-
-  // ===== Add Comment =====
-  // ===== Add Comment =====
-commentBtn.addEventListener("click", async () => {
-  const txt = inp.value.trim();
-  if (!txt) return alert("Andika maoni yako.");
-  inp.value = "";
-
-  const tempDiv = document.createElement("div");
-  tempDiv.className = "comment-item";
-  tempDiv.innerHTML = `
-    <div class="comment-header">
-      <span class="username">Wewe (${currentUser.kituo})</span>
-      <span class="time">${formatDate(new Date().toISOString())}</span>
-    </div>
-    <p>${highlightMentions(txt)}</p>
-  `;
-  commentsList.prepend(tempDiv);
-
-  // Smooth scroll to the new comment
-  tempDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  // Auto-scroll input into view on mobile
-  inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-  try {
-    const res = await fetch(`/api/comments/${report.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comment: txt })
-    });
-    if (!res.ok) throw new Error(await res.text());
-    const saved = await res.json();
-    tempDiv.querySelector(".username").textContent = `${saved.username} (${saved.clinic})`;
-    tempDiv.querySelector(".time").textContent = formatDate(saved.timestamp);
-    report.comments.unshift(saved);
-  } catch (err) {
-    alert("Tatizo ku-post comment");
-    tempDiv.remove();
-  }
-});
-
-// ===== Mention Suggest =====
-inp.addEventListener("keyup", () => {
-  const match = inp.value.match(/@(\w*)$/);
-  if (match) {
-    const q = match[1].toLowerCase();
-    const suggest = Array.from(new Set(allUsers.filter(u => u.toLowerCase().startsWith(q))));
-    if (suggest.length) {
-      mentionBox.innerHTML = suggest.map(u => `<div class="sItem">${u}</div>`).join('');
-      mentionBox.style.display = 'block';
-
-      // Smooth scroll for mention dropdown
-      mentionBox.scrollTop = 0; // reset scroll to top
-      mentionBox.style.scrollBehavior = 'smooth';
-    } else {
-      mentionBox.style.display = 'none';
+  mentionBox.addEventListener("click",(e)=>{
+    if(e.target.classList.contains("sItem")){
+      inp.value = inp.value.replace(/@(\w*)$/, "@"+e.target.innerText+" ");
+      mentionBox.style.display='none';
+      inp.focus();
     }
-  } else {
-    mentionBox.style.display = 'none';
-  }
-});
+  });
 
-// Click on mention item
-mentionBox.addEventListener("click", (e) => {
-  if (e.target.classList.contains("sItem")) {
-    inp.value = inp.value.replace(/@(\w*)$/, '@' + e.target.innerText + ' ');
-    mentionBox.style.display = 'none';
-    inp.focus();
-  }
-});
+  // ===== Send comment =====
+  sendBtn.addEventListener("click", async ()=>{
+    const txt = inp.value.trim();
+    if(!txt) return alert("Andika maoni yako.");
+    inp.value = "";
 
+    const tempDiv = document.createElement("div");
+    tempDiv.className = "comment-item";
+    tempDiv.innerHTML = `
+      <div class="comment-header">
+        <span class="username">Wewe (${currentUser.kituo})</span>
+        <span class="time">${formatDate(new Date().toISOString())}</span>
+      </div>
+      <p>${highlightMentions(txt)}</p>
+    `;
+    commentsList.prepend(tempDiv);
+    inpDiv.style.display='none';
+
+    try{
+      const res = await fetch(`/api/comments/${report.id}`, {
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({comment:txt})
+      });
+      if(!res.ok) throw new Error(await res.text());
+      const saved = await res.json();
+      tempDiv.querySelector(".username").textContent = `${saved.username} (${saved.clinic})`;
+      tempDiv.querySelector(".time").textContent = formatDate(saved.timestamp);
+      report.comments.unshift(saved);
+    } catch(err){
+      alert("Tatizo ku-post comment");
+      tempDiv.remove();
+    }
+  });
 
   // ===== Thumbs =====
   const thumbUp = card.querySelector(".thumb-up");
   const thumbDown = card.querySelector(".thumb-down");
-
-  if (report.username === currentUser.jina && report.clinic === currentUser.kituo) {
-    thumbUp.disabled = true; 
+  if(report.username===currentUser.jina && report.clinic===currentUser.kituo){
+    thumbUp.disabled = true;
     thumbDown.disabled = true;
   } else {
-    thumbUp.addEventListener("click", async () => {
-      const r = await fetch(`/api/reactions/${report.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "up" })
+    thumbUp.addEventListener("click", async()=>{
+      const r = await fetch(`/api/reactions/${report.id}`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({type:"up"})
       });
       const d = await r.json();
-      report.thumbs_up = d.thumbs_up;
-      report.thumbs_down = d.thumbs_down;
-      thumbUp.textContent = `👍 ${d.thumbs_up}`;
-      thumbDown.textContent = `👎 ${d.thumbs_down}`;
+      report.thumbs_up=d.thumbs_up; report.thumbs_down=d.thumbs_down;
+      thumbUp.textContent=`👍 ${d.thumbs_up}`;
+      thumbDown.textContent=`👎 ${d.thumbs_down}`;
     });
-
-    thumbDown.addEventListener("click", async () => {
-      const r = await fetch(`/api/reactions/${report.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "down" })
+    thumbDown.addEventListener("click", async()=>{
+      const r=await fetch(`/api/reactions/${report.id}`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({type:"down"})
       });
-      const d = await r.json();
-      report.thumbs_up = d.thumbs_up;
-      report.thumbs_down = d.thumbs_down;
-      thumbUp.textContent = `👍 ${d.thumbs_up}`;
-      thumbDown.textContent = `👎 ${d.thumbs_down}`;
+      const d=await r.json();
+      report.thumbs_up=d.thumbs_up; report.thumbs_down=d.thumbs_down;
+      thumbUp.textContent=`👍 ${d.thumbs_up}`;
+      thumbDown.textContent=`👎 ${d.thumbs_down}`;
     });
   }
-
   return card;
 }
-
-
-
-  
-
 
 
 // ====== RENDER PAGINATION ======
