@@ -148,19 +148,20 @@ function getTanzaniaTimestamp(){
 // Format timestamp for display
 // ====== Tanzania timestamp helper ======
 function formatTanzaniaTime(ts) {
-  // Ensure we have a Date object
+  if (!ts) return "Haijulikani";
+
   let dateObj;
+
   if (ts instanceof Date) {
     dateObj = ts;
   } else {
-    // Try to parse string/timestamp safely
-    dateObj = new Date(ts);
+    // Convert Postgres timestamp like "YYYY-MM-DD HH:MM:SS" to "YYYY-MM-DDTHH:MM:SSZ"
+    const isoStr = ts.toString().replace(' ', 'T') + 'Z';
+    dateObj = new Date(isoStr);
   }
 
-  // If still invalid, return placeholder
   if (isNaN(dateObj.getTime())) return "Haijulikani";
 
-  // Apply UTC+3 offset
   const tzOffsetMinutes = 3 * 60;
   const localDate = new Date(dateObj.getTime() + (tzOffsetMinutes - dateObj.getTimezoneOffset()) * 60000);
 
