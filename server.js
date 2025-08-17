@@ -183,6 +183,23 @@ app.get("/api/users", auth, async (req, res) => {
   }
 });
 
+// Route to show all reports of a specific user
+app.get("/user/:username", async (req, res) => {
+  const username = req.params.username;
+
+  try {
+    // Fetch reports for that user from your database
+    const userReports = await pool.query(
+      "SELECT * FROM reports WHERE username = $1 ORDER BY timestamp DESC",
+      [username]
+    );
+
+    res.render("user-reports", { username, reports: userReports.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Kuna tatizo kwenye seva");
+  }
+});
 
 // ====== Submit report ======
 
