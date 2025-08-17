@@ -93,8 +93,11 @@ function formatDate(ts) {
 }
 
 // ====== HIGHLIGHT @MENTIONS ======
+// ===== Update highlightMentions globally =====
 function highlightMentions(text) {
-  return text.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+  return text.replace(/@(\w+)/g, (match, username) => {
+    return `<a href="/user/${username}" class="mention">@${username}</a>`;
+  });
 }
 
 // ====== FETCH REPORTS ======
@@ -135,37 +138,45 @@ async function fetchReports(page=1) {
   card.className = "report-card";
 
   card.innerHTML = `
+    <!-- Header: avatar + username + clinic -->
     <div class="report-header">
-      <div class="avatar">${report.username.charAt(0).toUpperCase()}</div>
+      <a href="/user/${report.username}" class="avatar">${report.username.charAt(0).toUpperCase()}</a>
       <div class="user-info">
-        <span class="username">${report.username}</span>
+        <a href="/user/${report.username}" class="username">${report.username}</a>
         <span class="clinic">${report.clinic}</span>
       </div>
     </div>
 
+    <!-- Report image -->
     ${report.image ? `<div class="report-image"><img src="${report.image}" alt="Ripoti"></div>` : ""}
 
+    <!-- Caption -->
     <div class="report-caption">${highlightMentions(report.description)}</div>
 
+    <!-- Actions: thumbs + chat icon -->
     <div class="report-actions">
       <button class="thumb-up">👍 ${report.thumbs_up || 0}</button>
       <button class="thumb-down">👎 ${report.thumbs_down || 0}</button>
-      <span class="openComment" style="margin-left:8px;cursor:pointer;">💬</span>
+      <span class="comment-toggle">💬</span>
     </div>
 
+    <!-- Comments section -->
     <div class="comments-section">
       <div class="commentsList">
         ${report.comments.map(c => `
           <div class="comment-item">
             <div class="comment-header">
-              <span class="username">${c.username} (${c.clinic})</span>
+              <a href="/user/${c.username}" class="username">${c.username}</a>
+              <span class="clinic">(${c.clinic})</span>
               <span class="time">${formatDate(c.timestamp)}</span>
             </div>
             <p>${highlightMentions(c.comment)}</p>
           </div>
         `).join('')}
       </div>
-      <div class="comment-input" style="display:none;margin-top:8px;">
+
+      <!-- Hidden input initially -->
+      <div class="comment-input" style="display:none;">
         <input type="text" placeholder="Andika maoni yako" name="commentText">
         <div class="mentionBox" style="display:none;"></div>
         <button class="sendCommentBtn">Tuma</button>
@@ -174,71 +185,75 @@ async function fetchReports(page=1) {
   `;
 
   const commentsList = card.querySelector(".commentsList");
-  const inpDiv      = card.querySelector(".comment-input");
-  const inp         = inpDiv.querySelector("input[name='commentText']");
-  const mentionBox  = inpDiv.querySelector(".mentionBox");
-  const sendBtn     = inpDiv.querySelector(".sendCommentBtn");
-  const openBtn     = card.querySelector(".openComment");
+  const inpDiv = card.querySelector(".comment-input");
+  const inp = inpDiv.querySelector("input[name='commentText']");
+  const mentionBox = inpDiv.querySelector(".mentionBox");
+  const sendBtn = inpDiv.querySelector(".sendCommentBtn");
+  const toggleBtn = card.querySelector(".comment-toggle");
 
-  // ===== Toggle box =====
-  openBtn.addEventListener("click", () => {
+  // ===== Toggle comment input =====
+  toggleBtn.addEventListener("click", () => {
     const isHidden = inpDiv.style.display === "none";
     inpDiv.style.display = isHidden ? "flex" : "none";
-    if(isHidden) inp.focus();
+    if (isHidden) inp.focus();
   });
 
-  // ===== Mention Suggest =====
+  // ===== Mention suggestion =====
   inp.addEventListener("keyup", () => {
     const match = inp.value.match(/@(\w*)$/);
-    if(match){
+    if (match) {
       const q = match[1].toLowerCase();
-      const suggest = [...new Set(allUsers.filter(u=>u.toLowerCase().startsWith(q)))];
-      if(suggest.length){
-        mentionBox.innerHTML = suggest.map(u=>`<div class="sItem">${u}</div>`).join('');
+      const suggest = [...new Set(allUsers.filter(u => u.toLowerCase().startsWith(q)))];
+      if (suggest.length) {
+        mentionBox.innerHTML = suggest.map(u => `<div class="sItem">${u}</div>`).join('');
         mentionBox.style.display = 'block';
-      }else mentionBox.style.display='none';
+      } else {
+        mentionBox.style.display = 'none';
+      }
     } else {
-      mentionBox.style.display='none';
+      mentionBox.style.display = 'none';
     }
   });
 
-  mentionBox.addEventListener("click",(e)=>{
-    if(e.target.classList.contains("sItem")){
-      inp.value = inp.value.replace(/@(\w*)$/, "@"+e.target.innerText+" ");
-      mentionBox.style.display='none';
+  mentionBox.addEventListener("click", (e) => {
+    if (e.target.classList.contains("sItem")) {
+      inp.value = inp.value.replace(/@(\w*)$/, "@" + e.target.innerText + " ");
+      mentionBox.style.display = 'none';
       inp.focus();
     }
   });
 
   // ===== Send comment =====
-  sendBtn.addEventListener("click", async ()=>{
+  sendBtn.addEventListener("click", async () => {
     const txt = inp.value.trim();
-    if(!txt) return alert("Andika maoni yako.");
+    if (!txt) return alert("Andika maoni yako.");
     inp.value = "";
 
     const tempDiv = document.createElement("div");
     tempDiv.className = "comment-item";
     tempDiv.innerHTML = `
       <div class="comment-header">
-        <span class="username">Wewe (${currentUser.kituo})</span>
+        <a href="/user/${currentUser.jina}" class="username">${currentUser.jina}</a>
+        <span class="clinic">(${currentUser.kituo})</span>
         <span class="time">${formatDate(new Date().toISOString())}</span>
       </div>
       <p>${highlightMentions(txt)}</p>
     `;
     commentsList.prepend(tempDiv);
-    inpDiv.style.display='none';
+    inpDiv.style.display = 'none';
 
-    try{
+    try {
       const res = await fetch(`/api/comments/${report.id}`, {
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({comment:txt})
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment: txt })
       });
-      if(!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await res.text());
       const saved = await res.json();
-      tempDiv.querySelector(".username").textContent = `${saved.username} (${saved.clinic})`;
+      tempDiv.querySelector(".username").textContent = saved.username;
       tempDiv.querySelector(".time").textContent = formatDate(saved.timestamp);
       report.comments.unshift(saved);
-    } catch(err){
+    } catch (err) {
       alert("Tatizo ku-post comment");
       tempDiv.remove();
     }
@@ -247,33 +262,49 @@ async function fetchReports(page=1) {
   // ===== Thumbs =====
   const thumbUp = card.querySelector(".thumb-up");
   const thumbDown = card.querySelector(".thumb-down");
-  if(report.username===currentUser.jina && report.clinic===currentUser.kituo){
+  if (report.username === currentUser.jina && report.clinic === currentUser.kituo) {
     thumbUp.disabled = true;
     thumbDown.disabled = true;
   } else {
-    thumbUp.addEventListener("click", async()=>{
-      const r = await fetch(`/api/reactions/${report.id}`,{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({type:"up"})
+    thumbUp.addEventListener("click", async () => {
+      const r = await fetch(`/api/reactions/${report.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "up" })
       });
       const d = await r.json();
-      report.thumbs_up=d.thumbs_up; report.thumbs_down=d.thumbs_down;
-      thumbUp.textContent=`👍 ${d.thumbs_up}`;
-      thumbDown.textContent=`👎 ${d.thumbs_down}`;
+      report.thumbs_up = d.thumbs_up;
+      report.thumbs_down = d.thumbs_down;
+      thumbUp.textContent = `👍 ${d.thumbs_up}`;
+      thumbDown.textContent = `👎 ${d.thumbs_down}`;
     });
-    thumbDown.addEventListener("click", async()=>{
-      const r=await fetch(`/api/reactions/${report.id}`,{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({type:"down"})
+
+    thumbDown.addEventListener("click", async () => {
+      const r = await fetch(`/api/reactions/${report.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "down" })
       });
-      const d=await r.json();
-      report.thumbs_up=d.thumbs_up; report.thumbs_down=d.thumbs_down;
-      thumbUp.textContent=`👍 ${d.thumbs_up}`;
-      thumbDown.textContent=`👎 ${d.thumbs_down}`;
+      const d = await r.json();
+      report.thumbs_up = d.thumbs_up;
+      report.thumbs_down = d.thumbs_down;
+      thumbUp.textContent = `👍 ${d.thumbs_up}`;
+      thumbDown.textContent = `👎 ${d.thumbs_down}`;
     });
   }
+
   return card;
 }
+
+
+
+
+    
+
+  
+    
+
+  
 
 
 // ====== RENDER PAGINATION ======
