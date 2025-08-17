@@ -16,6 +16,9 @@ cloudinary.config({
 });
 
 const app = express();
+// Set views folder and EJS engine
+app.set("views", path.join(__dirname, "views")); // folder where your .ejs files are
+app.set("view engine", "ejs");
 const PORT = process.env.PORT || 3000;
 
 // PostgreSQL connection
