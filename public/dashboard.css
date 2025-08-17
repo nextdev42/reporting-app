@@ -366,3 +366,24 @@ form .status {
     min-width: 30px;
   }
 }
+/* Mention dropdown styles */
+.mentionBox {
+  position: absolute;
+  background: white;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  z-index: 99;
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+.mentionBox .sItem {
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.mentionBox .sItem:hover {
+  background-color: #f0f0f0;
+}
