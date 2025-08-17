@@ -112,12 +112,27 @@ const upload = multer({ dest: uploadDir });
 // ====== Auth helper ======
 function auth(req,res,next){ if(!req.session.userId) return res.redirect("/"); next(); }
 
-const redirectLoggedIn = (req, res, next) => {
+// Redirect logged-in users to their profile page
+const redirectToProfile = (req, res, next) => {
   if (req.session && req.session.userId) {
-    return res.redirect("/dashboard.html");
+    return res.redirect(`/user/${encodeURIComponent(req.session.jina)}`);
   }
   next();
 };
+
+// Apply to public routes
+app.get("/", redirectToProfile, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+app.get("/index.html", redirectToProfile, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+app.get("/login", redirectToProfile, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+app.get("/register", redirectToProfile, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 // ====== Tanzania timestamp helper ======
 function getTanzaniaTimestamp(){
   const now = new Date();
@@ -142,18 +157,7 @@ function formatTanzaniaTime(date) {
 // Redirect logged-in users away from public pages
 
 
-app.get("/", redirectLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-app.get("/index.html", redirectLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-app.get("/login", redirectLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-app.get("/register", redirectLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+
 
 // Register
 app.post("/register", async (req,res)=>{
