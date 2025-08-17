@@ -112,21 +112,33 @@ async function fetchReports(page=1) {
 }
 
 // ====== RENDER ONE REPORT ======
-function renderReportCard(report) {
+
+
+  function renderReportCard(report) {
   const card = document.createElement("div");
-  card.className="report-card";
+  card.className = "report-card";
 
   card.innerHTML = `
-    <p><strong>Muda:</strong> ${formatDate(report.timestamp)}</p>
-    <p><strong>Jina la Mtumiaji:</strong> ${report.username}</p>
-    <p><strong>Kliniki:</strong> ${report.clinic}</p>
-    <p><strong>Kichwa:</strong> ${report.title}</p>
-    <p><strong>Maelezo:</strong> ${report.description}</p>
-    ${report.image?`<img src="${report.image}" alt="Ripoti">`:""}
-    <div class="comments">
-      <h4>Maoni:</h4>
+    <div class="report-header">
+      <div class="avatar">${report.username.charAt(0).toUpperCase()}</div>
+      <div class="user-info">
+        <span class="username">${report.username}</span>
+        <span class="clinic">${report.clinic}</span>
+      </div>
+    </div>
+
+    ${report.image ? `<div class="report-image"><img src="${report.image}" alt="Ripoti"></div>` : ""}
+
+    <div class="report-caption">${highlightMentions(report.description)}</div>
+
+    <div class="report-actions">
+      <button class="thumb-up">👍 ${report.thumbs_up || 0}</button>
+      <button class="thumb-down">👎 ${report.thumbs_down || 0}</button>
+    </div>
+
+    <div class="comments-section">
       <div class="commentsList">
-        ${report.comments.map(c=> `
+        ${report.comments.map(c => `
           <div class="comment-item">
             <div class="comment-header">
               <span class="username">${c.username} (${c.clinic})</span>
@@ -140,61 +152,47 @@ function renderReportCard(report) {
       <div class="mentionBox" style="display:none;"></div>
       <button>Add</button>
     </div>
-    <div class="thumbs">
-      <button class="thumb-up">👍 ${report.thumbs_up||0}</button>
-      <button class="thumb-down">👎 ${report.thumbs_down||0}</button>
-    </div>
   `;
 
   const commentsList = card.querySelector(".commentsList");
-  const inp         = card.querySelector("input[name='commentText']");
-  const mentionBox  = card.querySelector(".mentionBox");
-  const commentBtn  = card.querySelector(".comments button");
+  const inp = card.querySelector("input[name='commentText']");
+  const mentionBox = card.querySelector(".mentionBox");
+  const commentBtn = card.querySelector(".comments-section button");
 
   // ===== Mention Suggest =====
-  // ===== Mention Suggest =====
-// ===== Mention Suggest =====
-inp.addEventListener("keyup", () => {
-  const match = inp.value.match(/@(\w*)$/);
-  if (match) {
-    const q = match[1].toLowerCase();
-
-    // filter and remove duplicates
-    const suggest = Array.from(new Set(
-      allUsers
-        .filter(u => u.toLowerCase().startsWith(q))
-    ));
-
-    if (suggest.length) {
-      mentionBox.innerHTML = suggest.map(u => `<div class="sItem">${u}</div>`).join('');
-      mentionBox.style.display = 'block';
+  inp.addEventListener("keyup", () => {
+    const match = inp.value.match(/@(\w*)$/);
+    if (match) {
+      const q = match[1].toLowerCase();
+      const suggest = Array.from(new Set(allUsers.filter(u => u.toLowerCase().startsWith(q))));
+      if (suggest.length) {
+        mentionBox.innerHTML = suggest.map(u => `<div class="sItem">${u}</div>`).join('');
+        mentionBox.style.display = 'block';
+      } else {
+        mentionBox.style.display = 'none';
+      }
     } else {
       mentionBox.style.display = 'none';
     }
-  } else {
-    mentionBox.style.display = 'none';
-  }
-});
+  });
 
+  mentionBox.addEventListener("click", (e) => {
+    if (e.target.classList.contains("sItem")) {
+      inp.value = inp.value.replace(/@(\w*)$/, '@' + e.target.innerText + ' ');
+      mentionBox.style.display = 'none';
+      inp.focus();
+    }
+  });
 
-// ===== Click on suggestion =====
-mentionBox.addEventListener("click", (e) => {
-  if (e.target.classList.contains("sItem")) {
-    inp.value = inp.value.replace(/@(\w*)$/, '@' + e.target.innerText + ' ');
-    mentionBox.style.display = 'none';
-    inp.focus();
-  }
-});
+  // ===== Add Comment =====
+  commentBtn.addEventListener("click", async () => {
+    const txt = inp.value.trim();
+    if (!txt) return alert("Andika maoni yako.");
+    inp.value = "";
 
-
-  // ===== Add Comment (newest on top) =====
-  commentBtn.addEventListener("click", async ()=>{
-    const txt=inp.value.trim();
-    if(!txt) return alert("Andika maoni yako.");
-    inp.value="";
     const tempDiv = document.createElement("div");
-    tempDiv.className="comment-item";
-    tempDiv.innerHTML=`
+    tempDiv.className = "comment-item";
+    tempDiv.innerHTML = `
       <div class="comment-header">
         <span class="username">Wewe (${currentUser.kituo})</span>
         <span class="time">${formatDate(new Date().toISOString())}</span>
@@ -203,49 +201,66 @@ mentionBox.addEventListener("click", (e) => {
     `;
     commentsList.prepend(tempDiv);
 
-    try{
-      const res = await fetch(`/api/comments/${report.id}`,{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({comment:txt})
+    try {
+      const res = await fetch(`/api/comments/${report.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment: txt })
       });
-      if(!res.ok) throw new Error(await res.text());
-      const saved=await res.json();
-      tempDiv.querySelector(".username").textContent=`${saved.username} (${saved.clinic})`;
-      tempDiv.querySelector(".time").textContent=formatDate(saved.timestamp);
+      if (!res.ok) throw new Error(await res.text());
+      const saved = await res.json();
+      tempDiv.querySelector(".username").textContent = `${saved.username} (${saved.clinic})`;
+      tempDiv.querySelector(".time").textContent = formatDate(saved.timestamp);
       report.comments.unshift(saved);
-    }catch(err){
+    } catch (err) {
       alert("Tatizo ku-post comment");
       tempDiv.remove();
     }
   });
 
   // ===== Thumbs =====
-  const thumbUp=card.querySelector(".thumb-up"), thumbDown=card.querySelector(".thumb-down");
-  if(report.username===currentUser.jina && report.clinic===currentUser.kituo){
-    thumbUp.disabled=true; thumbDown.disabled=true;
-  }else{
-    thumbUp.addEventListener("click",async ()=>{
-      const r=await fetch(`/api/reactions/${report.id}`,{
-        method:"POST",headers:{ "Content-Type":"application/json"},
-        body:JSON.stringify({type:"up"})
+  const thumbUp = card.querySelector(".thumb-up");
+  const thumbDown = card.querySelector(".thumb-down");
+
+  if (report.username === currentUser.jina && report.clinic === currentUser.kituo) {
+    thumbUp.disabled = true; 
+    thumbDown.disabled = true;
+  } else {
+    thumbUp.addEventListener("click", async () => {
+      const r = await fetch(`/api/reactions/${report.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "up" })
       });
-      const d=await r.json();
-      report.thumbs_up=d.thumbs_up; report.thumbs_down=d.thumbs_down;
-      thumbUp.textContent=`👍 ${d.thumbs_up}`; thumbDown.textContent=`👎 ${d.thumbs_down}`;
+      const d = await r.json();
+      report.thumbs_up = d.thumbs_up;
+      report.thumbs_down = d.thumbs_down;
+      thumbUp.textContent = `👍 ${d.thumbs_up}`;
+      thumbDown.textContent = `👎 ${d.thumbs_down}`;
     });
-    thumbDown.addEventListener("click",async ()=>{
-      const r=await fetch(`/api/reactions/${report.id}`,{
-        method:"POST",headers:{ "Content-Type":"application/json"},
-        body:JSON.stringify({type:"down"})
+
+    thumbDown.addEventListener("click", async () => {
+      const r = await fetch(`/api/reactions/${report.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "down" })
       });
-      const d=await r.json();
-      report.thumbs_up=d.thumbs_up; report.thumbs_down=d.thumbs_down;
-      thumbUp.textContent=`👍 ${d.thumbs_up}`; thumbDown.textContent=`👎 ${d.thumbs_down}`;
+      const d = await r.json();
+      report.thumbs_up = d.thumbs_up;
+      report.thumbs_down = d.thumbs_down;
+      thumbUp.textContent = `👍 ${d.thumbs_up}`;
+      thumbDown.textContent = `👎 ${d.thumbs_down}`;
     });
   }
+
   return card;
 }
+
+
+
+  
+
+
 
 // ====== RENDER PAGINATION ======
 function renderPagination() {
