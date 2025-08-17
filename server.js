@@ -188,23 +188,21 @@ app.get("/api/users", auth, async (req, res) => {
 
 // Route to show all reports of a specific user
 // Route to show all reports of a specific user
+
 app.get("/user/:username", auth, async (req, res) => {
   const username = req.params.username;
 
   try {
-    // Fetch reports with user info
     const userReports = await pool.query(
       `SELECT r.*, u.jina AS username, u.kituo AS clinic
        FROM reports r
        JOIN users u ON r.user_id = u.id
-       WHERE LOWER(u.jina) = LOWER($1)
+       WHERE TRIM(LOWER(u.jina)) LIKE TRIM(LOWER($1)) || '%'
        ORDER BY r.timestamp DESC`,
       [username]
     );
 
     const reportIds = userReports.rows.map(r => r.id);
-
-    // Fetch comments
     let comments = [];
     if (reportIds.length) {
       const commentRes = await pool.query(
@@ -218,41 +216,21 @@ app.get("/user/:username", auth, async (req, res) => {
       comments = commentRes.rows;
     }
 
-    // Fetch reactions counts
-    let reactions = [];
-    if (reportIds.length) {
-      const reactRes = await pool.query(
-        `SELECT report_id,
-                COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
-                COUNT(*) FILTER (WHERE type='down') AS thumbs_down
-         FROM reactions
-         WHERE report_id = ANY($1::int[])
-         GROUP BY report_id`,
-        [reportIds]
-      );
-      reactions = reactRes.rows;
-    }
-
-    // Attach comments and thumbs to each report
     userReports.rows.forEach(r => {
       r.comments = comments
         .filter(c => c.report_id === r.id)
         .map(c => ({ ...c, timestamp: formatTanzaniaTime(c.timestamp) }));
-
-      const react = reactions.find(re => re.report_id === r.id);
-      r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
-      r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
-
       r.timestamp = formatTanzaniaTime(r.timestamp);
     });
 
+    console.log("Found:", userReports.rows.length)  // <-- optional debug
     res.render("user-reports", { username, reports: userReports.rows });
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Kuna tatizo kwenye seva");
   }
 });
-
 // ====== Submit report ======
 
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
