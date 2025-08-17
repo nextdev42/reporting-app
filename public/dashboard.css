@@ -142,7 +142,12 @@ button.submit-btn:hover {
   font-size: 0.85rem;
   color: #666;
 }
-
+.report-header .time {
+  font-size: 0.75rem;
+  color: #777;
+  display:block;   /* puts it on its own line */
+  margin-top: 2px;
+}
 /* Image */
 .report-image img {
   width: 100%;
