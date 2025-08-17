@@ -227,10 +227,11 @@ app.get("/api/users", auth, async (req, res) => {
 
 
 
+// Route to render user page
 app.get("/user/:username", auth, (req, res) => {
   res.render("user-reports", { 
-    username: req.params.username, 
-    loggedInUser: req.session.jina 
+    username: req.params.username,    // The user whose page is being viewed
+    loggedInUser: req.session.jina    // The currently logged-in user
   });
 });
     
