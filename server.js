@@ -114,12 +114,16 @@ function auth(req,res,next){ if(!req.session.userId) return res.redirect("/"); n
 
 // Redirect logged-in users to their profile page
 // Redirect logged-in users to their profile
+// Middleware to redirect logged-in users to their profile
 const redirectToProfile = (req, res, next) => {
-  if (req.session && req.session.userId) {
+  if (req.session?.userId) {
+    // If the user is already logged in, redirect them to their profile page
     return res.redirect(`/user/${encodeURIComponent(req.session.jina)}`);
   }
   next();
 };
+
+// Apply to public routes
 
 // Apply to public routes
 app.get("/", redirectToProfile, (req, res) => {
