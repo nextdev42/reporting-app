@@ -228,7 +228,10 @@ app.get("/api/users", auth, async (req, res) => {
 
 
 app.get("/user/:username", auth, (req, res) => {
-  res.render("user-reports", { username: req.params.username });
+  res.render("user-reports", { 
+    username: req.params.username, 
+    loggedInUser: req.session.jina 
+  });
 });
     
     
