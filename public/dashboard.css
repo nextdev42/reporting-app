@@ -245,14 +245,60 @@ button.submit-btn:hover {
 }
 
 /* Comment input */
-.comments-section input[type="text"] {
-  width: 100%;
-  border: 1px solid #ccc;
-  border-radius: 20px;
-  padding: 8px 12px;
-  font-size: 0.9rem;
-  outline: none;
+/* --- Comment input (hidden until chat icon clicked) --- */
+.comment-input {
+  display:none;
+  margin-top:6px;
+  gap:6px;
+  align-items: center;
 }
+
+/* Textbox inside comment input */
+.comment-input input[type="text"]{
+  flex:1;
+  padding:8px 14px;
+  border-radius:20px;
+  border:1px solid #ccc;
+  font-size:0.9rem;
+}
+
+/* Send button */
+.comment-input button{
+  background:#4CAF50;
+  color:#fff;
+  border:none;
+  padding:8px 16px;
+  border-radius:20px;
+  cursor:pointer;
+  font-weight:600;
+  transition: background .25s, transform .2s;
+}
+
+.comment-input button:hover{
+  background:#45a049;
+  transform:translateY(-1px);
+}
+
+/* --- Chat icon (toggle input) like threads/instagram --- */
+.comment-toggle {
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background .25s, transform .2s;
+  font-size:1.3rem;
+  color:#444;
+}
+
+/* hover state */
+.comment-toggle:hover {
+  background:rgba(0,0,0,0.08);
+  transform:scale(1.1);
+}
+
 
 .comments-section button {
   margin-top: 4px;
