@@ -86,26 +86,30 @@ async function initTables() {
 }
 initTables();
 // Redirect logged-in users away from public login/register pages
-app.get("/", (req,res)=>{
-  if(req.session.userId){
-    return res.redirect("/dashboard.html");
-  }
-  return res.sendFile(path.join(__dirname,"public","index.html"));
+// Redirect logged-in users away from public pages
+const redirectLoggedIn = (req, res, next) => {
+  if (req.session.userId) return res.redirect("/dashboard.html");
+  next();
+};
+
+app.get("/", redirectLoggedIn, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.get("/login", (req,res)=>{
-  if(req.session.userId){
-    return res.redirect("/dashboard.html");
-  }
-  return res.sendFile(path.join(__dirname,"public","index.html"));
+app.get("/index.html", redirectLoggedIn, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.get("/register", (req,res)=>{
-  if(req.session.userId){
-    return res.redirect("/dashboard.html");
-  }
-  return res.sendFile(path.join(__dirname,"public","index.html"));
+app.get("/login", redirectLoggedIn, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
+
+app.get("/register", redirectLoggedIn, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// Now static files
+
 // ====== Middleware ======
 app.use(express.static("public"));
 app.use("/uploads", express.static("reports/uploads"));
