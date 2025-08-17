@@ -167,6 +167,18 @@ app.get("/logout", (req,res)=>{
 // User info
 app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req.session.kituo}));
 
+
+// List of all users for mention dropdown
+app.get("/api/users", auth, async (req, res) => {
+  try {
+    const r = await pool.query("SELECT jina FROM users ORDER BY jina ASC");
+    res.json(r.rows.map(u => u.jina));
+  } catch (err) {
+    console.error("Error fetching users", err);
+    res.status(500).send("Server error");
+  }
+});
+
 // ====== Submit report ======
 
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
