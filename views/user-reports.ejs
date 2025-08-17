@@ -6,25 +6,152 @@
   <title>Ripoti za <%= username %></title>
   <link rel="stylesheet" href="/dashboard.css">
   <style>
-    .thumb-up.active { color: green; font-weight: bold; }
-    .thumb-down.active { color: red; font-weight: bold; }
-    .report-thumbs span { cursor: pointer; user-select: none; margin-right: 10px; }
-    .pagination { margin-top: 20px; text-align: center; }
-    .pagination button { margin: 0 5px; padding: 5px 10px; cursor: pointer; }
-    .pagination button.active { font-weight: bold; background-color: #eee; }
+    /* Summary card */
+    .user-summary {
+      display: flex;
+      gap: 20px;
+      padding: 15px;
+      margin-bottom: 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .user-summary div {
+      font-weight: bold;
+      text-align: center;
+    }
+
+    /* Report cards */
+    .reports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(320px,1fr));
+      gap: 20px;
+    }
+    .card.report-card {
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 15px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header h3 {
+      margin: 0 0 5px 0;
+    }
+    .card-header p {
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .card-body {
+      margin-top: 10px;
+    }
+    .card-body img.report-image {
+      margin-top: 10px;
+      border-radius: 6px;
+      display: block;
+      max-width: 100%;
+    }
+
+    .card-footer {
+      margin-top: 15px;
+    }
+
+    .report-thumbs span {
+      font-weight: bold;
+      margin: 0 5px;
+      cursor: pointer;
+    }
+    .thumb-up-btn:hover, .thumb-down-btn:hover {
+      transform: scale(1.2);
+      transition: transform 0.15s ease;
+      color: #1e90ff; /* Dashboard primary color */
+    }
+
+    .report-comments {
+      margin-top: 10px;
+    }
+    .report-comments ul {
+      list-style: none;
+      padding: 0;
+      margin: 5px 0;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .report-comments li {
+      font-size: 0.85rem;
+      margin-bottom: 5px;
+    }
+    .report-comments form {
+      display: flex;
+      gap: 5px;
+      margin-top: 5px;
+    }
+    .report-comments input[type="text"] {
+      flex: 1;
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    .report-comments button {
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: none;
+      background-color: #1e90ff;
+      color: #fff;
+      cursor: pointer;
+    }
+    .report-comments button:hover {
+      background-color: #0d6efd;
+    }
+
+    nav.navbar {
+      display: flex;
+      justify-content: space-between;
+      background-color: #1e90ff;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 0 0 10px 10px;
+      margin-bottom: 20px;
+    }
+    nav.navbar a {
+      color: white;
+      text-decoration: none;
+      margin-left: 15px;
+    }
+    nav.navbar a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <nav class="navbar">
-    <a href="/dashboard.html">Nyumbani</a>
-    <a href="/logout">Logout</a>
-    <span style="margin-left:20px;">Umeingia kama: <strong><%= loggedInUser %></strong></span>
+    <div>Unaangalia ripoti za <strong><%= username %></strong></div>
+    <div>
+      <span>Umeingia kama <strong><%= loggedInUser %></strong></span>
+      <a href="/dashboard.html">Nyumbani</a>
+      <a href="/logout">Logout</a>
+    </div>
   </nav>
 
   <div class="container">
-    <h2>Ukitembelea <%= username %> | Ripoti zake</h2>
+    <!-- Summary -->
+    <div class="user-summary">
+      <div>
+        <div id="total-posts">0</div>
+        <div>Posts</div>
+      </div>
+      <div>
+        <div id="total-thumbs-up">0</div>
+        <div>👍 Jumla</div>
+      </div>
+      <div>
+        <div id="total-thumbs-down">0</div>
+        <div>👎 Jumla</div>
+      </div>
+    </div>
+
     <div id="reports-container" class="reports-grid"></div>
-    <div class="pagination" id="pagination"></div>
   </div>
 
   <template id="report-template">
@@ -35,12 +162,12 @@
       </div>
       <div class="card-body">
         <p class="report-description"></p>
-        <img class="report-image" src="" alt="" style="max-width:100%; display:none; margin-top:10px;">
+        <img class="report-image" src="" alt="">
       </div>
       <div class="card-footer">
         <div class="report-thumbs">
-          <span class="thumb-up">👍 <span class="thumbs-up">0</span></span>
-          <span class="thumb-down">👎 <span class="thumbs-down">0</span></span>
+          <span class="thumb-up-btn">👍</span> <span class="thumbs-up">0</span> |
+          <span class="thumb-down-btn">👎</span> <span class="thumbs-down">0</span>
         </div>
         <div class="report-comments">
           <h4>Maoni:</h4>
@@ -58,24 +185,27 @@
     const username = "<%= username %>";
     const loggedInUser = "<%= loggedInUser %>";
     const reportsContainer = document.getElementById('reports-container');
-    const paginationContainer = document.getElementById('pagination');
     const reportTemplate = document.getElementById('report-template');
 
-    let currentPage = 1;
-    const limit = 10;
-    let totalPages = 1;
-
-    async function fetchReports(page = 1) {
+    async function fetchReports() {
       try {
-        const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}&page=${page}&limit=${limit}`);
+        const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
         const data = await res.json();
-        totalPages = data.totalPages || 1;
         displayReports(data.reports);
-        setupPagination();
+        updateSummary(data.reports);
       } catch (err) {
         console.error("Error fetching reports:", err);
         reportsContainer.innerHTML = "<p>Kuna tatizo kupata ripoti.</p>";
       }
+    }
+
+    function updateSummary(reports) {
+      const totalPosts = reports.length;
+      const thumbsUp = reports.reduce((sum, r) => sum + (r.thumbs_up || 0), 0);
+      const thumbsDown = reports.reduce((sum, r) => sum + (r.thumbs_down || 0), 0);
+      document.getElementById('total-posts').textContent = totalPosts;
+      document.getElementById('total-thumbs-up').textContent = thumbsUp;
+      document.getElementById('total-thumbs-down').textContent = thumbsDown;
     }
 
     function displayReports(reports) {
@@ -93,13 +223,8 @@
           img.style.display = "block";
         }
 
-        const thumbsUp = clone.querySelector(".thumbs-up");
-        const thumbsDown = clone.querySelector(".thumbs-down");
-        const thumbUpSpan = clone.querySelector(".thumb-up");
-        const thumbDownSpan = clone.querySelector(".thumb-down");
-
-        thumbsUp.textContent = r.thumbs_up || 0;
-        thumbsDown.textContent = r.thumbs_down || 0;
+        clone.querySelector(".thumbs-up").textContent = r.thumbs_up || 0;
+        clone.querySelector(".thumbs-down").textContent = r.thumbs_down || 0;
 
         const commentsList = clone.querySelector(".comments-list");
         r.comments.forEach(c => {
@@ -108,7 +233,7 @@
           commentsList.appendChild(li);
         });
 
-        // Comment submission
+        // Live comment posting
         const commentForm = clone.querySelector(".comment-form");
         commentForm.addEventListener("submit", async (e) => {
           e.preventDefault();
@@ -134,66 +259,39 @@
           }
         });
 
-        thumbUpSpan.addEventListener("click", () => react(r.id, 'up', thumbUpSpan, thumbDownSpan, thumbsUp, thumbsDown));
-        thumbDownSpan.addEventListener("click", () => react(r.id, 'down', thumbUpSpan, thumbDownSpan, thumbsUp, thumbsDown));
+        // Thumbs interactivity
+        const thumbUpBtn = clone.querySelector(".thumb-up-btn");
+        const thumbDownBtn = clone.querySelector(".thumb-down-btn");
+
+        if (r.username === loggedInUser) {
+          thumbUpBtn.style.cursor = "not-allowed";
+          thumbDownBtn.style.cursor = "not-allowed";
+        } else {
+          thumbUpBtn.addEventListener("click", async () => react(r.id, "up", clone));
+          thumbDownBtn.addEventListener("click", async () => react(r.id, "down", clone));
+        }
 
         reportsContainer.appendChild(clone);
       });
     }
 
-    function setupPagination() {
-      paginationContainer.innerHTML = "";
-      if (totalPages <= 1) return;
-
-      const prevBtn = document.createElement("button");
-      prevBtn.textContent = "Previous";
-      prevBtn.disabled = currentPage === 1;
-      prevBtn.addEventListener("click", () => { if(currentPage>1){ currentPage--; fetchReports(currentPage); } });
-      paginationContainer.appendChild(prevBtn);
-
-      for (let i = 1; i <= totalPages; i++) {
-        const btn = document.createElement("button");
-        btn.textContent = i;
-        btn.classList.toggle("active", i === currentPage);
-        btn.addEventListener("click", () => {
-          currentPage = i;
-          fetchReports(currentPage);
-        });
-        paginationContainer.appendChild(btn);
-      }
-
-      const nextBtn = document.createElement("button");
-      nextBtn.textContent = "Next";
-      nextBtn.disabled = currentPage === totalPages;
-      nextBtn.addEventListener("click", () => { if(currentPage<totalPages){ currentPage++; fetchReports(currentPage); } });
-      paginationContainer.appendChild(nextBtn);
-    }
-
-    async function react(reportId, type, thumbUpSpan, thumbDownSpan, thumbsUp, thumbsDown) {
+    async function react(reportId, type, clone) {
       try {
         const res = await fetch(`/api/reactions/${reportId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ type })
         });
-        if (!res.ok) {
-          const msg = await res.text();
-          alert(msg || "Tatizo kutoa thumbs");
-          return;
-        }
+        if (!res.ok) throw new Error("Tatizo ku-react");
         const data = await res.json();
-        thumbsUp.textContent = data.thumbs_up;
-        thumbsDown.textContent = data.thumbs_down;
-
-        thumbUpSpan.classList.toggle('active', type === 'up');
-        thumbDownSpan.classList.toggle('active', type === 'down');
+        clone.querySelector(".thumbs-up").textContent = data.thumbs_up;
+        clone.querySelector(".thumbs-down").textContent = data.thumbs_down;
       } catch (err) {
         console.error(err);
-        alert("Tatizo kutoa thumbs");
       }
     }
 
-    fetchReports(currentPage);
+    fetchReports();
   </script>
 </body>
 </html>
