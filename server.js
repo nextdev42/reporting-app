@@ -226,71 +226,11 @@ app.get("/api/users", auth, async (req, res) => {
 // Route to show all reports of a specific user
 
 
-app.get("/user/:username", auth, async (req, res) => {
-  const username = req.params.username;
 
-  try {
-    const userReportsRes = await pool.query(
-      `SELECT r.*, u.jina AS username, u.kituo AS clinic
-       FROM reports r
-       JOIN users u ON r.user_id = u.id
-       WHERE TRIM(LOWER(u.jina)) LIKE TRIM(LOWER($1)) || '%'
-       ORDER BY r.timestamp DESC`,
-      [username]
-    );
-
-    const reports = userReportsRes.rows;
-    const reportIds = reports.map(r => r.id);
-
-    // Fetch comments
-    let comments = [];
-    if (reportIds.length) {
-      const commentRes = await pool.query(
-        `SELECT c.*, u.jina AS username, u.kituo AS clinic
-         FROM comments c
-         JOIN users u ON c.user_id = u.id
-         WHERE report_id = ANY($1::int[])
-         ORDER BY c.id DESC`,
-        [reportIds]
-      );
-      comments = commentRes.rows;
-    }
-
-    // Fetch reactions
-    let reactions = [];
-    if (reportIds.length) {
-      const reactRes = await pool.query(
-        `SELECT report_id,
-                COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
-                COUNT(*) FILTER (WHERE type='down') AS thumbs_down
-         FROM reactions
-         WHERE report_id = ANY($1::int[])
-         GROUP BY report_id`,
-        [reportIds]
-      );
-      reactions = reactRes.rows;
-    }
-
-    // Attach comments, reactions, and format timestamps
-    reports.forEach(r => {
-      r.timestamp = formatTanzaniaTime(new Date(r.timestamp));
-
-      r.comments = comments
-        .filter(c => c.report_id === r.id)
-        .map(c => ({ ...c, timestamp: formatTanzaniaTime(new Date(c.timestamp)) }));
-
-      const react = reactions.find(re => re.report_id === r.id);
-      r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
-      r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
-    });
-
-    res.render("user-reports", { username, reports });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Kuna tatizo kwenye seva");
-  }
+app.get("/user/:username", auth, (req, res) => {
+  res.render("user-reports", { username: req.params.username });
 });
+    
     
 // ====== Submit report ======
 
