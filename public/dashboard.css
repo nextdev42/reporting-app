@@ -78,6 +78,14 @@ nav button:hover {
 .toggle-btn:hover {
   background: #45a049;
 }
+.filters-wrapper {
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+  max-height: 600px; /* fully open height */
+}
+.filters-wrapper.collapsed {
+  max-height: 0;
+}
 
 /* ========== FORM SECTIONS ========== */
 .form-section, .reports-section {
