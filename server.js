@@ -225,11 +225,12 @@ app.get("/api/users", auth, async (req, res) => {
 // Route to show all reports of a specific user
 // Route to show all reports of a specific user
 
+
 app.get("/user/:username", auth, async (req, res) => {
   const username = req.params.username;
 
   try {
-    const userReports = await pool.query(
+    const userReportsRes = await pool.query(
       `SELECT r.*, u.jina AS username, u.kituo AS clinic
        FROM reports r
        JOIN users u ON r.user_id = u.id
@@ -238,7 +239,10 @@ app.get("/user/:username", auth, async (req, res) => {
       [username]
     );
 
-    const reportIds = userReports.rows.map(r => r.id);
+    const reports = userReportsRes.rows;
+    const reportIds = reports.map(r => r.id);
+
+    // Fetch comments
     let comments = [];
     if (reportIds.length) {
       const commentRes = await pool.query(
@@ -252,21 +256,42 @@ app.get("/user/:username", auth, async (req, res) => {
       comments = commentRes.rows;
     }
 
-    userReports.rows.forEach(r => {
+    // Fetch reactions
+    let reactions = [];
+    if (reportIds.length) {
+      const reactRes = await pool.query(
+        `SELECT report_id,
+                COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
+                COUNT(*) FILTER (WHERE type='down') AS thumbs_down
+         FROM reactions
+         WHERE report_id = ANY($1::int[])
+         GROUP BY report_id`,
+        [reportIds]
+      );
+      reactions = reactRes.rows;
+    }
+
+    // Attach comments, reactions, and format timestamps
+    reports.forEach(r => {
+      r.timestamp = formatTanzaniaTime(new Date(r.timestamp));
+
       r.comments = comments
         .filter(c => c.report_id === r.id)
-        .map(c => ({ ...c, timestamp: formatTanzaniaTime(c.timestamp) }));
-      r.timestamp = formatTanzaniaTime(r.timestamp);
+        .map(c => ({ ...c, timestamp: formatTanzaniaTime(new Date(c.timestamp)) }));
+
+      const react = reactions.find(re => re.report_id === r.id);
+      r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
+      r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
     });
 
-    console.log("Found:", userReports.rows.length)  // <-- optional debug
-    res.render("user-reports", { username, reports: userReports.rows });
+    res.render("user-reports", { username, reports });
 
   } catch (err) {
     console.error(err);
     res.status(500).send("Kuna tatizo kwenye seva");
   }
 });
+    
 // ====== Submit report ======
 
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
