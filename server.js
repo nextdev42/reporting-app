@@ -113,6 +113,7 @@ const upload = multer({ dest: uploadDir });
 function auth(req,res,next){ if(!req.session.userId) return res.redirect("/"); next(); }
 
 // Redirect logged-in users to their profile page
+// Redirect logged-in users to their profile
 const redirectToProfile = (req, res, next) => {
   if (req.session && req.session.userId) {
     return res.redirect(`/user/${encodeURIComponent(req.session.jina)}`);
