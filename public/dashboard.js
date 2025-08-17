@@ -143,6 +143,7 @@ async function fetchReports(page=1) {
       <a href="/user/${report.username}" class="avatar">${report.username.charAt(0).toUpperCase()}</a>
       <div class="user-info">
         <a href="/user/${report.username}" class="username">${report.username}</a>
+        <span class="time">${formatDate(report.timestamp)}</span>
         <span class="clinic">${report.clinic}</span>
       </div>
     </div>
