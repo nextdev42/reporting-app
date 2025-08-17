@@ -184,17 +184,47 @@ app.get("/api/users", auth, async (req, res) => {
 });
 
 // Route to show all reports of a specific user
-app.get("/user/:username", async (req, res) => {
+// Route to show all reports of a specific user
+app.get("/user/:username", auth, async (req, res) => {
   const username = req.params.username;
 
   try {
-    // Fetch reports for that user from your database
+    // Join reports with users to get reports for this username
     const userReports = await pool.query(
-      "SELECT * FROM reports WHERE username = $1 ORDER BY timestamp DESC",
+      `SELECT r.*, u.jina AS username, u.kituo AS clinic
+       FROM reports r
+       JOIN users u ON r.user_id = u.id
+       WHERE LOWER(u.jina) = LOWER($1)
+       ORDER BY r.timestamp DESC`,
       [username]
     );
 
+    // Fetch comments for these reports
+    const reportIds = userReports.rows.map(r => r.id);
+    let comments = [];
+    if (reportIds.length) {
+      const commentRes = await pool.query(
+        `SELECT c.*, u.jina AS username, u.kituo AS clinic
+         FROM comments c
+         JOIN users u ON c.user_id = u.id
+         WHERE report_id = ANY($1::int[])
+         ORDER BY c.id DESC`,
+        [reportIds]
+      );
+      comments = commentRes.rows;
+    }
+
+    // Attach comments to reports
+    userReports.rows.forEach(r => {
+      r.comments = comments
+        .filter(c => c.report_id === r.id)
+        .map(c => ({ ...c, timestamp: formatTanzaniaTime(c.timestamp) }));
+
+      r.timestamp = formatTanzaniaTime(r.timestamp);
+    });
+
     res.render("user-reports", { username, reports: userReports.rows });
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Kuna tatizo kwenye seva");
