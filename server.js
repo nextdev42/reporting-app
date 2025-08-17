@@ -171,13 +171,18 @@ app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req
 // List of all users for mention dropdown
 app.get("/api/users", auth, async (req, res) => {
   try {
-    const r = await pool.query("SELECT jina FROM users ORDER BY jina ASC");
-    res.json(r.rows.map(u => u.jina));
+    const r = await pool.query("SELECT DISTINCT LOWER(jina) AS jina FROM users ORDER BY LOWER(jina) ASC");
+    
+    // Capitalize first letter (optional)
+    const users = r.rows.map(u => u.jina.charAt(0).toUpperCase() + u.jina.slice(1));
+    
+    res.json(users);
   } catch (err) {
     console.error("Error fetching users", err);
     res.status(500).send("Server error");
   }
 });
+
 
 // ====== Submit report ======
 
