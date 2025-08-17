@@ -225,11 +225,13 @@ app.get("/api/users", auth, async (req, res) => {
 // Route to show all reports of a specific user
 // Route to show all reports of a specific user
 
+
 app.get("/user/:username", auth, async (req, res) => {
   const username = req.params.username;
 
   try {
-    const userReports = await pool.query(
+    // Fetch all reports for this user
+    const userReportsRes = await pool.query(
       `SELECT r.*, u.jina AS username, u.kituo AS clinic
        FROM reports r
        JOIN users u ON r.user_id = u.id
@@ -237,8 +239,11 @@ app.get("/user/:username", auth, async (req, res) => {
        ORDER BY r.timestamp DESC`,
       [username]
     );
+    const userReports = userReportsRes.rows;
 
-    const reportIds = userReports.rows.map(r => r.id);
+    const reportIds = userReports.map(r => r.id);
+
+    // Fetch all comments for these reports
     let comments = [];
     if (reportIds.length) {
       const commentRes = await pool.query(
@@ -252,21 +257,29 @@ app.get("/user/:username", auth, async (req, res) => {
       comments = commentRes.rows;
     }
 
-    userReports.rows.forEach(r => {
-      r.comments = comments
-        .filter(c => c.report_id === r.id)
-        .map(c => ({ ...c, timestamp: formatTanzaniaTime(c.timestamp) }));
-      r.timestamp = formatTanzaniaTime(r.timestamp);
+    // Format timestamps for reports and comments
+    userReports.forEach(report => {
+      // Format report timestamp
+      report.timestamp = formatTanzaniaTime(report.timestamp);
+
+      // Attach comments for this report
+      report.comments = comments
+        .filter(c => c.report_id === report.id)
+        .map(c => ({
+          ...c,
+          timestamp: formatTanzaniaTime(c.timestamp) // ensure proper formatting
+        }));
     });
 
-    console.log("Found:", userReports.rows.length)  // <-- optional debug
-    res.render("user-reports", { username, reports: userReports.rows });
+    console.log("Found reports:", userReports.length);
+    res.render("user-reports", { username, reports: userReports });
 
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching user reports:", err);
     res.status(500).send("Kuna tatizo kwenye seva");
   }
 });
+    
 // ====== Submit report ======
 
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
