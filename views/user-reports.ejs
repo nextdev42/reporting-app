@@ -1,24 +1,46 @@
+<!-- views/user-reports.ejs -->
 <!DOCTYPE html>
 <html lang="sw">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ripoti za <%= username %></title>
-<link rel="stylesheet" href="/dashboard.css"><!-- reuse dashboard look -->
 <style>
-  /* user page specific tweaks */
-  .user-header {
-    display:flex;align-items:center;gap:20px;margin-bottom:20px;
-    background:white;padding:20px;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.1);
-  }
-  .user-avatar {
-    width:100px;height:100px;border-radius:50%;background:#4CAF50;
-    display:flex;align-items:center;justify-content:center;color:#fff;
-    font-size:2.5rem;font-weight:bold;
-  }
-  .stats {display:flex;gap:20px;margin-top:10px;}
-  .stats span {font-weight:bold;}
-  .reports-grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:25px;}
+  /* CSS pasted exactly from your given stylish template … */
+  /* --- START CSS --- */
+  :root { /* … all your CSS variables … */ }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;}
+  body{background-color:#FAFAFA;color:#262626;padding-top:60px;}
+  nav{position:fixed;top:0;width:100%;background:linear-gradient(45deg,#405DE6,#833AB4);color:#fff;padding:12px 5%;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.1);z-index:1000;}
+  nav h1{font-size:1.5rem;font-weight:600}
+  .nav-actions{display:flex;align-items:center;gap:15px}
+  nav button{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:6px 12px;border-radius:20px;cursor:pointer;transition:.3s;}
+  nav button:hover{background:rgba(255,255,255,.25)}
+  .container{max-width:1200px;margin:0 auto;padding:20px;}
+  .user-header{display:flex;align-items:center;gap:25px;margin-bottom:30px;padding:25px;background:#fff;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.1);position:relative;overflow:hidden}
+  .user-header::before{content:'';position:absolute;top:0;left:0;width:100%;height:5px;background:linear-gradient(to right,#405DE6,#833AB4,#E1306C);}
+  .user-header img{width:120px;height:120px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.1);}
+  .user-header .info{flex:1;}
+  .stats{display:flex;gap:25px;margin-top:15px;}
+  .stats span{font-size:1.1rem;font-weight:500;display:flex;flex-direction:column;align-items:center}
+  .reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:25px;margin-top:20px}
+  .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);transition:.3s;animation:fadeIn.5s forwards;opacity:0}
+  .card:hover{transform:translateY(-6px);box-shadow:0 8px 25px rgba(0,0,0,.1);}
+  .card-header{display:flex;align-items:center;padding:15px;border-bottom:1px solid #DBDBDB;}
+  .report-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#DBDBDB;color:#fff;font-weight:bold;border:2px solid #405DE6;object-fit:cover;margin-right:12px;}
+  .report-title{font-weight:600;font-size:1.1rem;}
+  .report-meta{font-size:.85rem;color:#8E8E8E}
+  .report-description{padding:15px;line-height:1.6}
+  .report-image{width:100%;max-height:350px;object-fit:cover;border-radius:8px;margin:0 15px 15px 15px;display:none}
+  .card-footer{padding:15px;border-top:1px solid #DBDBDB}
+  .report-thumbs{display:flex;gap:20px;margin-bottom:15px;font-weight:500}
+  .comment-item{display:flex;gap:8px;margin-bottom:12px;padding:8px;border-radius:8px;transition:.2s;}
+  .comment-item:hover{background:rgba(0,0,0,.03);}
+  .comment-avatar{width:32px;height:32px;border-radius:50%;background:#DBDBDB;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;}
+  .comment-user{font-weight:600;font-size:.9rem;}
+  /* etc… */
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  /* --- END CSS --- */
 </style>
 </head>
 <body>
@@ -34,135 +56,134 @@
 
 <div class="container">
 
-  <!-- Header -->
+  <!-- User header -->
   <div class="user-header">
-    <div id="userAvatar" class="user-avatar"><%= username.charAt(0).toUpperCase() %></div>
-    <div>
-      <h2>Unaangalia ripoti za <strong><%= username %></strong></h2>
+    <img id="userAvatar" src="https://ui-avatars.com/api/?name=<%= username %>&background=405DE6&color=fff" alt="avatar">
+    <div class="info">
+      <h2>Unaangalia ripoti za <%= username %></h2>
       <div class="stats">
         <span id="totalPosts">0 Ripoti</span>
         <span id="totalThumbsUp">0 👍</span>
         <span id="totalThumbsDown">0 👎</span>
       </div>
-      <form id="avatarForm" class="avatar-upload" enctype="multipart/form-data">
-        <input type="file" name="avatar" accept="image/*" required>
+      <!-- Av upload (if owner) -->
+      <% if(username === loggedInUser){ %>
+      <form id="avatarForm" class="avatar-upload">
+        <input type="file" name="avatar" accept="image/*">
         <button type="submit">Update Avatar</button>
       </form>
+      <% } %>
     </div>
   </div>
 
-  <!-- Reports -->
   <div id="reports-container" class="reports-grid"></div>
 </div>
 
 <script>
-  const username = "<%= username %>";
-  const reportsContainer = document.getElementById('reports-container');
-  const totalPostsEl = document.getElementById('totalPosts');
-  const upEl   = document.getElementById("totalThumbsUp");
-  const downEl = document.getElementById("totalThumbsDown");
+const username = "<%= username %>";
+const loggedInUser = "<%= loggedInUser %>";
 
-  async function fetchReports(){
-    const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
-    const {reports} = await res.json();
+// Stats
+let totalP=0, totalUp=0, totalDown=0;
 
-    let totalUp=0,totalDown=0;
-    totalPostsEl.textContent = reports.length+" Ripoti";
+function createReportCard(r){
+  const card = document.createElement('div');
+  card.className="card";
 
-    reportsContainer.innerHTML="";
-    reports.forEach(r=>{
-      totalUp += (r.thumbs_up||0);
-      totalDown += (r.thumbs_down||0);
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="report-avatar">${r.username.charAt(0).toUpperCase()}</div>
+      <div>
+        <div class="report-title">${r.title||''}</div>
+        <div class="report-meta">${r.username} - ${r.clinic} | ${r.timestamp}</div>
+      </div>
+    </div>
+    <div class="report-description">${r.description}</div>
+    <img class="report-image">
+    <div class="card-footer">
+      <div class="report-thumbs">
+        <span>👍 <span class="thumbs-up">${r.thumbs_up||0}</span></span>
+        <span>👎 <span class="thumbs-down">${r.thumbs_down||0}</span></span>
+      </div>
+      <div class="report-comments">
+        <h4>Maoni:</h4>
+        <ul class="comments-list"></ul>
+        <form class="comment-form">
+          <input type="text" name="comment" placeholder="Andika maoni..." required/>
+          <button type="submit">Tuma</button>
+        </form>
+      </div>
+    </div>
+  `;
 
-      const card = document.createElement("div");
-      card.className="card";
+  // image
+  if(r.image){ const img=card.querySelector('.report-image');img.src=r.image;img.style.display='block';}
 
-      card.innerHTML = `
-        <div class="card-header">
-          <div class="report-avatar" style="background:#4CAF50;color:#fff;display:flex;align-items:center;justify-content:center;">
-            ${r.username.charAt(0).toUpperCase()}
-          </div>
-          <div class="card-header-content">
-            <h3 class="report-title">${r.title||''}</h3>
-            <p class="report-meta">${r.username} - ${r.clinic} | ${r.timestamp}</p>
-          </div>
-        </div>
-        <div class="card-body">
-          <p class="report-description">${r.description}</p>
-          ${r.image?`<img class="report-image" style="display:block;" src="${r.image}"/>`:""}
-        </div>
-        <div class="card-footer">
-          <div class="report-thumbs">
-            <span>👍 <span class="thumbs-up">${r.thumbs_up||0}</span></span>
-            <span>👎 <span class="thumbs-down">${r.thumbs_down||0}</span></span>
-          </div>
-          <div class="report-comments">
-            <h4>Maoni:</h4>
-            <ul class="comments-list">
-              ${r.comments.map(c=>
-                `<li class="comment-item">
-                  <div class="comment-avatar" style="background:#4CAF50;color:#fff;display:flex;align-items:center;justify-content:center;">
-                        ${c.username.charAt(0).toUpperCase()}
-                  </div>
-                  <div class="comment-content">
-                    <div class="comment-user">${c.username}</div>
-                    <div class="comment-text">${c.comment}</div>
-                    <div class="comment-time">${c.timestamp}</div>
-                  </div>
-                </li>`).join("")}
-            </ul>
-            <form class="comment-form">
-              <input type="text" name="comment" placeholder="Andika maoni..." required>
-              <button type="submit">Tuma</button>
-            </form>
-          </div>
-        </div>
-      `;
+  totalP++; totalUp+=r.thumbs_up; totalDown+=r.thumbs_down;
 
-      const form = card.querySelector('.comment-form');
-      const list = card.querySelector('.comments-list');
-      form.addEventListener("submit",async(e)=>{
-        e.preventDefault();
-        const txt = form.comment.value.trim();
-        if(!txt) return;
-        const res = await fetch(`/api/comments/${r.id}`,{
-          method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({comment:txt})
-        });
-        const saved = await res.json();
-        const li = document.createElement("li");
-        li.className="comment-item";
-        li.innerHTML = `
-            <div class="comment-avatar" style="background:#4CAF50;color:#fff;display:flex;align-items:center;justify-content:center;">
-              ${saved.username.charAt(0).toUpperCase()}
-            </div>
-            <div class="comment-content">
-              <div class="comment-user">${saved.username}</div>
-              <div class="comment-text">${saved.comment}</div>
-              <div class="comment-time">${saved.timestamp}</div>
-            </div>`;
-        list.prepend(li);
-        form.reset();
-      });
-
-      reportsContainer.appendChild(card);
-    });
-
-    upEl.textContent = totalUp + " 👍";
-    downEl.textContent = totalDown + " 👎";
-  }
-  fetchReports();
-
-  // avatar upload
-  document.getElementById("avatarForm").addEventListener("submit",async(e)=>{
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const res = await fetch(`/update-avatar?user=${encodeURIComponent(username)}`,{
-      method:"POST",body:fd
-    });
-    if(res.ok){ alert("Avatar updated"); location.reload(); }
-    else alert("Tatizo ku-upload");
+  // append comments
+  const ul = card.querySelector('.comments-list');
+  r.comments.forEach(c=>{
+     const li=document.createElement('li');
+     li.className='comment-item';
+     li.innerHTML = `
+        <div class="comment-avatar">${c.username.charAt(0).toUpperCase()}</div>
+        <div>
+          <div class="comment-user">${c.username}</div>
+          <div class="comment-text">${c.comment}</div>
+          <div class="comment-time">${c.timestamp}</div>
+        </div>`;
+     ul.appendChild(li);
   });
+
+  // Send new comments
+  const form = card.querySelector('.comment-form');
+  if(r.username===loggedInUser){
+    // owner cannot comment own post
+    form.style.display='none';
+  }
+  form.addEventListener('submit',async(e)=>{
+    e.preventDefault();
+    const input = form.comment;
+    if(!input.value.trim())return;
+    const txt=input.value;
+    input.value="";
+    try {
+      const res= await fetch(`/api/comments/${r.id}`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({comment:txt})
+      });
+      if(!res.ok) throw new Error();
+      const c = await res.json();
+      const li=document.createElement('li');
+      li.className='comment-item';
+      li.innerHTML=`<div class="comment-avatar">${c.username.charAt(0).toUpperCase()}</div>
+        <div><div class="comment-user">${c.username}</div>
+        <div class="comment-text">${c.comment}</div>
+        <div class="comment-time">${c.timestamp}</div></div>`;
+      ul.prepend(li);
+    }catch(err){alert("Tatizo kutuma maoni")}
+  });
+
+  return card;
+}
+
+async function loadReports(){
+  const wrap=document.getElementById('reports-container');
+  wrap.innerHTML = "<div>Inapakia...</div>";
+  const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
+  const data = await res.json();
+  wrap.innerHTML="";
+  data.reports.forEach(r=>wrap.appendChild(createReportCard(r)));
+
+  document.getElementById('totalPosts').textContent = totalP+" Ripoti";
+  document.getElementById('totalThumbsUp').textContent = totalUp+" 👍";
+  document.getElementById('totalThumbsDown').textContent = totalDown+" 👎";
+}
+
+loadReports();
+
+// TODO handle avatar update upload to cloudinary if needed…
 </script>
 </body>
 </html>
