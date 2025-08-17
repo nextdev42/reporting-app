@@ -11,7 +11,7 @@
 <nav>
   <h1>Ripoti za <span id="usernameTitle"><%= username %></span></h1>
   <div class="nav-actions">
-    <button onclick="location.href='/dashboard.html'">Nyumbani</button>
+    <button onclick="location.href='/'">Nyumbani</button>
     <button onclick="location.href='/logout'">Toka</button>
   </div>
 </nav>
@@ -24,8 +24,8 @@
 </div>
 
 <script>
-const username = "<%= username %>"; 
-const reports = <%= JSON.stringify(reports) %>;
+const username = "<%= username %>";
+const reports = <%- JSON.stringify(reports) %>; // <%- avoids escaping JSON
 
 document.getElementById("usernameTitle").textContent = username;
 
@@ -68,7 +68,9 @@ function renderReportCard(report) {
         ${report.comments.map(c => `
           <div class="comment-item">
             <div class="comment-header">
-              <span class="username" onclick="location.href='/user/${c.username}'">${c.username} (${c.clinic})</span>
+              <span class="username" onclick="location.href='/user/${c.username}'">
+                ${c.username} (${c.clinic})
+              </span>
               <span class="time">${formatDate(c.timestamp)}</span>
             </div>
             <p>${highlightMentions(c.comment)}</p>
@@ -84,7 +86,6 @@ function renderReportCard(report) {
     </div>
   `;
 
-  // Chat toggle
   const toggle = card.querySelector(".comment-toggle");
   const inputBox = card.querySelector(".comment-input");
   toggle.addEventListener("click", () => {
