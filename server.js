@@ -146,15 +146,33 @@ function getTanzaniaTimestamp(){
 }
 
 // Format timestamp for display
-function formatTanzaniaTime(date) {
-  const ts = new Date(date);
-  return !isNaN(ts) 
-    ? ts.toLocaleString("sw-TZ", {
-        day:"2-digit", month:"long", year:"numeric",
-        hour:"2-digit", minute:"2-digit", second:"2-digit",
-        hour12:false
-      })
-    : "Haijulikani";
+// ====== Tanzania timestamp helper ======
+function formatTanzaniaTime(ts) {
+  // Ensure we have a Date object
+  let dateObj;
+  if (ts instanceof Date) {
+    dateObj = ts;
+  } else {
+    // Try to parse string/timestamp safely
+    dateObj = new Date(ts);
+  }
+
+  // If still invalid, return placeholder
+  if (isNaN(dateObj.getTime())) return "Haijulikani";
+
+  // Apply UTC+3 offset
+  const tzOffsetMinutes = 3 * 60;
+  const localDate = new Date(dateObj.getTime() + (tzOffsetMinutes - dateObj.getTimezoneOffset()) * 60000);
+
+  return localDate.toLocaleString("sw-TZ", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
 }
 
 // ====== Routes ======
@@ -230,7 +248,7 @@ app.get("/user/:username", auth, async (req, res) => {
   const username = req.params.username;
 
   try {
-    // Fetch all reports for this user
+    // Get user reports
     const userReportsRes = await pool.query(
       `SELECT r.*, u.jina AS username, u.kituo AS clinic
        FROM reports r
@@ -239,11 +257,11 @@ app.get("/user/:username", auth, async (req, res) => {
        ORDER BY r.timestamp DESC`,
       [username]
     );
-    const userReports = userReportsRes.rows;
 
-    const reportIds = userReports.map(r => r.id);
+    const reports = userReportsRes.rows;
+    const reportIds = reports.map(r => r.id);
 
-    // Fetch all comments for these reports
+    // Get all comments for these reports
     let comments = [];
     if (reportIds.length) {
       const commentRes = await pool.query(
@@ -257,28 +275,33 @@ app.get("/user/:username", auth, async (req, res) => {
       comments = commentRes.rows;
     }
 
-    // Format timestamps for reports and comments
-    userReports.forEach(report => {
-      // Format report timestamp
-      report.timestamp = formatTanzaniaTime(report.timestamp);
-
-      // Attach comments for this report
-      report.comments = comments
-        .filter(c => c.report_id === report.id)
-        .map(c => ({
-          ...c,
-          timestamp: formatTanzaniaTime(c.timestamp) // ensure proper formatting
-        }));
+    // Map comments to their reports and format timestamps
+    const commentsByReport = {};
+    comments.forEach(c => {
+      if (!commentsByReport[c.report_id]) commentsByReport[c.report_id] = [];
+      commentsByReport[c.report_id].push({
+        ...c,
+        timestamp: formatTanzaniaTime(c.timestamp)
+      });
     });
 
-    console.log("Found reports:", userReports.length);
-    res.render("user-reports", { username, reports: userReports });
+    // Attach comments and format report timestamps
+    const formattedReports = reports.map(r => ({
+      ...r,
+      timestamp: formatTanzaniaTime(r.timestamp),
+      comments: commentsByReport[r.id] || []
+    }));
+
+    res.render("user-reports", { username, reports: formattedReports });
 
   } catch (err) {
-    console.error("Error fetching user reports:", err);
+    console.error(err);
     res.status(500).send("Kuna tatizo kwenye seva");
   }
 });
+
+    
+    
     
 // ====== Submit report ======
 
