@@ -7,98 +7,110 @@
   <link rel="stylesheet" href="/dashboard.css">
 </head>
 <body>
+  <nav>
+    <a href="/dashboard.html">Nyumbani</a>
+    <a href="/logout">Logout</a>
+  </nav>
 
-<nav>
-  <h1>Ripoti za <span id="usernameTitle"><%= username %></span></h1>
-  <div class="nav-actions">
-    <button onclick="location.href='/'">Nyumbani</button>
-    <button onclick="location.href='/logout'">Toka</button>
+  <div class="container">
+    <h2>Ripoti za <%= username %></h2>
+    <div id="reports-container"></div>
   </div>
-</nav>
 
-<div class="container">
-  <div class="reports-section">
-    <h2>Ripoti Zilizowasilishwa</h2>
-    <div id="userReportsContainer"></div>
-  </div>
-</div>
-
-<script>
-  // Pass server data into JS safely
-  const username = "<%= username %>";
-  const reports = <%- JSON.stringify(reports) %>;
-
-  document.getElementById("usernameTitle").textContent = username;
-
-  function formatDate(ts) {
-    const d = new Date(ts);
-    return d.toLocaleString("sw-TZ");
-  }
-
-  function highlightMentions(text) {
-    return text.replace(/@(\w+)/g, '<a href="/user/$1">@$1</a>');
-  }
-
-  function renderReportCard(report) {
-    const card = document.createElement("div");
-    card.className = "report-card";
-
-    card.innerHTML = `
-      <div class="report-header">
-        <div class="avatar" onclick="location.href='/user/${report.username}'">
-          ${report.username.charAt(0).toUpperCase()}
-        </div>
-        <div class="user-info">
-          <span class="username" onclick="location.href='/user/${report.username}'">${report.username}</span>
-          <span class="clinic">${report.clinic}</span>
-        </div>
+  <template id="report-template">
+    <div class="report">
+      <h3 class="report-title"></h3>
+      <p class="report-meta"></p>
+      <p class="report-description"></p>
+      <img class="report-image" src="" alt="" style="max-width:300px; display:none;">
+      <div class="report-thumbs">
+        👍 <span class="thumbs-up">0</span> |
+        👎 <span class="thumbs-down">0</span>
       </div>
-
-      ${report.image ? `<div class="report-image"><img src="${report.image}" alt="Ripoti"></div>` : ""}
-
-      <div class="report-caption">${highlightMentions(report.description)}</div>
-
-      <div class="report-actions">
-        <button class="thumb-up">👍 ${report.thumbs_up || 0}</button>
-        <button class="thumb-down">👎 ${report.thumbs_down || 0}</button>
-        <span class="comment-toggle">💬</span>
+      <div class="report-comments">
+        <h4>Maoni:</h4>
+        <ul class="comments-list"></ul>
+        <form class="comment-form">
+          <input type="text" name="comment" placeholder="Andika maoni..." required>
+          <button type="submit">Tuma</button>
+        </form>
       </div>
+    </div>
+  </template>
 
-      <div class="comments-section">
-        <div class="commentsList">
-          ${report.comments.map(c => `
-            <div class="comment-item">
-              <div class="comment-header">
-                <span class="username" onclick="location.href='/user/${c.username}'">
-                  ${c.username} (${c.clinic})
-                </span>
-                <span class="time">${formatDate(c.timestamp)}</span>
-              </div>
-              <p>${highlightMentions(c.comment)}</p>
-            </div>
-          `).join('')}
-        </div>
+  <script>
+    const username = "<%= username %>";
+    const reportsContainer = document.getElementById('reports-container');
+    const reportTemplate = document.getElementById('report-template');
 
-        <div class="comment-input">
-          <input type="text" placeholder="Andika maoni yako" name="commentText">
-          <div class="mentionBox" style="display:none;"></div>
-          <button class="sendCommentBtn">Tuma</button>
-        </div>
-      </div>
-    `;
+    async function fetchReports() {
+      try {
+        const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
+        const data = await res.json();
+        displayReports(data.reports);
+      } catch (err) {
+        console.error("Error fetching reports:", err);
+        reportsContainer.innerHTML = "<p>Kuna tatizo kupata ripoti.</p>";
+      }
+    }
 
-    const toggle = card.querySelector(".comment-toggle");
-    const inputBox = card.querySelector(".comment-input");
-    toggle.addEventListener("click", () => {
-      inputBox.style.display = inputBox.style.display === "flex" ? "none" : "flex";
-    });
+    function displayReports(reports) {
+      reportsContainer.innerHTML = "";
+      reports.forEach(r => {
+        const clone = reportTemplate.content.cloneNode(true);
+        const reportEl = clone.querySelector(".report");
 
-    return card;
-  }
+        clone.querySelector(".report-title").textContent = r.title || "No Title";
+        clone.querySelector(".report-meta").textContent = `${r.username} - ${r.clinic} | ${r.timestamp}`;
+        clone.querySelector(".report-description").textContent = r.description || "";
 
-  const container = document.getElementById("userReportsContainer");
-  reports.forEach(r => container.appendChild(renderReportCard(r)));
-</script>
+        const img = clone.querySelector(".report-image");
+        if (r.image) {
+          img.src = r.image;
+          img.style.display = "block";
+        }
 
+        clone.querySelector(".thumbs-up").textContent = r.thumbs_up || 0;
+        clone.querySelector(".thumbs-down").textContent = r.thumbs_down || 0;
+
+        const commentsList = clone.querySelector(".comments-list");
+        r.comments.forEach(c => {
+          const li = document.createElement("li");
+          li.textContent = `${c.username} (${c.timestamp}): ${c.comment}`;
+          commentsList.appendChild(li);
+        });
+
+        // Live comment posting
+        const commentForm = clone.querySelector(".comment-form");
+        commentForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const input = commentForm.comment;
+          if (!input.value.trim()) return;
+
+          try {
+            const res = await fetch(`/api/comments/${r.id}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ comment: input.value.trim() })
+            });
+            if (!res.ok) throw new Error("Error posting comment");
+            const newComment = await res.json();
+
+            const li = document.createElement("li");
+            li.textContent = `${newComment.username} (${newComment.timestamp}): ${newComment.comment}`;
+            commentsList.prepend(li); // show newest first
+            input.value = "";
+          } catch (err) {
+            console.error(err);
+            alert("Tatizo ku-tuma comment");
+          }
+        });
+
+        reportsContainer.appendChild(clone);
+      });
+    }
+
+    fetchReports();
+  </script>
 </body>
 </html>
