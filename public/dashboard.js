@@ -153,37 +153,29 @@ function renderReportCard(report) {
 
   // ===== Mention Suggest =====
   // ===== Mention Suggest =====
-inp.addEventListener("input", () => {
+// ===== Mention Suggest =====
+inp.addEventListener("keyup", () => {
   const match = inp.value.match(/@(\w*)$/);
-  if (!match) {
-    mentionBox.style.display = "none";
-    return;
-  }
+  if (match) {
+    const q = match[1].toLowerCase();
 
-  const query = match[1].toLowerCase();
+    // filter and remove duplicates
+    const suggest = Array.from(new Set(
+      allUsers
+        .filter(u => u.toLowerCase().startsWith(q))
+    ));
 
-  // deduplicate and match case-insensitively
-  const seen = new Set();
-  const suggestions = allUsers
-    .filter(u => {
-      const uLower = u.toLowerCase();
-      if (uLower.startsWith(query) && !seen.has(uLower)) {
-        seen.add(uLower);
-        return true;
-      }
-      return false;
-    });
-
-  if (suggestions.length) {
-    mentionBox.innerHTML = suggestions
-      .map(u => `<div class="sItem">${u}</div>`)
-      .join('');
-    mentionBox.style.display = 'block';
-    mentionBox.scrollTop = 0; // reset scroll to top for smooth mobile experience
+    if (suggest.length) {
+      mentionBox.innerHTML = suggest.map(u => `<div class="sItem">${u}</div>`).join('');
+      mentionBox.style.display = 'block';
+    } else {
+      mentionBox.style.display = 'none';
+    }
   } else {
     mentionBox.style.display = 'none';
   }
 });
+
 
 // ===== Click on suggestion =====
 mentionBox.addEventListener("click", (e) => {
