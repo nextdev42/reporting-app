@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ripoti za Mtumiaji</title>
-<link rel="stylesheet" href="dashboard.css">
+<title>Ripoti za <%= username %></title>
+<link rel="stylesheet" href="/dashboard.css">
 </head>
 <body>
 
 <nav>
-  <h1>Ripoti za <span id="usernameTitle"></span></h1>
+  <h1>Ripoti za <span id="usernameTitle"><%= username %></span></h1>
   <div class="nav-actions">
-    <button onclick="location.href='/'">Nyumbani</button>
+    <button onclick="location.href='/dashboard.html'">Nyumbani</button>
     <button onclick="location.href='/logout'">Toka</button>
   </div>
 </nav>
@@ -24,8 +24,6 @@
 </div>
 
 <script>
-// Assume 'reports' and 'username' are passed from backend, e.g. via template engine
-// Example placeholder for testing:
 const username = "<%= username %>"; 
 const reports = <%= JSON.stringify(reports) %>;
 
@@ -70,9 +68,7 @@ function renderReportCard(report) {
         ${report.comments.map(c => `
           <div class="comment-item">
             <div class="comment-header">
-              <span class="username" onclick="location.href='/user/${c.username}'">
-                ${c.username} (${c.clinic})
-              </span>
+              <span class="username" onclick="location.href='/user/${c.username}'">${c.username} (${c.clinic})</span>
               <span class="time">${formatDate(c.timestamp)}</span>
             </div>
             <p>${highlightMentions(c.comment)}</p>
