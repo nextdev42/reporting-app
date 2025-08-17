@@ -160,63 +160,107 @@ async function fetchReports(page=1) {
   const commentBtn = card.querySelector(".comments-section button");
 
   // ===== Mention Suggest =====
-  inp.addEventListener("keyup", () => {
-    const match = inp.value.match(/@(\w*)$/);
-    if (match) {
-      const q = match[1].toLowerCase();
-      const suggest = Array.from(new Set(allUsers.filter(u => u.toLowerCase().startsWith(q))));
-      if (suggest.length) {
-        mentionBox.innerHTML = suggest.map(u => `<div class="sItem">${u}</div>`).join('');
-        mentionBox.style.display = 'block';
-      } else {
-        mentionBox.style.display = 'none';
-      }
+// ===== Mention Suggest =====
+inp.addEventListener("keyup", () => {
+  const match = inp.value.match(/@(\w*)$/);
+  if (match) {
+    const q = match[1].toLowerCase();
+    const suggest = Array.from(new Set(allUsers.filter(u => u.toLowerCase().startsWith(q))));
+    if (suggest.length) {
+      mentionBox.innerHTML = suggest.map(u => `<div class="sItem">${u}</div>`).join('');
+      mentionBox.style.display = 'block';
+
+      // Smooth scroll for mention dropdown
+      mentionBox.scrollTop = 0; // reset scroll to top
+      mentionBox.style.scrollBehavior = 'smooth';
     } else {
       mentionBox.style.display = 'none';
     }
-  });
+  } else {
+    mentionBox.style.display = 'none';
+  }
+});
 
-  mentionBox.addEventListener("click", (e) => {
-    if (e.target.classList.contains("sItem")) {
-      inp.value = inp.value.replace(/@(\w*)$/, '@' + e.target.innerText + ' ');
-      mentionBox.style.display = 'none';
-      inp.focus();
-    }
-  });
+  // Click on mention item
+mentionBox.addEventListener("click", (e) => {
+  if (e.target.classList.contains("sItem")) {
+    inp.value = inp.value.replace(/@(\w*)$/, '@' + e.target.innerText + ' ');
+    mentionBox.style.display = 'none';
+    inp.focus();
+  }
+});
 
   // ===== Add Comment =====
-  commentBtn.addEventListener("click", async () => {
-    const txt = inp.value.trim();
-    if (!txt) return alert("Andika maoni yako.");
-    inp.value = "";
+  // ===== Add Comment =====
+commentBtn.addEventListener("click", async () => {
+  const txt = inp.value.trim();
+  if (!txt) return alert("Andika maoni yako.");
+  inp.value = "";
 
-    const tempDiv = document.createElement("div");
-    tempDiv.className = "comment-item";
-    tempDiv.innerHTML = `
-      <div class="comment-header">
-        <span class="username">Wewe (${currentUser.kituo})</span>
-        <span class="time">${formatDate(new Date().toISOString())}</span>
-      </div>
-      <p>${highlightMentions(txt)}</p>
-    `;
-    commentsList.prepend(tempDiv);
+  const tempDiv = document.createElement("div");
+  tempDiv.className = "comment-item";
+  tempDiv.innerHTML = `
+    <div class="comment-header">
+      <span class="username">Wewe (${currentUser.kituo})</span>
+      <span class="time">${formatDate(new Date().toISOString())}</span>
+    </div>
+    <p>${highlightMentions(txt)}</p>
+  `;
+  commentsList.prepend(tempDiv);
 
-    try {
-      const res = await fetch(`/api/comments/${report.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comment: txt })
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const saved = await res.json();
-      tempDiv.querySelector(".username").textContent = `${saved.username} (${saved.clinic})`;
-      tempDiv.querySelector(".time").textContent = formatDate(saved.timestamp);
-      report.comments.unshift(saved);
-    } catch (err) {
-      alert("Tatizo ku-post comment");
-      tempDiv.remove();
+  // Smooth scroll to the new comment
+  tempDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Auto-scroll input into view on mobile
+  inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  try {
+    const res = await fetch(`/api/comments/${report.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment: txt })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const saved = await res.json();
+    tempDiv.querySelector(".username").textContent = `${saved.username} (${saved.clinic})`;
+    tempDiv.querySelector(".time").textContent = formatDate(saved.timestamp);
+    report.comments.unshift(saved);
+  } catch (err) {
+    alert("Tatizo ku-post comment");
+    tempDiv.remove();
+  }
+});
+
+// ===== Mention Suggest =====
+inp.addEventListener("keyup", () => {
+  const match = inp.value.match(/@(\w*)$/);
+  if (match) {
+    const q = match[1].toLowerCase();
+    const suggest = Array.from(new Set(allUsers.filter(u => u.toLowerCase().startsWith(q))));
+    if (suggest.length) {
+      mentionBox.innerHTML = suggest.map(u => `<div class="sItem">${u}</div>`).join('');
+      mentionBox.style.display = 'block';
+
+      // Smooth scroll for mention dropdown
+      mentionBox.scrollTop = 0; // reset scroll to top
+      mentionBox.style.scrollBehavior = 'smooth';
+    } else {
+      mentionBox.style.display = 'none';
     }
-  });
+  } else {
+    mentionBox.style.display = 'none';
+  }
+});
+
+// Click on mention item
+mentionBox.addEventListener("click", (e) => {
+  if (e.target.classList.contains("sItem")) {
+    inp.value = inp.value.replace(/@(\w*)$/, '@' + e.target.innerText + ' ');
+    mentionBox.style.display = 'none';
+    inp.focus();
+  }
+});
+
 
   // ===== Thumbs =====
   const thumbUp = card.querySelector(".thumb-up");
