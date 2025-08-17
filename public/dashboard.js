@@ -152,25 +152,48 @@ function renderReportCard(report) {
   const commentBtn  = card.querySelector(".comments button");
 
   // ===== Mention Suggest =====
-  inp.addEventListener("keyup", () => {
-    const match = inp.value.match(/@(\w*)$/);
-    if(match){
-      const q = match[1].toLowerCase();
-      const suggest = allUsers.filter(u=>u.toLowerCase().startsWith(q));
-      if(suggest.length){
-        mentionBox.innerHTML = suggest.map(u=>`<div class="sItem">${u}</div>`).join('');
-        mentionBox.style.display='block';
-      }else mentionBox.style.display='none';
-    }else mentionBox.style.display='none';
-  });
+  // ===== Mention Suggest =====
+inp.addEventListener("input", () => {
+  const match = inp.value.match(/@(\w*)$/);
+  if (!match) {
+    mentionBox.style.display = "none";
+    return;
+  }
 
-  mentionBox.addEventListener("click", (e)=>{
-    if(e.target.classList.contains("sItem")){
-      inp.value = inp.value.replace(/@(\w*)$/, '@'+e.target.innerText+' ');
-      mentionBox.style.display='none';
-      inp.focus();
-    }
-  });
+  const query = match[1].toLowerCase();
+
+  // deduplicate and match case-insensitively
+  const seen = new Set();
+  const suggestions = allUsers
+    .filter(u => {
+      const uLower = u.toLowerCase();
+      if (uLower.startsWith(query) && !seen.has(uLower)) {
+        seen.add(uLower);
+        return true;
+      }
+      return false;
+    });
+
+  if (suggestions.length) {
+    mentionBox.innerHTML = suggestions
+      .map(u => `<div class="sItem">${u}</div>`)
+      .join('');
+    mentionBox.style.display = 'block';
+    mentionBox.scrollTop = 0; // reset scroll to top for smooth mobile experience
+  } else {
+    mentionBox.style.display = 'none';
+  }
+});
+
+// ===== Click on suggestion =====
+mentionBox.addEventListener("click", (e) => {
+  if (e.target.classList.contains("sItem")) {
+    inp.value = inp.value.replace(/@(\w*)$/, '@' + e.target.innerText + ' ');
+    mentionBox.style.display = 'none';
+    inp.focus();
+  }
+});
+
 
   // ===== Add Comment (newest on top) =====
   commentBtn.addEventListener("click", async ()=>{
