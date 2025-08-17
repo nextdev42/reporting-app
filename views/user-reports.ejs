@@ -3,629 +3,180 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ripoti za Kliniki</title>
+<title>Ripoti za <%= username %></title>
+<link rel="stylesheet" href="/dashboard.css"><!-- so colors match dashboard -->
+<!-- include the instagram-style internal css here -->
 <style>
-/* Base Styles */
-:root {
-  --primary: #405DE6;
-  --secondary: #5851DB;
-  --accent: #833AB4;
-  --pink: #E1306C;
-  --red: #FD1D1D;
-  --orange: #F56040;
-  --yellow: #FCAF45;
-  --background: #FAFAFA;
-  --card-bg: #FFFFFF;
-  --text: #262626;
-  --text-secondary: #8E8E8E;
-  --border: #DBDBDB;
-  --shadow: rgba(0, 0, 0, 0.1);
-  --success: #4CAF50;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-}
-
-body {
-  background-color: var(--background);
-  color: var(--text);
-  padding-top: 60px;
-}
-
-/* Navigation */
-nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background: linear-gradient(45deg, var(--primary), var(--accent));
-  color: white;
-  padding: 12px 5%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 10px var(--shadow);
-  z-index: 1000;
-}
-
-nav h1 {
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.nav-actions span {
-  font-size: 0.9rem;
-}
-
-.nav-actions strong {
-  color: var(--yellow);
-}
-
-nav button {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-nav button:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-/* Container */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-/* User Header */
-.user-header {
-  display: flex;
-  align-items: center;
-  gap: 25px;
-  margin-bottom: 30px;
-  padding: 25px;
-  background: var(--card-bg);
-  border-radius: 16px;
-  box-shadow: 0 4px 12px var(--shadow);
-  position: relative;
-  overflow: hidden;
-}
-
-.user-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 5px;
-  background: linear-gradient(to right, var(--primary), var(--accent), var(--pink));
-}
-
-.user-header img {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid var(--card-bg);
-  box-shadow: 0 2px 10px var(--shadow);
-  z-index: 2;
-}
-
-.user-header .info {
-  flex: 1;
-}
-
-.user-header h2 {
-  font-size: 1.8rem;
-  margin-bottom: 10px;
-  color: var(--text);
-}
-
-.user-header .stats {
-  display: flex;
-  gap: 25px;
-  margin: 15px 0;
-}
-
-.user-header .stats span {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 1.1rem;
-  font-weight: 500;
-}
-
-.user-header .stats span::before {
-  content: '';
-  display: block;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  margin-bottom: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-}
-
-.user-header .stats #totalPosts::before {
-  content: '📝';
-}
-
-.user-header .stats #totalThumbsUp::before {
-  content: '👍';
-}
-
-.user-header .stats #totalThumbsDown::before {
-  content: '👎';
-}
-
-.avatar-upload {
-  margin-top: 15px;
-  display: flex;
-  gap: 10px;
-}
-
-.avatar-upload input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.9rem;
-}
-
-.avatar-upload button {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.avatar-upload button:hover {
-  background: var(--secondary);
-}
-
-/* Reports Grid */
-.reports-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 25px;
-  margin-top: 20px;
-}
-
-/* Report Card */
-.card {
-  background: var(--card-bg);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px var(--shadow);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px var(--shadow);
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  padding: 15px;
-  border-bottom: 1px solid var(--border);
-}
-
-.report-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-right: 12px;
-  border: 2px solid var(--primary);
-}
-
-.card-header-content {
-  flex: 1;
-}
-
-.report-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 3px;
-}
-
-.report-meta {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.card-body {
-  padding: 15px;
-}
-
-.report-description {
-  margin-bottom: 15px;
-  line-height: 1.5;
-}
-
-.report-image {
-  width: 100%;
-  max-height: 300px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-top: 10px;
-  display: none;
-}
-
-.card-footer {
-  padding: 15px;
-  border-top: 1px solid var(--border);
-}
-
-.report-thumbs {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-.report-thumbs span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: 500;
-}
-
-.report-comments h4 {
-  margin-bottom: 10px;
-  font-size: 1rem;
-}
-
-.comments-list {
-  max-height: 150px;
-  overflow-y: auto;
-  margin-bottom: 15px;
-  padding-right: 5px;
-}
-
-.comments-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.comments-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.comments-list::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
-}
-
-.comment-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding: 8px;
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-
-.comment-item:hover {
-  background: rgba(0, 0, 0, 0.03);
-}
-
-.comment-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.comment-content {
-  flex: 1;
-}
-
-.comment-content .comment-user {
-  font-weight: 600;
-  font-size: 0.9rem;
-  margin-bottom: 2px;
-}
-
-.comment-content .comment-text {
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.comment-content .comment-time {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-top: 3px;
-}
-
-.comment-form {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.comment-form input {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  font-size: 0.9rem;
-  background: var(--background);
-}
-
-.comment-form button {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.comment-form button:hover {
-  background: var(--secondary);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .reports-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  }
-  
-  .user-header {
-    flex-direction: column;
-    text-align: center;
-    padding: 20px 15px;
-  }
-  
-  .user-header .stats {
-    justify-content: center;
-  }
-  
-  .nav-actions {
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-end;
-  }
-}
-
-@media (max-width: 480px) {
-  .reports-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  nav {
-    padding: 10px 3%;
-  }
-  
-  nav h1 {
-    font-size: 1.2rem;
-  }
-  
-  .user-header img {
-    width: 90px;
-    height: 90px;
-  }
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.card {
-  animation: fadeIn 0.5s ease forwards;
-  opacity: 0;
-}
-
-.card:nth-child(2) { animation-delay: 0.1s; }
-.card:nth-child(3) { animation-delay: 0.2s; }
-.card:nth-child(4) { animation-delay: 0.3s; }
-.card:nth-child(5) { animation-delay: 0.4s; }
-.card:nth-child(6) { animation-delay: 0.5s; }
-
-/* Loading Spinner */
-.spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255,255,255,.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+/* 👇 paste the CSS you provided exactly here (var --primary etc...) */
 </style>
 </head>
 <body>
+
 <nav>
   <h1>Ripoti za Kliniki</h1>
   <div class="nav-actions">
-    <span>Umeingia kama: <strong>Dr. John</strong></span>
+    <span>Umeingia kama: <strong><%= loggedInUser %></strong></span>
     <button onclick="location.href='/dashboard.html'">Nyumbani</button>
     <button onclick="location.href='/logout'">Toka</button>
   </div>
 </nav>
 
 <div class="container">
-  <!-- User header -->
   <div class="user-header">
-    <img id="userAvatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8YXZhdGFyfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60" alt="Avatar">
+    <img id="userAvatar" src="/default-avatar.png" alt="Avatar">
     <div class="info">
-      <h2>Unaangalia ripoti za Dr. John</h2>
+      <h2>Unaangalia ripoti za <%= username %></h2>
       <div class="stats">
-        <span id="totalPosts">12 Ripoti</span>
-        <span id="totalThumbsUp">42 👍</span>
-        <span id="totalThumbsDown">3 👎</span>
+        <span id="totalPosts">0 Ripoti</span>
+        <span id="totalThumbsUp">0 👍</span>
+        <span id="totalThumbsDown">0 👎</span>
       </div>
+      <% if(username === loggedInUser){ %>
       <form id="avatarForm" class="avatar-upload">
         <input type="file" name="avatar" accept="image/*" required>
         <button type="submit">Update Avatar</button>
       </form>
+      <% } %>
     </div>
   </div>
 
-  <!-- Reports grid -->
   <div id="reports-container" class="reports-grid">
-    <!-- Report cards will be dynamically generated here -->
-    <div class="card report-card">
-      <div class="card-header">
-        <img class="report-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8YXZhdGFyfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60" alt="Avatar">
-        <div class="card-header-content">
-          <h3 class="report-title">Uvunjaji wa Vifaa</h3>
-          <p class="report-meta">Dr. John - Kituo cha Afya cha Mlimani | Tarehe: 18 Agosti 2023</p>
-        </div>
-      </div>
-      <div class="card-body">
-        <p class="report-description">Kifaa cha kuchanganua damu kimevunjika kwenye maabara. Tunahitaji uingizwaji wa haraka kwa ajili ya vipimo vya wagonjwa.</p>
-        <img class="report-image" src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bWVkaWNhbCUyMGVxdWlwbWVudHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60" alt="Damaged Equipment" style="display:block;">
-      </div>
-      <div class="card-footer">
-        <div class="report-thumbs">
-          <span>👍 <span class="thumbs-up">15</span></span>
-          <span>👎 <span class="thumbs-down">2</span></span>
-        </div>
-        <div class="report-comments">
-          <h4>Maoni:</h4>
-          <ul class="comments-list">
-            <li class="comment-item">
-              <img class="comment-avatar" src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NXx8YXZhdGFyfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60" alt="Avatar">
-              <div class="comment-content">
-                <div class="comment-user">Dr. Sarah</div>
-                <div class="comment-text">Nimewasiliana na wanasayansi wa vifaa. Watafika kesho kukagua hali ya kifaa.</div>
-                <div class="comment-time">Tarehe: 18 Agosti 2023</div>
-              </div>
-            </li>
-            <li class="comment-item">
-              <img class="comment-avatar" src="https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8YXZhdGFyfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60" alt="Avatar">
-              <div class="comment-content">
-                <div class="comment-user">Mganga Michael</div>
-                <div class="comment-text">Tunatumia kituo cha jirani kwa vipimo kwa sasa.</div>
-                <div class="comment-time">Tarehe: 18 Agosti 2023</div>
-              </div>
-            </li>
-          </ul>
-          <form class="comment-form">
-            <input type="text" name="comment" placeholder="Andika maoni..." required>
-            <button type="submit">Tuma</button>
-          </form>
-        </div>
-      </div>
-    </div>
-    
-    <div class="card report-card">
-      <div class="card-header">
-        <img class="report-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8YXZhdGFyfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60" alt="Avatar">
-        <div class="card-header-content">
-          <h3 class="report-title">Ukosefu wa Dawa Muhimu</h3>
-          <p class="report-meta">Dr. John - Kituo cha Afya cha Mlimani | Tarehe: 15 Agosti 2023</p>
-        </div>
-      </div>
-      <div class="card-body">
-        <p class="report-description">Dawa za malaria na mapima ya COVID-19 zimeisha. Muhimu kupata upatikanaji wa haraka.</p>
-      </div>
-      <div class="card-footer">
-        <div class="report-thumbs">
-          <span>👍 <span class="thumbs-up">24</span></span>
-          <span>👎 <span class="thumbs-down">1</span></span>
-        </div>
-        <div class="report-comments">
-          <h4>Maoni:</h4>
-          <ul class="comments-list">
-            <li class="comment-item">
-              <img class="comment-avatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8YXZhdGFyfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60" alt="Avatar">
-              <div class="comment-content">
-                <div class="comment-user">Dr. Fatma</div>
-                <div class="comment-text">Zilizoagizwa zinafikia kesho asubuhi.</div>
-                <div class="comment-time">Tarehe: 16 Agosti 2023</div>
-              </div>
-            </li>
-          </ul>
-          <form class="comment-form">
-            <input type="text" name="comment" placeholder="Andika maoni..." required>
-            <button type="submit">Tuma</button>
-          </form>
-        </div>
-      </div>
-    </div>
-    
-    <div class="card report-card">
-      <div class="card-header">
-        <img class="report-avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8YXZhdGFyfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60" alt="Avatar">
-        <div class="card-header-content">
-          <h3 class="report-title">Uboreshaji wa Usafi</h3>
-          <p class="report-meta">Dr. John - Kituo cha Afya cha Mlimani | Tarehe: 10 Agosti 2023</p>
-        </div>
-      </div>
-      <div class="card-body">
-        <p class="report-description">Mahitaji ya uboreshaji wa mfumo wa taka hatari. Tunaomba uangalizi wa haraka kwenye eneo la taka za kliniki.</p>
-        <img class="report-image" src="https://images.unsplash.com/photo-1581578021223-7d5d4730d517?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bWVkaWNhbCUyMHdhc3RlfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60" alt="Waste Area" style="display:block;">
-      </div>
-      <div class="card-footer">
-        <div class="report-thumbs">
-          <span>👍 <span class="thumbs-up">18</span></span>
-          <span>👎 <span class="thumbs-down">0</span></span>
-        </div>
-        <div class="report-comments">
-          <h4>Maoni:</h4>
-          <ul class="comments-list">
-            <li class="comment-item">
-              <img class="comment-avatar" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTF8fGF2YXRhcnxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60" alt="Avatar">
-              <div class="comment-content">
-                <div class="comment-user">Mganga Robert</div>
-                <div class="comment-text">Tayari nimewasiliana na wadau wa usafi. Watafika Jumatatu ijayo.</div>
-                <div class="comment-time">Tarehe: 12 Agosti 2023</div>
-              </div>
-            </li>
-          </ul>
-          <form class="comment-form">
-            <input type="text" name="comment" placeholder="Andika maoni..." required>
-            <button type="submit">Tuma</button>
-          </form>
-        </div>
-      </div>
-    </div>
+    <!-- report cards injected by JS -->
   </div>
 </div>
 
+
+<!-- Template for cards -->
+<template id="cardTpl">
+  <div class="card report-card">
+    <div class="card-header">
+      <img class="report-avatar" src="/default-avatar.png">
+      <div class="card-header-content">
+        <h3 class="report-title"></h3>
+        <p class="report-meta"></p>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="report-description"></p>
+      <img class="report-image" style="display:none;">
+    </div>
+    <div class="card-footer">
+      <div class="report-thumbs">
+          <span>👍 <span class="thumbs-up">0</span></span>
+          <span>👎 <span class="thumbs-down">0</span></span>
+      </div>
+      <div class="report-comments">
+        <h4>Maoni:</h4>
+        <ul class="comments-list"></ul>
+        <form class="comment-form">
+          <input type="text" name="comment" placeholder="Andika maoni..." required>
+          <button type="submit">Tuma</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script>
-// Simulating data fetching and display
-document.addEventListener('DOMContentLoaded', function() {
-  // This would be replaced with your actual data fetching logic
-  console.log("Page loaded - data would be fetched here");
-});
+const username    = "<%= username %>";
+const loggedUser  = "<%= loggedInUser %>";
+const reportsDiv  = document.getElementById('reports-container');
+const tpl         = document.getElementById('cardTpl');
+
+// Avatar
+(async()=>{
+  try{
+    const uRes= await fetch(`/api/useravatar?u=${encodeURIComponent(username)}`);
+    const {avatar} = await uRes.json();
+    document.getElementById("userAvatar").src= avatar || '/default-avatar.png';
+  }catch(e){/* ignore */}
+})();
+
+// Get reports
+(async ()=>{
+  try{
+    const r = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
+    const data = await r.json();
+    fillStats(data.reports);
+    data.reports.forEach(drawCard);
+  }catch(e){
+    reportsDiv.innerHTML="<p>Tatizo kupata ripoti...</p>";
+  }
+})();
+
+function fillStats(list){
+  const total   = list.length;
+  const upCount = list.reduce((n,r)=>n+r.thumbs_up,0);
+  const dnCount = list.reduce((n,r)=>n+r.thumbs_down,0);
+  document.getElementById('totalPosts').innerText = total+' Ripoti';
+  document.getElementById('totalThumbsUp').innerText = upCount+' 👍';
+  document.getElementById('totalThumbsDown').innerText = dnCount+' 👎';
+}
+
+function drawCard(r){
+  const clone = tpl.content.cloneNode(true);
+  clone.querySelector('.report-title').innerText = r.title||"";
+  clone.querySelector('.report-meta').innerText  = `${r.username} - ${r.clinic} | ${r.timestamp}`;
+  clone.querySelector('.report-description').innerText = r.description;
+
+  // avatar
+  clone.querySelector('.report-avatar').src = r.avatar||"/default-avatar.png"; 
+
+  // img
+  if(r.image){
+    const im = clone.querySelector('.report-image');
+    im.src=r.image; im.style.display='block';
+  }
+
+  // thumbs
+  clone.querySelector('.thumbs-up').innerText = r.thumbs_up;
+  clone.querySelector('.thumbs-down').innerText = r.thumbs_down;
+  if(username === loggedUser){
+    clone.querySelector('.report-thumbs').style.pointerEvents="none";
+  }
+
+  // comments
+  const ul = clone.querySelector('.comments-list');
+  r.comments.forEach(c=>{
+    const li = document.createElement('li');
+    li.className='comment-item';
+    li.innerHTML = `
+      <img class="comment-avatar" src="${c.avatar||'/default-avatar.png'}">
+      <div class="comment-content">
+         <div class="comment-user">${c.username}</div>
+         <div class="comment-text">${c.comment}</div>
+         <div class="comment-time">${c.timestamp}</div>
+      </div>
+    `;
+    ul.appendChild(li);
+  });
+
+  // send comment
+  clone.querySelector('.comment-form').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const txt = e.target.comment.value;
+    if(!txt) return;
+    const rr = await fetch(`/api/comments/${r.id}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({comment:txt})
+    });
+    const saved = await rr.json();
+    const li = document.createElement('li');
+    li.className='comment-item';
+    li.innerHTML = `
+      <img class="comment-avatar" src="${saved.avatar||'/default-avatar.png'}">
+      <div class="comment-content">
+         <div class="comment-user">${saved.username}</div>
+         <div class="comment-text">${saved.comment}</div>
+         <div class="comment-time">${saved.timestamp}</div>
+      </div>`;
+    ul.prepend(li);
+    e.target.reset();
+  });
+
+  reportsDiv.appendChild(clone);
+}
 </script>
 </body>
 </html>
