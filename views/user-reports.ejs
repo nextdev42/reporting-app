@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ripoti za <%= username %></title>
-<link rel="stylesheet" href="/dashboard.css" />
-<!-- keep your instagram UI CSS -->
+<link rel="stylesheet" href="/dashboard.css"><!-- reuse dashboard look -->
 <style>
-/* ----- PLACE ALL THE CSS YOU GAVE (var --primary, nav, user-header etc...) HERE WITHOUT CHANGES ---- */
+  /* user page specific tweaks */
+  .user-header {
+    display:flex;align-items:center;gap:20px;margin-bottom:20px;
+    background:white;padding:20px;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  }
+  .user-avatar {
+    width:100px;height:100px;border-radius:50%;background:#4CAF50;
+    display:flex;align-items:center;justify-content:center;color:#fff;
+    font-size:2.5rem;font-weight:bold;
+  }
+  .stats {display:flex;gap:20px;margin-top:10px;}
+  .stats span {font-weight:bold;}
+  .reports-grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:25px;}
 </style>
 </head>
 <body>
@@ -22,158 +33,136 @@
 </nav>
 
 <div class="container">
-  <!-- USER HEADER -->
+
+  <!-- Header -->
   <div class="user-header">
-    <img id="userAvatar" src="/default-avatar.png" alt="Avatar">
-    <div class="info">
-      <h2>Unaangalia ripoti za <%= username %></h2>
+    <div id="userAvatar" class="user-avatar"><%= username.charAt(0).toUpperCase() %></div>
+    <div>
+      <h2>Unaangalia ripoti za <strong><%= username %></strong></h2>
       <div class="stats">
         <span id="totalPosts">0 Ripoti</span>
         <span id="totalThumbsUp">0 👍</span>
         <span id="totalThumbsDown">0 👎</span>
       </div>
-
-      <% if(loggedInUser === username){ %>
-      <form id="avatarForm" class="avatar-upload">
+      <form id="avatarForm" class="avatar-upload" enctype="multipart/form-data">
         <input type="file" name="avatar" accept="image/*" required>
         <button type="submit">Update Avatar</button>
       </form>
-      <% } %>
     </div>
   </div>
 
-  <!-- GRID FOR POSTS -->
+  <!-- Reports -->
   <div id="reports-container" class="reports-grid"></div>
 </div>
 
-<!-- TEMPLATE (for cloning) -->
-<template id="cardTpl">
-  <div class="card report-card">
-    <div class="card-header">
-      <img class="report-avatar" src="/default-avatar.png" alt="avatar">
-      <div class="card-header-content">
-        <h3 class="report-title"></h3>
-        <p class="report-meta"></p>
-      </div>
-    </div>
-    <div class="card-body">
-      <p class="report-description"></p>
-      <img class="report-image" style="display:none;">
-    </div>
-    <div class="card-footer">
-      <div class="report-thumbs">
-        <span>👍 <span class="thumbs-up">0</span></span>
-        <span>👎 <span class="thumbs-down">0</span></span>
-      </div>
-      <div class="report-comments">
-        <h4>Maoni:</h4>
-        <ul class="comments-list"></ul>
-        <form class="comment-form">
-          <input type="text" name="comment" placeholder="Andika maoni..." required>
-          <button type="submit">Tuma</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script>
-const username    = "<%= username %>";
-const loggedUser  = "<%= loggedInUser %>";
+  const username = "<%= username %>";
+  const reportsContainer = document.getElementById('reports-container');
+  const totalPostsEl = document.getElementById('totalPosts');
+  const upEl   = document.getElementById("totalThumbsUp");
+  const downEl = document.getElementById("totalThumbsDown");
 
-// Fetch user avatar if you will provide /api/useravatar?u=
-fetch(`/api/useravatar?u=${encodeURIComponent(username)}`)
-  .then(r=>r.json()).then(d=>{
-    document.getElementById('userAvatar').src = d.avatar || "/default-avatar.png";
-  }).catch(()=>{});
+  async function fetchReports(){
+    const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
+    const {reports} = await res.json();
 
-// Fetch reports dynamically
-(async()=>{
-  try{
-    const r = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
-    const data = await r.json();
-    displayStats(data.reports);
-    data.reports.forEach(buildCard);
-  }catch(e){
-    document.getElementById('reports-container').innerHTML="<p>Tatizo kupata ripoti...</p>";
-  }
-})();
+    let totalUp=0,totalDown=0;
+    totalPostsEl.textContent = reports.length+" Ripoti";
 
-function displayStats(list){
-  const total   = list.length,
-        up      = list.reduce((n,r)=>n+r.thumbs_up,0),
-        down    = list.reduce((n,r)=>n+r.thumbs_down,0);
-  document.getElementById('totalPosts').innerText = `${total} Ripoti`;
-  document.getElementById('totalThumbsUp').innerText = `${up} 👍`;
-  document.getElementById('totalThumbsDown').innerText = `${down} 👎`;
-}
+    reportsContainer.innerHTML="";
+    reports.forEach(r=>{
+      totalUp += (r.thumbs_up||0);
+      totalDown += (r.thumbs_down||0);
 
-function buildCard(r){
-  const tpl   = document.getElementById('cardTpl');
-  const clone = tpl.content.cloneNode(true);
-  
-  // basic info
-  clone.querySelector('.report-title').innerText = r.title || '';
-  clone.querySelector('.report-description').innerText = r.description || '';
-  clone.querySelector('.report-meta').innerText = `${r.username} - ${r.clinic} | ${r.timestamp}`;
-  
-  // avatar
-  clone.querySelector('.report-avatar').src = r.avatar || '/default-avatar.png';
-  
-  // photo
-  if(r.image){
-    const img = clone.querySelector('.report-image');
-    img.src = r.image;
-    img.style.display = "block";
-  }
-  
-  // thumbs
-  clone.querySelector('.thumbs-up').innerText   = r.thumbs_up || 0;
-  clone.querySelector('.thumbs-down').innerText = r.thumbs_down || 0;
-  if(r.username === loggedUser){
-    clone.querySelector('.report-thumbs').style.pointerEvents="none";
-  }
-  
-  // comments
-  const ul = clone.querySelector('.comments-list');
-  r.comments.forEach(c=>{
-    const li=document.createElement('li');
-    li.className="comment-item";
-    li.innerHTML = `
-      <img class="comment-avatar" src="${c.avatar||'/default-avatar.png'}">
-      <div class="comment-content">
-        <div class="comment-user">${c.username}</div>
-        <div class="comment-text">${c.comment}</div>
-        <div class="comment-time">${c.timestamp}</div>
-      </div>`;
-    ul.appendChild(li);
-  });
+      const card = document.createElement("div");
+      card.className="card";
 
-  // post comment
-  clone.querySelector('.comment-form').addEventListener('submit', async(e)=>{
-    e.preventDefault();
-    const text = e.target.comment.value.trim();
-    if(!text) return;
-    const res = await fetch(`/api/comments/${r.id}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({comment:text})
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="report-avatar" style="background:#4CAF50;color:#fff;display:flex;align-items:center;justify-content:center;">
+            ${r.username.charAt(0).toUpperCase()}
+          </div>
+          <div class="card-header-content">
+            <h3 class="report-title">${r.title||''}</h3>
+            <p class="report-meta">${r.username} - ${r.clinic} | ${r.timestamp}</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="report-description">${r.description}</p>
+          ${r.image?`<img class="report-image" style="display:block;" src="${r.image}"/>`:""}
+        </div>
+        <div class="card-footer">
+          <div class="report-thumbs">
+            <span>👍 <span class="thumbs-up">${r.thumbs_up||0}</span></span>
+            <span>👎 <span class="thumbs-down">${r.thumbs_down||0}</span></span>
+          </div>
+          <div class="report-comments">
+            <h4>Maoni:</h4>
+            <ul class="comments-list">
+              ${r.comments.map(c=>
+                `<li class="comment-item">
+                  <div class="comment-avatar" style="background:#4CAF50;color:#fff;display:flex;align-items:center;justify-content:center;">
+                        ${c.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div class="comment-content">
+                    <div class="comment-user">${c.username}</div>
+                    <div class="comment-text">${c.comment}</div>
+                    <div class="comment-time">${c.timestamp}</div>
+                  </div>
+                </li>`).join("")}
+            </ul>
+            <form class="comment-form">
+              <input type="text" name="comment" placeholder="Andika maoni..." required>
+              <button type="submit">Tuma</button>
+            </form>
+          </div>
+        </div>
+      `;
+
+      const form = card.querySelector('.comment-form');
+      const list = card.querySelector('.comments-list');
+      form.addEventListener("submit",async(e)=>{
+        e.preventDefault();
+        const txt = form.comment.value.trim();
+        if(!txt) return;
+        const res = await fetch(`/api/comments/${r.id}`,{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({comment:txt})
+        });
+        const saved = await res.json();
+        const li = document.createElement("li");
+        li.className="comment-item";
+        li.innerHTML = `
+            <div class="comment-avatar" style="background:#4CAF50;color:#fff;display:flex;align-items:center;justify-content:center;">
+              ${saved.username.charAt(0).toUpperCase()}
+            </div>
+            <div class="comment-content">
+              <div class="comment-user">${saved.username}</div>
+              <div class="comment-text">${saved.comment}</div>
+              <div class="comment-time">${saved.timestamp}</div>
+            </div>`;
+        list.prepend(li);
+        form.reset();
+      });
+
+      reportsContainer.appendChild(card);
     });
-    const newC = await res.json();
-    const li   = document.createElement('li');
-    li.className="comment-item";
-    li.innerHTML = `
-      <img class="comment-avatar" src="${newC.avatar||'/default-avatar.png'}">
-      <div class="comment-content">
-         <div class="comment-user">${newC.username}</div>
-         <div class="comment-text">${newC.comment}</div>
-         <div class="comment-time">${newC.timestamp}</div>
-      </div>`;
-    ul.prepend(li);
-    e.target.reset();
-  });
 
-  document.getElementById('reports-container').appendChild(clone);
-}
+    upEl.textContent = totalUp + " 👍";
+    downEl.textContent = totalDown + " 👎";
+  }
+  fetchReports();
+
+  // avatar upload
+  document.getElementById("avatarForm").addEventListener("submit",async(e)=>{
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const res = await fetch(`/update-avatar?user=${encodeURIComponent(username)}`,{
+      method:"POST",body:fd
+    });
+    if(res.ok){ alert("Avatar updated"); location.reload(); }
+    else alert("Tatizo ku-upload");
+  });
 </script>
 </body>
 </html>
