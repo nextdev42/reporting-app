@@ -21,6 +21,7 @@ let allUsers    = []; // for mention suggestion
 
 // ====== TOGGLE REPORT FORM ======
 // ====== TOGGLE REPORT FORM ======
+// ====== TOGGLE REPORT FORM ======
 toggleFormBtn.addEventListener("click", () => {
   const isHidden = reportFormSection.style.display === "none" || !reportFormSection.style.display;
   reportFormSection.style.display = isHidden ? "block" : "none";
@@ -29,17 +30,18 @@ toggleFormBtn.addEventListener("click", () => {
 
 // ====== TOGGLE FILTER SECTION ======
 const toggleFilterBtn = document.getElementById("toggleFilterBtn");
-const filtersContent = document.getElementById("filtersContent");
+const filtersContent  = document.getElementById("filtersContent");
 
-// initialize filter as visible
-filtersContent.style.display = "block";
-toggleFilterBtn.textContent = "Zificha";
+// initialize filter as hidden
+filtersContent.style.display = "none";
+toggleFilterBtn.textContent = "Onyesha";
 
 toggleFilterBtn.addEventListener("click", () => {
   const isHidden = filtersContent.style.display === "none";
   filtersContent.style.display = isHidden ? "block" : "none";
   toggleFilterBtn.textContent = isHidden ? "Zificha" : "Onyesha";
 });
+
 
 
 
