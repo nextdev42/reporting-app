@@ -85,6 +85,22 @@ async function initTables() {
   console.log("✅ Tables ensured");
 }
 initTables();
+
+
+// Now static files
+
+// ====== Middleware ======
+app.use(express.static("public"));
+app.use("/uploads", express.static("reports/uploads"));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(session({
+  store: new pgSession({ pool, tableName: 'session' }),
+  secret: "supersecret123!",
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 24*60*60*1000, sameSite: 'lax', httpOnly:true }
+}));
 // Redirect logged-in users away from public login/register pages
 // Redirect logged-in users away from public pages
 const redirectLoggedIn = (req, res, next) => {
@@ -107,22 +123,6 @@ app.get("/login", redirectLoggedIn, (req, res) => {
 app.get("/register", redirectLoggedIn, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-
-// Now static files
-
-// ====== Middleware ======
-app.use(express.static("public"));
-app.use("/uploads", express.static("reports/uploads"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(session({
-  store: new pgSession({ pool, tableName: 'session' }),
-  secret: "supersecret123!",
-  resave: false,
-  saveUninitialized: false,
-  cookie: { maxAge: 24*60*60*1000, sameSite: 'lax', httpOnly:true }
-}));
-
 // Multer setup
 const uploadDir = "reports/uploads";
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
