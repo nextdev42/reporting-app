@@ -76,6 +76,11 @@ function formatDate(ts) {
   });
 }
 
+// ====== HIGHLIGHT @MENTIONS ======
+function highlightMentions(text) {
+  return text.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+}
+
 // ====== FETCH REPORTS ======
 async function fetchReports(page=1) {
   if (fetchTimeout) clearTimeout(fetchTimeout);
@@ -127,7 +132,7 @@ function renderReportCard(report) {
               <span class="username">${c.username} (${c.clinic})</span>
               <span class="time">${formatDate(c.timestamp)}</span>
             </div>
-            <p>${c.comment.replace(/@(\w+)/g,'<strong>@$1</strong>')}</p>
+            <p>${highlightMentions(c.comment)}</p>
           </div>
         `).join('')}
       </div>
@@ -179,7 +184,7 @@ function renderReportCard(report) {
         <span class="username">Wewe (${currentUser.kituo})</span>
         <span class="time">${formatDate(new Date().toISOString())}</span>
       </div>
-      <p>${txt.replace(/@(\w+)/g,'<strong>@$1</strong>')}</p>
+      <p>${highlightMentions(txt)}</p>
     `;
     commentsList.prepend(tempDiv);
 
