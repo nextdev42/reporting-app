@@ -103,27 +103,7 @@ app.use(session({
 }));
 app.use(express.static("public"));
 app.use("/uploads", express.static("reports/uploads"));
-// Redirect logged-in users away from public login/register pages
-// Redirect logged-in users away from public pages
-const redirectLoggedIn = (req, res, next) => {
-  if (req.session && req.session.userId) {
-    return res.redirect("/dashboard.html");
-  }
-  next();
-};
 
-app.get("/", redirectLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-app.get("/index.html", redirectLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-app.get("/login", redirectLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-app.get("/register", redirectLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
 // Multer setup
 const uploadDir = "reports/uploads";
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -132,6 +112,12 @@ const upload = multer({ dest: uploadDir });
 // ====== Auth helper ======
 function auth(req,res,next){ if(!req.session.userId) return res.redirect("/"); next(); }
 
+const redirectLoggedIn = (req, res, next) => {
+  if (req.session && req.session.userId) {
+    return res.redirect("/dashboard.html");
+  }
+  next();
+};
 // ====== Tanzania timestamp helper ======
 function getTanzaniaTimestamp(){
   const now = new Date();
@@ -152,6 +138,22 @@ function formatTanzaniaTime(date) {
 }
 
 // ====== Routes ======
+// Redirect logged-in users away from public login/register pages
+// Redirect logged-in users away from public pages
+
+
+app.get("/", redirectLoggedIn, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+app.get("/index.html", redirectLoggedIn, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+app.get("/login", redirectLoggedIn, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+app.get("/register", redirectLoggedIn, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 // Register
 app.post("/register", async (req,res)=>{
