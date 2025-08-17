@@ -64,6 +64,21 @@ nav button:hover {
   color: #333;
 }
 
+.toggle-btn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.toggle-btn:hover {
+  background: #45a049;
+}
+
 /* ========== FORM SECTIONS ========== */
 .form-section, .reports-section {
   background: white;
