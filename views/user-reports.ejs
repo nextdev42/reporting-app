@@ -1,297 +1,245 @@
 <!DOCTYPE html>
 <html lang="sw">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ripoti za <%= username %></title>
-  <link rel="stylesheet" href="/dashboard.css">
-  <style>
-    /* Summary card */
-    .user-summary {
-      display: flex;
-      gap: 20px;
-      padding: 15px;
-      margin-bottom: 20px;
-      background: #f8f9fa;
-      border-radius: 10px;
-      align-items: center;
-      justify-content: flex-start;
-    }
-    .user-summary div {
-      font-weight: bold;
-      text-align: center;
-    }
-
-    /* Report cards */
-    .reports-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill,minmax(320px,1fr));
-      gap: 20px;
-    }
-    .card.report-card {
-      border: 1px solid #e0e0e0;
-      border-radius: 10px;
-      padding: 15px;
-      background: #fff;
-      display: flex;
-      flex-direction: column;
-    }
-    .card-header h3 {
-      margin: 0 0 5px 0;
-    }
-    .card-header p {
-      font-size: 0.85rem;
-      color: #555;
-    }
-    .card-body {
-      margin-top: 10px;
-    }
-    .card-body img.report-image {
-      margin-top: 10px;
-      border-radius: 6px;
-      display: block;
-      max-width: 100%;
-    }
-
-    .card-footer {
-      margin-top: 15px;
-    }
-
-    .report-thumbs span {
-      font-weight: bold;
-      margin: 0 5px;
-      cursor: pointer;
-    }
-    .thumb-up-btn:hover, .thumb-down-btn:hover {
-      transform: scale(1.2);
-      transition: transform 0.15s ease;
-      color: #1e90ff; /* Dashboard primary color */
-    }
-
-    .report-comments {
-      margin-top: 10px;
-    }
-    .report-comments ul {
-      list-style: none;
-      padding: 0;
-      margin: 5px 0;
-      max-height: 150px;
-      overflow-y: auto;
-    }
-    .report-comments li {
-      font-size: 0.85rem;
-      margin-bottom: 5px;
-    }
-    .report-comments form {
-      display: flex;
-      gap: 5px;
-      margin-top: 5px;
-    }
-    .report-comments input[type="text"] {
-      flex: 1;
-      padding: 5px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
-    .report-comments button {
-      padding: 5px 10px;
-      border-radius: 4px;
-      border: none;
-      background-color: #1e90ff;
-      color: #fff;
-      cursor: pointer;
-    }
-    .report-comments button:hover {
-      background-color: #0d6efd;
-    }
-
-    nav.navbar {
-      display: flex;
-      justify-content: space-between;
-      background-color: #1e90ff;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 0 0 10px 10px;
-      margin-bottom: 20px;
-    }
-    nav.navbar a {
-      color: white;
-      text-decoration: none;
-      margin-left: 15px;
-    }
-    nav.navbar a:hover {
-      text-decoration: underline;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ripoti za <%= username %></title>
+<link rel="stylesheet" href="/dashboard.css">
+<style>
+  /* Extra styles for user page */
+  .user-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  .user-header img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .user-header .stats {
+    display: flex;
+    gap: 15px;
+  }
+  .report-card img.report-image {
+    margin-top: 10px;
+    border-radius: 8px;
+  }
+  .comment-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 8px;
+  }
+  .comment-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+  }
+  .avatar-upload {
+    margin-top: 10px;
+  }
+</style>
 </head>
 <body>
-  <nav class="navbar">
-    <div>Unaangalia ripoti za <strong><%= username %></strong></div>
+<nav>
+  <h1>Ripoti za Kliniki</h1>
+  <div class="nav-actions">
+    <span>Umeingia kama: <strong><%= loggedInUser %></strong></span>
+    <button onclick="location.href='/dashboard.html'">Nyumbani</button>
+    <button onclick="location.href='/logout'">Toka</button>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- User header -->
+  <div class="user-header">
+    <img id="userAvatar" src="" alt="Avatar">
     <div>
-      <span>Umeingia kama <strong><%= loggedInUser %></strong></span>
-      <a href="/dashboard.html">Nyumbani</a>
-      <a href="/logout">Logout</a>
+      <h2>Unaangalia ripoti za <%= username %></h2>
+      <div class="stats">
+        <span id="totalPosts">0 Ripoti</span>
+        <span id="totalThumbsUp">0 👍</span>
+        <span id="totalThumbsDown">0 👎</span>
+      </div>
+      <% if (username === loggedInUser) { %>
+      <form id="avatarForm" class="avatar-upload">
+        <input type="file" name="avatar" accept="image/*" required>
+        <button type="submit">Update Avatar</button>
+      </form>
+      <% } %>
     </div>
-  </nav>
-
-  <div class="container">
-    <!-- Summary -->
-    <div class="user-summary">
-      <div>
-        <div id="total-posts">0</div>
-        <div>Posts</div>
-      </div>
-      <div>
-        <div id="total-thumbs-up">0</div>
-        <div>👍 Jumla</div>
-      </div>
-      <div>
-        <div id="total-thumbs-down">0</div>
-        <div>👎 Jumla</div>
-      </div>
-    </div>
-
-    <div id="reports-container" class="reports-grid"></div>
   </div>
 
-  <template id="report-template">
-    <div class="card report-card">
-      <div class="card-header">
-        <h3 class="report-title"></h3>
-        <p class="report-meta"></p>
+  <!-- Reports grid -->
+  <div id="reports-container" class="reports-grid"></div>
+</div>
+
+<template id="report-template">
+  <div class="card report-card">
+    <div class="card-header">
+      <img class="report-avatar" src="" alt="Avatar">
+      <h3 class="report-title"></h3>
+      <p class="report-meta"></p>
+    </div>
+    <div class="card-body">
+      <p class="report-description"></p>
+      <img class="report-image" src="" alt="" style="display:none;">
+    </div>
+    <div class="card-footer">
+      <div class="report-thumbs">
+        👍 <span class="thumbs-up">0</span> |
+        👎 <span class="thumbs-down">0</span>
       </div>
-      <div class="card-body">
-        <p class="report-description"></p>
-        <img class="report-image" src="" alt="">
-      </div>
-      <div class="card-footer">
-        <div class="report-thumbs">
-          <span class="thumb-up-btn">👍</span> <span class="thumbs-up">0</span> |
-          <span class="thumb-down-btn">👎</span> <span class="thumbs-down">0</span>
-        </div>
-        <div class="report-comments">
-          <h4>Maoni:</h4>
-          <ul class="comments-list"></ul>
-          <form class="comment-form">
-            <input type="text" name="comment" placeholder="Andika maoni..." required>
-            <button type="submit">Tuma</button>
-          </form>
-        </div>
+      <div class="report-comments">
+        <h4>Maoni:</h4>
+        <ul class="comments-list"></ul>
+        <form class="comment-form">
+          <input type="text" name="comment" placeholder="Andika maoni..." required>
+          <button type="submit">Tuma</button>
+        </form>
       </div>
     </div>
-  </template>
+  </div>
+</template>
 
-  <script>
-    const username = "<%= username %>";
-    const loggedInUser = "<%= loggedInUser %>";
-    const reportsContainer = document.getElementById('reports-container');
-    const reportTemplate = document.getElementById('report-template');
+<script>
+const username = "<%= username %>";
+const loggedInUser = "<%= loggedInUser %>";
+const reportsContainer = document.getElementById('reports-container');
+const reportTemplate = document.getElementById('report-template');
+const userAvatarImg = document.getElementById('userAvatar');
 
-    async function fetchReports() {
+// Fetch user's avatar
+async function fetchAvatar() {
+  try {
+    const res = await fetch('/api/users');
+    const data = await res.json();
+    const user = data.find(u => u.toLowerCase() === username.toLowerCase());
+    if(user && user.avatar) userAvatarImg.src = user.avatar;
+    else userAvatarImg.src = '/default-avatar.png';
+  } catch(err) {
+    console.error(err);
+    userAvatarImg.src = '/default-avatar.png';
+  }
+}
+
+// Avatar update
+const avatarForm = document.getElementById('avatarForm');
+if(avatarForm) {
+  avatarForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const fileInput = avatarForm.avatar;
+    const formData = new FormData();
+    formData.append('avatar', fileInput.files[0]);
+    try {
+      const res = await fetch('/api/avatar', { method:'POST', body: formData });
+      const data = await res.json();
+      userAvatarImg.src = data.avatar;
+      alert("Avatar updated!");
+    } catch(err) {
+      console.error(err);
+      alert("Tatizo ku-update avatar");
+    }
+  });
+}
+
+// Fetch reports
+async function fetchReports() {
+  try {
+    const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
+    const data = await res.json();
+    displayReports(data.reports);
+    updateStats(data.reports);
+  } catch (err) {
+    console.error("Error fetching reports:", err);
+    reportsContainer.innerHTML = "<p>Kuna tatizo kupata ripoti.</p>";
+  }
+}
+
+// Update totals
+function updateStats(reports) {
+  const totalPosts = reports.length;
+  const totalThumbsUp = reports.reduce((acc, r) => acc + r.thumbs_up, 0);
+  const totalThumbsDown = reports.reduce((acc, r) => acc + r.thumbs_down, 0);
+  document.getElementById('totalPosts').textContent = `${totalPosts} Ripoti`;
+  document.getElementById('totalThumbsUp').textContent = `${totalThumbsUp} 👍`;
+  document.getElementById('totalThumbsDown').textContent = `${totalThumbsDown} 👎`;
+}
+
+// Display reports
+function displayReports(reports) {
+  reportsContainer.innerHTML = "";
+  reports.forEach(r => {
+    const clone = reportTemplate.content.cloneNode(true);
+    clone.querySelector(".report-title").textContent = r.title || "Hakuna title";
+    clone.querySelector(".report-meta").textContent = `${r.username} - ${r.clinic} | ${r.timestamp}`;
+    clone.querySelector(".report-description").textContent = r.description || "";
+    
+    const img = clone.querySelector(".report-image");
+    if (r.image) { img.src = r.image; img.style.display = "block"; }
+
+    clone.querySelector(".thumbs-up").textContent = r.thumbs_up || 0;
+    clone.querySelector(".thumbs-down").textContent = r.thumbs_down || 0;
+
+    // Disable thumbs for owner
+    if(loggedInUser.toLowerCase() === username.toLowerCase()) {
+      clone.querySelector(".thumbs-up").parentNode.style.pointerEvents = "none";
+    }
+
+    clone.querySelector(".report-avatar").src = r.avatar || '/default-avatar.png';
+
+    const commentsList = clone.querySelector(".comments-list");
+    r.comments.forEach(c => {
+      const li = document.createElement("li");
+      li.classList.add("comment-item");
+      const img = document.createElement("img");
+      img.classList.add("comment-avatar");
+      img.src = c.avatar || '/default-avatar.png';
+      li.appendChild(img);
+      li.appendChild(document.createTextNode(`${c.username} (${c.timestamp}): ${c.comment}`));
+      commentsList.appendChild(li);
+    });
+
+    // Live comment posting
+    const commentForm = clone.querySelector(".comment-form");
+    commentForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const input = commentForm.comment;
+      if (!input.value.trim()) return;
       try {
-        const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
-        const data = await res.json();
-        displayReports(data.reports);
-        updateSummary(data.reports);
-      } catch (err) {
-        console.error("Error fetching reports:", err);
-        reportsContainer.innerHTML = "<p>Kuna tatizo kupata ripoti.</p>";
-      }
-    }
-
-    function updateSummary(reports) {
-      const totalPosts = reports.length;
-      const thumbsUp = reports.reduce((sum, r) => sum + (r.thumbs_up || 0), 0);
-      const thumbsDown = reports.reduce((sum, r) => sum + (r.thumbs_down || 0), 0);
-      document.getElementById('total-posts').textContent = totalPosts;
-      document.getElementById('total-thumbs-up').textContent = thumbsUp;
-      document.getElementById('total-thumbs-down').textContent = thumbsDown;
-    }
-
-    function displayReports(reports) {
-      reportsContainer.innerHTML = "";
-      reports.forEach(r => {
-        const clone = reportTemplate.content.cloneNode(true);
-
-        clone.querySelector(".report-title").textContent = r.title || "Hakuna title";
-        clone.querySelector(".report-meta").textContent = `${r.username} - ${r.clinic} | ${r.timestamp}`;
-        clone.querySelector(".report-description").textContent = r.description || "";
-
-        const img = clone.querySelector(".report-image");
-        if (r.image) {
-          img.src = r.image;
-          img.style.display = "block";
-        }
-
-        clone.querySelector(".thumbs-up").textContent = r.thumbs_up || 0;
-        clone.querySelector(".thumbs-down").textContent = r.thumbs_down || 0;
-
-        const commentsList = clone.querySelector(".comments-list");
-        r.comments.forEach(c => {
-          const li = document.createElement("li");
-          li.textContent = `${c.username} (${c.timestamp}): ${c.comment}`;
-          commentsList.appendChild(li);
-        });
-
-        // Live comment posting
-        const commentForm = clone.querySelector(".comment-form");
-        commentForm.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const input = commentForm.comment;
-          if (!input.value.trim()) return;
-
-          try {
-            const res = await fetch(`/api/comments/${r.id}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ comment: input.value.trim() })
-            });
-            if (!res.ok) throw new Error("Tatizo ku-tuma comment");
-            const newComment = await res.json();
-
-            const li = document.createElement("li");
-            li.textContent = `${newComment.username} (${newComment.timestamp}): ${newComment.comment}`;
-            commentsList.prepend(li);
-            input.value = "";
-          } catch (err) {
-            console.error(err);
-            alert("Tatizo ku-tuma comment");
-          }
-        });
-
-        // Thumbs interactivity
-        const thumbUpBtn = clone.querySelector(".thumb-up-btn");
-        const thumbDownBtn = clone.querySelector(".thumb-down-btn");
-
-        if (r.username === loggedInUser) {
-          thumbUpBtn.style.cursor = "not-allowed";
-          thumbDownBtn.style.cursor = "not-allowed";
-        } else {
-          thumbUpBtn.addEventListener("click", async () => react(r.id, "up", clone));
-          thumbDownBtn.addEventListener("click", async () => react(r.id, "down", clone));
-        }
-
-        reportsContainer.appendChild(clone);
-      });
-    }
-
-    async function react(reportId, type, clone) {
-      try {
-        const res = await fetch(`/api/reactions/${reportId}`, {
+        const res = await fetch(`/api/comments/${r.id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type })
+          body: JSON.stringify({ comment: input.value.trim() })
         });
-        if (!res.ok) throw new Error("Tatizo ku-react");
-        const data = await res.json();
-        clone.querySelector(".thumbs-up").textContent = data.thumbs_up;
-        clone.querySelector(".thumbs-down").textContent = data.thumbs_down;
-      } catch (err) {
+        if (!res.ok) throw new Error("Tatizo ku-tuma comment");
+        const newComment = await res.json();
+        const li = document.createElement("li");
+        li.classList.add("comment-item");
+        const img = document.createElement("img");
+        img.classList.add("comment-avatar");
+        img.src = '/default-avatar.png';
+        li.appendChild(img);
+        li.appendChild(document.createTextNode(`${newComment.username} (${newComment.timestamp}): ${newComment.comment}`));
+        commentsList.prepend(li);
+        input.value = "";
+      } catch(err) {
         console.error(err);
+        alert("Tatizo ku-tuma comment");
       }
-    }
+    });
 
-    fetchReports();
-  </script>
+    reportsContainer.appendChild(clone);
+  });
+}
+
+fetchAvatar();
+fetchReports();
+</script>
 </body>
 </html>
