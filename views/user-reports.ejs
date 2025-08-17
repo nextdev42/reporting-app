@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ripoti za <%= username %></title>
-<link rel="stylesheet" href="/dashboard.css"><!-- so colors match dashboard -->
-<!-- include the instagram-style internal css here -->
+<link rel="stylesheet" href="/dashboard.css" />
+<!-- keep your instagram UI CSS -->
 <style>
-/* 👇 paste the CSS you provided exactly here (var --primary etc...) */
+/* ----- PLACE ALL THE CSS YOU GAVE (var --primary, nav, user-header etc...) HERE WITHOUT CHANGES ---- */
 </style>
 </head>
 <body>
@@ -22,6 +22,7 @@
 </nav>
 
 <div class="container">
+  <!-- USER HEADER -->
   <div class="user-header">
     <img id="userAvatar" src="/default-avatar.png" alt="Avatar">
     <div class="info">
@@ -31,7 +32,8 @@
         <span id="totalThumbsUp">0 👍</span>
         <span id="totalThumbsDown">0 👎</span>
       </div>
-      <% if(username === loggedInUser){ %>
+
+      <% if(loggedInUser === username){ %>
       <form id="avatarForm" class="avatar-upload">
         <input type="file" name="avatar" accept="image/*" required>
         <button type="submit">Update Avatar</button>
@@ -40,17 +42,15 @@
     </div>
   </div>
 
-  <div id="reports-container" class="reports-grid">
-    <!-- report cards injected by JS -->
-  </div>
+  <!-- GRID FOR POSTS -->
+  <div id="reports-container" class="reports-grid"></div>
 </div>
 
-
-<!-- Template for cards -->
+<!-- TEMPLATE (for cloning) -->
 <template id="cardTpl">
   <div class="card report-card">
     <div class="card-header">
-      <img class="report-avatar" src="/default-avatar.png">
+      <img class="report-avatar" src="/default-avatar.png" alt="avatar">
       <div class="card-header-content">
         <h3 class="report-title"></h3>
         <p class="report-meta"></p>
@@ -62,8 +62,8 @@
     </div>
     <div class="card-footer">
       <div class="report-thumbs">
-          <span>👍 <span class="thumbs-up">0</span></span>
-          <span>👎 <span class="thumbs-down">0</span></span>
+        <span>👍 <span class="thumbs-up">0</span></span>
+        <span>👎 <span class="thumbs-down">0</span></span>
       </div>
       <div class="report-comments">
         <h4>Maoni:</h4>
@@ -80,102 +80,99 @@
 <script>
 const username    = "<%= username %>";
 const loggedUser  = "<%= loggedInUser %>";
-const reportsDiv  = document.getElementById('reports-container');
-const tpl         = document.getElementById('cardTpl');
 
-// Avatar
+// Fetch user avatar if you will provide /api/useravatar?u=
+fetch(`/api/useravatar?u=${encodeURIComponent(username)}`)
+  .then(r=>r.json()).then(d=>{
+    document.getElementById('userAvatar').src = d.avatar || "/default-avatar.png";
+  }).catch(()=>{});
+
+// Fetch reports dynamically
 (async()=>{
-  try{
-    const uRes= await fetch(`/api/useravatar?u=${encodeURIComponent(username)}`);
-    const {avatar} = await uRes.json();
-    document.getElementById("userAvatar").src= avatar || '/default-avatar.png';
-  }catch(e){/* ignore */}
-})();
-
-// Get reports
-(async ()=>{
   try{
     const r = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
     const data = await r.json();
-    fillStats(data.reports);
-    data.reports.forEach(drawCard);
+    displayStats(data.reports);
+    data.reports.forEach(buildCard);
   }catch(e){
-    reportsDiv.innerHTML="<p>Tatizo kupata ripoti...</p>";
+    document.getElementById('reports-container').innerHTML="<p>Tatizo kupata ripoti...</p>";
   }
 })();
 
-function fillStats(list){
-  const total   = list.length;
-  const upCount = list.reduce((n,r)=>n+r.thumbs_up,0);
-  const dnCount = list.reduce((n,r)=>n+r.thumbs_down,0);
-  document.getElementById('totalPosts').innerText = total+' Ripoti';
-  document.getElementById('totalThumbsUp').innerText = upCount+' 👍';
-  document.getElementById('totalThumbsDown').innerText = dnCount+' 👎';
+function displayStats(list){
+  const total   = list.length,
+        up      = list.reduce((n,r)=>n+r.thumbs_up,0),
+        down    = list.reduce((n,r)=>n+r.thumbs_down,0);
+  document.getElementById('totalPosts').innerText = `${total} Ripoti`;
+  document.getElementById('totalThumbsUp').innerText = `${up} 👍`;
+  document.getElementById('totalThumbsDown').innerText = `${down} 👎`;
 }
 
-function drawCard(r){
+function buildCard(r){
+  const tpl   = document.getElementById('cardTpl');
   const clone = tpl.content.cloneNode(true);
-  clone.querySelector('.report-title').innerText = r.title||"";
-  clone.querySelector('.report-meta').innerText  = `${r.username} - ${r.clinic} | ${r.timestamp}`;
-  clone.querySelector('.report-description').innerText = r.description;
-
+  
+  // basic info
+  clone.querySelector('.report-title').innerText = r.title || '';
+  clone.querySelector('.report-description').innerText = r.description || '';
+  clone.querySelector('.report-meta').innerText = `${r.username} - ${r.clinic} | ${r.timestamp}`;
+  
   // avatar
-  clone.querySelector('.report-avatar').src = r.avatar||"/default-avatar.png"; 
-
-  // img
+  clone.querySelector('.report-avatar').src = r.avatar || '/default-avatar.png';
+  
+  // photo
   if(r.image){
-    const im = clone.querySelector('.report-image');
-    im.src=r.image; im.style.display='block';
+    const img = clone.querySelector('.report-image');
+    img.src = r.image;
+    img.style.display = "block";
   }
-
+  
   // thumbs
-  clone.querySelector('.thumbs-up').innerText = r.thumbs_up;
-  clone.querySelector('.thumbs-down').innerText = r.thumbs_down;
-  if(username === loggedUser){
+  clone.querySelector('.thumbs-up').innerText   = r.thumbs_up || 0;
+  clone.querySelector('.thumbs-down').innerText = r.thumbs_down || 0;
+  if(r.username === loggedUser){
     clone.querySelector('.report-thumbs').style.pointerEvents="none";
   }
-
+  
   // comments
   const ul = clone.querySelector('.comments-list');
   r.comments.forEach(c=>{
-    const li = document.createElement('li');
-    li.className='comment-item';
+    const li=document.createElement('li');
+    li.className="comment-item";
     li.innerHTML = `
       <img class="comment-avatar" src="${c.avatar||'/default-avatar.png'}">
       <div class="comment-content">
-         <div class="comment-user">${c.username}</div>
-         <div class="comment-text">${c.comment}</div>
-         <div class="comment-time">${c.timestamp}</div>
-      </div>
-    `;
+        <div class="comment-user">${c.username}</div>
+        <div class="comment-text">${c.comment}</div>
+        <div class="comment-time">${c.timestamp}</div>
+      </div>`;
     ul.appendChild(li);
   });
 
-  // send comment
-  clone.querySelector('.comment-form').addEventListener('submit', async e=>{
+  // post comment
+  clone.querySelector('.comment-form').addEventListener('submit', async(e)=>{
     e.preventDefault();
-    const txt = e.target.comment.value;
-    if(!txt) return;
-    const rr = await fetch(`/api/comments/${r.id}`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({comment:txt})
+    const text = e.target.comment.value.trim();
+    if(!text) return;
+    const res = await fetch(`/api/comments/${r.id}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({comment:text})
     });
-    const saved = await rr.json();
-    const li = document.createElement('li');
-    li.className='comment-item';
+    const newC = await res.json();
+    const li   = document.createElement('li');
+    li.className="comment-item";
     li.innerHTML = `
-      <img class="comment-avatar" src="${saved.avatar||'/default-avatar.png'}">
+      <img class="comment-avatar" src="${newC.avatar||'/default-avatar.png'}">
       <div class="comment-content">
-         <div class="comment-user">${saved.username}</div>
-         <div class="comment-text">${saved.comment}</div>
-         <div class="comment-time">${saved.timestamp}</div>
+         <div class="comment-user">${newC.username}</div>
+         <div class="comment-text">${newC.comment}</div>
+         <div class="comment-time">${newC.timestamp}</div>
       </div>`;
     ul.prepend(li);
     e.target.reset();
   });
 
-  reportsDiv.appendChild(clone);
+  document.getElementById('reports-container').appendChild(clone);
 }
 </script>
 </body>
