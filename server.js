@@ -105,7 +105,7 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 const upload = multer({ dest: uploadDir });
 
 // ====== Auth helper ======
-function auth(req,res,next){ if(!req.session.userId) return res.redirect("/index.html"); next(); }
+function auth(req,res,next){ if(!req.session.userId) return res.redirect("/"); next(); }
 
 // ====== Tanzania timestamp helper ======
 function getTanzaniaTimestamp(){
@@ -127,7 +127,27 @@ function formatTanzaniaTime(date) {
 }
 
 // ====== Routes ======
+// Redirect logged-in users away from public login/register pages
+app.get("/", (req,res)=>{
+  if(req.session.userId){
+    return res.redirect("/dashboard.html");
+  }
+  return res.sendFile(path.join(__dirname,"public","index.html"));
+});
 
+app.get("/login", (req,res)=>{
+  if(req.session.userId){
+    return res.redirect("/dashboard.html");
+  }
+  return res.sendFile(path.join(__dirname,"public","index.html"));
+});
+
+app.get("/register", (req,res)=>{
+  if(req.session.userId){
+    return res.redirect("/dashboard.html");
+  }
+  return res.sendFile(path.join(__dirname,"public","index.html"));
+});
 // Register
 app.post("/register", async (req,res)=>{
   const { jina, ukoo, namba, kituo, password, confirmPassword } = req.body;
