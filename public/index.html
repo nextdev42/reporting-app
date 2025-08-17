@@ -46,6 +46,7 @@
   </div>
 
   <script>
+    // Tab switching
     const loginTab = document.getElementById('loginTab');
     const registerTab = document.getElementById('registerTab');
     const loginForm = document.getElementById('loginForm');
@@ -64,6 +65,20 @@
       loginForm.style.display = 'none';
       registerForm.style.display = 'block';
     });
+
+    // ===== Frontend redirect for logged-in users =====
+    fetch("/api/user")
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error("Not logged in");
+      })
+      .then(user => {
+        // Redirect logged-in user to their profile
+        window.location.href = `/user/${encodeURIComponent(user.jina)}`;
+      })
+      .catch(err => {
+        console.log("User not logged in, staying on public page.");
+      });
   </script>
 </body>
 </html>
