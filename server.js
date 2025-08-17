@@ -146,34 +146,15 @@ function getTanzaniaTimestamp(){
 }
 
 // Format timestamp for display
-// ====== Tanzania timestamp helper ======
-function formatTanzaniaTime(ts) {
-  if (!ts) return "Haijulikani";
-
-  let dateObj;
-
-  if (ts instanceof Date) {
-    dateObj = ts;
-  } else {
-    // Convert Postgres timestamp like "YYYY-MM-DD HH:MM:SS" to "YYYY-MM-DDTHH:MM:SSZ"
-    const isoStr = ts.toString().replace(' ', 'T') + 'Z';
-    dateObj = new Date(isoStr);
-  }
-
-  if (isNaN(dateObj.getTime())) return "Haijulikani";
-
-  const tzOffsetMinutes = 3 * 60;
-  const localDate = new Date(dateObj.getTime() + (tzOffsetMinutes - dateObj.getTimezoneOffset()) * 60000);
-
-  return localDate.toLocaleString("sw-TZ", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
-  });
+function formatTanzaniaTime(date) {
+  const ts = new Date(date);
+  return !isNaN(ts) 
+    ? ts.toLocaleString("sw-TZ", {
+        day:"2-digit", month:"long", year:"numeric",
+        hour:"2-digit", minute:"2-digit", second:"2-digit",
+        hour12:false
+      })
+    : "Haijulikani";
 }
 
 // ====== Routes ======
@@ -244,13 +225,11 @@ app.get("/api/users", auth, async (req, res) => {
 // Route to show all reports of a specific user
 // Route to show all reports of a specific user
 
-
 app.get("/user/:username", auth, async (req, res) => {
   const username = req.params.username;
 
   try {
-    // Get user reports
-    const userReportsRes = await pool.query(
+    const userReports = await pool.query(
       `SELECT r.*, u.jina AS username, u.kituo AS clinic
        FROM reports r
        JOIN users u ON r.user_id = u.id
@@ -259,10 +238,7 @@ app.get("/user/:username", auth, async (req, res) => {
       [username]
     );
 
-    const reports = userReportsRes.rows;
-    const reportIds = reports.map(r => r.id);
-
-    // Get all comments for these reports
+    const reportIds = userReports.rows.map(r => r.id);
     let comments = [];
     if (reportIds.length) {
       const commentRes = await pool.query(
@@ -276,34 +252,21 @@ app.get("/user/:username", auth, async (req, res) => {
       comments = commentRes.rows;
     }
 
-    // Map comments to their reports and format timestamps
-    const commentsByReport = {};
-    comments.forEach(c => {
-      if (!commentsByReport[c.report_id]) commentsByReport[c.report_id] = [];
-      commentsByReport[c.report_id].push({
-        ...c,
-        timestamp: formatTanzaniaTime(c.timestamp)
-      });
+    userReports.rows.forEach(r => {
+      r.comments = comments
+        .filter(c => c.report_id === r.id)
+        .map(c => ({ ...c, timestamp: formatTanzaniaTime(c.timestamp) }));
+      r.timestamp = formatTanzaniaTime(r.timestamp);
     });
 
-    // Attach comments and format report timestamps
-    const formattedReports = reports.map(r => ({
-      ...r,
-      timestamp: formatTanzaniaTime(r.timestamp),
-      comments: commentsByReport[r.id] || []
-    }));
-
-    res.render("user-reports", { username, reports: formattedReports });
+    console.log("Found:", userReports.rows.length)  // <-- optional debug
+    res.render("user-reports", { username, reports: userReports.rows });
 
   } catch (err) {
     console.error(err);
     res.status(500).send("Kuna tatizo kwenye seva");
   }
 });
-
-    
-    
-    
 // ====== Submit report ======
 
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
