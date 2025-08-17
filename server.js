@@ -85,7 +85,27 @@ async function initTables() {
   console.log("✅ Tables ensured");
 }
 initTables();
+// Redirect logged-in users away from public login/register pages
+app.get("/", (req,res)=>{
+  if(req.session.userId){
+    return res.redirect("/dashboard.html");
+  }
+  return res.sendFile(path.join(__dirname,"public","index.html"));
+});
 
+app.get("/login", (req,res)=>{
+  if(req.session.userId){
+    return res.redirect("/dashboard.html");
+  }
+  return res.sendFile(path.join(__dirname,"public","index.html"));
+});
+
+app.get("/register", (req,res)=>{
+  if(req.session.userId){
+    return res.redirect("/dashboard.html");
+  }
+  return res.sendFile(path.join(__dirname,"public","index.html"));
+});
 // ====== Middleware ======
 app.use(express.static("public"));
 app.use("/uploads", express.static("reports/uploads"));
@@ -127,27 +147,7 @@ function formatTanzaniaTime(date) {
 }
 
 // ====== Routes ======
-// Redirect logged-in users away from public login/register pages
-app.get("/", (req,res)=>{
-  if(req.session.userId){
-    return res.redirect("/dashboard.html");
-  }
-  return res.sendFile(path.join(__dirname,"public","index.html"));
-});
 
-app.get("/login", (req,res)=>{
-  if(req.session.userId){
-    return res.redirect("/dashboard.html");
-  }
-  return res.sendFile(path.join(__dirname,"public","index.html"));
-});
-
-app.get("/register", (req,res)=>{
-  if(req.session.userId){
-    return res.redirect("/dashboard.html");
-  }
-  return res.sendFile(path.join(__dirname,"public","index.html"));
-});
 // Register
 app.post("/register", async (req,res)=>{
   const { jina, ukoo, namba, kituo, password, confirmPassword } = req.body;
