@@ -20,11 +20,28 @@ let currentUser = {};
 let allUsers    = []; // for mention suggestion
 
 // ====== TOGGLE REPORT FORM ======
+// ====== TOGGLE REPORT FORM ======
 toggleFormBtn.addEventListener("click", () => {
-  const isHidden = reportFormSection.style.display === "none";
+  const isHidden = reportFormSection.style.display === "none" || !reportFormSection.style.display;
   reportFormSection.style.display = isHidden ? "block" : "none";
-  toggleFormBtn.textContent = isHidden ? "Ficha Fomu" : "Ongeza Ripoti";
+  toggleFormBtn.textContent = isHidden ? "Zificha Fomu" : "Ongeza Ripoti";
 });
+
+// ====== TOGGLE FILTER SECTION ======
+const toggleFilterBtn = document.getElementById("toggleFilterBtn");
+const filtersContent = document.getElementById("filtersContent");
+
+// initialize filter as visible
+filtersContent.style.display = "block";
+toggleFilterBtn.textContent = "Zificha";
+
+toggleFilterBtn.addEventListener("click", () => {
+  const isHidden = filtersContent.style.display === "none";
+  filtersContent.style.display = isHidden ? "block" : "none";
+  toggleFilterBtn.textContent = isHidden ? "Zificha" : "Onyesha";
+});
+
+
 
 // ====== GREETING & CURRENT USER ======
 async function loadGreeting() {
