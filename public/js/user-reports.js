@@ -50,34 +50,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Reaction handler
   async function react(type) {
-    try {
-      const res = await fetch(`/api/reactions/${r.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type })
-      });
-      if(!res.ok){
-        const msg = await res.text();
-        alert(msg || "Tatizo kupiga thumb");
-        return;
-      }
-      const data = await res.json();
-      // Update counters
-      thumbsUp.querySelector(".count").textContent = data.thumbs_up;
-      thumbsDown.querySelector(".count").textContent = data.thumbs_down;
-      // Grey out the selected thumb
-      if(type==="up"){
-        thumbsUp.classList.add("reacted");
-        thumbsDown.classList.remove("reacted");
-      } else {
-        thumbsDown.classList.add("reacted");
-        thumbsUp.classList.remove("reacted");
-      }
-    } catch(err){
-      console.error(err);
-      alert("Tatizo kupiga thumb");
+  try {
+    const res = await fetch(`/api/reactions/${r.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type })
+    });
+    if(!res.ok){
+      const msg = await res.text();
+      alert(msg || "Tatizo kupiga thumb");
+      return;
     }
+    const data = await res.json();
+
+    // Update counters on the card
+    thumbsUp.querySelector(".count").textContent = data.thumbs_up;
+    thumbsDown.querySelector(".count").textContent = data.thumbs_down;
+
+    // Grey out the selected thumb
+    if(type==="up"){
+      thumbsUp.classList.add("reacted");
+      thumbsDown.classList.remove("reacted");
+    } else {
+      thumbsDown.classList.add("reacted");
+      thumbsUp.classList.remove("reacted");
+    }
+
+    // ✅ Update overall totals at the top
+    const allReports = document.querySelectorAll(".card");
+    let totalUp = 0;
+    let totalDown = 0;
+    allReports.forEach(cardEl => {
+      const up = parseInt(cardEl.querySelector(".thumb-up .count").textContent) || 0;
+      const down = parseInt(cardEl.querySelector(".thumb-down .count").textContent) || 0;
+      totalUp += up;
+      totalDown += down;
+    });
+    document.getElementById('totalThumbsUp').textContent = totalUp + " 👍";
+    document.getElementById('totalThumbsDown').textContent = totalDown + " 👎";
+
+  } catch(err){
+    console.error(err);
+    alert("Tatizo kupiga thumb");
   }
+}
 
   // Add click listeners only if user hasn't reacted
   if(!r.user_thumb){
