@@ -121,8 +121,22 @@ nav button:hover {
 }
 
 .avatar-upload input[type="file"] {
-  flex: 1 1 auto;
+  display: none; /* hide default input */
 }
+
+.custom-file-btn {
+  padding: 6px 12px;
+  background: #405DE6;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.3s;
+}
+
+.custom-file-btn:hover {
+  background: #2e3cb5;
+  }
 
 .avatar-upload button {
   flex: 0 0 auto;
