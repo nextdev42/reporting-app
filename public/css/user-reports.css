@@ -113,7 +113,31 @@ nav button:hover {
 }
 
 .avatar-upload {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap; /* allow wrapping on small screens */
   margin-top: 10px;
+}
+
+.avatar-upload input[type="file"] {
+  flex: 1 1 auto;
+}
+
+.avatar-upload button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 480px) {
+  .avatar-upload {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .avatar-upload input[type="file"],
+  .avatar-upload button {
+    width: 100%;
+  }
 }
 
 .reports-grid {
