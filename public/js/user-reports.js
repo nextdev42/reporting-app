@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const totalComments = r.comments.length || 0;
 
-  // Helper to convert @username to links
   function linkUsernames(text) {
     return text.replace(/@([a-zA-Z0-9_.-]+)/g, '<a href="/user/$1" class="mention">@$1</a>');
   }
@@ -46,10 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
   `;
 
-  // --- Thumb reactions ---
+  // Thumb reactions
   const thumbsUp = card.querySelector(".thumb-up");
   const thumbsDown = card.querySelector(".thumb-down");
-
   if (r.user_thumb === "up") thumbsUp.classList.add("reacted");
   if (r.user_thumb === "down") thumbsDown.classList.add("reacted");
 
@@ -73,15 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
         thumbsDown.classList.add("reacted");
         thumbsUp.classList.remove("reacted");
       }
-
-      // Update total thumbs
-      let totalUp = 0, totalDown = 0;
-      document.querySelectorAll(".card").forEach(c => {
-        totalUp += parseInt(c.querySelector(".thumb-up .count").textContent) || 0;
-        totalDown += parseInt(c.querySelector(".thumb-down .count").textContent) || 0;
-      });
-      document.getElementById('totalThumbsUp').textContent = totalUp + " 👍";
-      document.getElementById('totalThumbsDown').textContent = totalDown + " 👎";
     } catch(err){
       console.error(err);
       alert("Tatizo kupiga thumb");
@@ -93,14 +82,12 @@ document.addEventListener("DOMContentLoaded", () => {
     thumbsDown.addEventListener("click", () => react("down"));
   }
 
-  // --- Comment toggle ---
+  // Comment toggle
   const toggleBtn = card.querySelector('.comment-toggle');
   const commentSection = card.querySelector('.report-comments');
   toggleBtn.addEventListener('click', () => commentSection.classList.toggle('active'));
 
   const form = card.querySelector('.comment-form');
-  form.style.display = r.username === window.LOGGED_IN_USER ? 'none' : 'flex';
-
   const ul = card.querySelector('.comments-list');
   r.comments.forEach(c => {
     const li = document.createElement('li');
@@ -115,91 +102,127 @@ document.addEventListener("DOMContentLoaded", () => {
     ul.appendChild(li);
   });
 
-  // --- Mention autocomplete ---
-  // === MENTION AUTOCOMPLETE ===
-const input = form.comment;
-const suggestionBox = document.createElement('div');
-suggestionBox.className = 'mention-suggestions';
-suggestionBox.style.position = 'absolute';
-suggestionBox.style.background = '#fff';
-suggestionBox.style.border = '1px solid #ccc';
-suggestionBox.style.display = 'none';
-suggestionBox.style.zIndex = 1000;
-suggestionBox.style.maxHeight = '150px';
-suggestionBox.style.overflowY = 'auto';
+  form.style.display = r.username === window.LOGGED_IN_USER ? 'none' : 'flex';
 
-// Attach suggestion box relative to the form
-const formContainer = form.closest('.card-footer');
-formContainer.style.position = 'relative';
-formContainer.appendChild(suggestionBox);
+  // --- Mention autocomplete with auto-select ---
+  const input = form.comment;
+  const suggestionBox = document.createElement('div');
+  suggestionBox.className = 'mention-suggestions';
+  suggestionBox.style.position = 'absolute';
+  suggestionBox.style.background = '#fff';
+  suggestionBox.style.border = '1px solid #ccc';
+  suggestionBox.style.display = 'none';
+  suggestionBox.style.zIndex = 1000;
+  suggestionBox.style.maxHeight = '150px';
+  suggestionBox.style.overflowY = 'auto';
 
-let currentQuery = '';
-let fetchController = null;
+  const formContainer = form.closest('.card-footer');
+  formContainer.style.position = 'relative';
+  formContainer.appendChild(suggestionBox);
 
-input.addEventListener('input', async () => {
-  const cursorPos = input.selectionStart;
-  const textBeforeCursor = input.value.slice(0, cursorPos);
-  const match = textBeforeCursor.match(/@([a-zA-Z0-9_.-]*)$/);
-  
-  if (!match) { 
-    suggestionBox.style.display = 'none';
-    return; 
+  let currentQuery = '';
+  let fetchController = null;
+  let selectedIndex = 0;
+
+  function updateSelection() {
+    const items = suggestionBox.querySelectorAll('.suggestion-item');
+    items.forEach((item,i)=>{
+      item.classList.toggle('selected', i===selectedIndex);
+    });
   }
 
-  currentQuery = match[1].toLowerCase();
-
-  if(fetchController) fetchController.abort();
-  fetchController = new AbortController();
-
-  try {
-    const res = await fetch('/api/users?search=' + encodeURIComponent(currentQuery), { signal: fetchController.signal });
-    if(!res.ok) throw new Error('Failed to fetch users');
-    const users = await res.json();
-
-    if(!users || !users.length){
-      suggestionBox.style.display='none';
-      return;
+  input.addEventListener('input', async () => {
+    const cursorPos = input.selectionStart;
+    const textBeforeCursor = input.value.slice(0, cursorPos);
+    const match = textBeforeCursor.match(/@([a-zA-Z0-9_.-]*)$/);
+    
+    if (!match) { 
+      suggestionBox.style.display = 'none';
+      return; 
     }
 
-    suggestionBox.innerHTML = '';
-    users.forEach(u => {
-      const username = u.trim(); // remove extra spaces
-      const div = document.createElement('div');
-      div.textContent = username;
-      div.className = 'suggestion-item';
-      div.style.padding = '5px';
-      div.style.cursor = 'pointer';
+    currentQuery = match[1].toLowerCase();
 
-      div.addEventListener('click', () => {
-        const start = textBeforeCursor.lastIndexOf('@');
-        input.value = input.value.slice(0, start) + '@' + username + ' ' + input.value.slice(cursorPos);
-        input.focus();
-        suggestionBox.style.display = 'none';
+    if(fetchController) fetchController.abort();
+    fetchController = new AbortController();
+
+    try {
+      const res = await fetch('/api/users?search=' + encodeURIComponent(currentQuery), { signal: fetchController.signal });
+      if(!res.ok) throw new Error('Failed to fetch users');
+      const users = await res.json();
+
+      if(!users || !users.length){
+        suggestionBox.style.display='none';
+        return;
+      }
+
+      suggestionBox.innerHTML = '';
+      users.forEach(u => {
+        const username = u.trim();
+        const div = document.createElement('div');
+        div.textContent = username;
+        div.className = 'suggestion-item';
+        div.style.padding = '5px';
+        div.style.cursor = 'pointer';
+
+        div.addEventListener('click', () => {
+          const start = textBeforeCursor.lastIndexOf('@');
+          input.value = input.value.slice(0, start) + '@' + username + ' ' + input.value.slice(cursorPos);
+          input.focus();
+          suggestionBox.style.display = 'none';
+        });
+
+        suggestionBox.appendChild(div);
       });
 
-      suggestionBox.appendChild(div);
-    });
+      selectedIndex = 0;
+      updateSelection();
+      suggestionBox.style.display = 'block';
+      setTimeout(() => { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
 
-    suggestionBox.style.display = 'block';
+    } catch(err) {
+      if(err.name !== 'AbortError') console.error(err);
+      suggestionBox.style.display = 'none';
+    }
+  });
 
-/* Ensure input is visible on mobile with smooth scrolling */
-setTimeout(() => {
-  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}, 100);
-  } catch(err) {
-    if(err.name !== 'AbortError') console.error(err);
-    suggestionBox.style.display = 'none';
-  }
-});
+  // Keyboard navigation
+  input.addEventListener('keydown', e => {
+    const items = suggestionBox.querySelectorAll('.suggestion-item');
+    if(!items.length) return;
 
-document.addEventListener('click', (e) => {
-  if(!input.contains(e.target) && !suggestionBox.contains(e.target)){
-    suggestionBox.style.display = 'none';
-  }
-});
+    if(e.key === 'ArrowDown'){
+      selectedIndex = (selectedIndex+1) % items.length;
+      updateSelection();
+      e.preventDefault();
+    } else if(e.key === 'ArrowUp'){
+      selectedIndex = (selectedIndex-1+items.length) % items.length;
+      updateSelection();
+      e.preventDefault();
+    } else if(e.key === 'Enter'){
+      const item = items[selectedIndex];
+      if(item){
+        const cursorPos = input.selectionStart;
+        const textBeforeCursor = input.value.slice(0, cursorPos);
+        const start = textBeforeCursor.lastIndexOf('@');
+        input.value = input.value.slice(0, start) + '@' + item.textContent + ' ' + input.value.slice(cursorPos);
+        suggestionBox.style.display = 'none';
+        input.focus();
+        e.preventDefault();
+      }
+    } else if(e.key === 'Escape'){
+      suggestionBox.style.display = 'none';
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if(!input.contains(e.target) && !suggestionBox.contains(e.target)){
+      suggestionBox.style.display = 'none';
+    }
+  });
 
   // --- Comment submission ---
-  form.addEventListener('submit', async (e)=>{
+  form.addEventListener('submit', async e=>{
     e.preventDefault();
     if(!input.value.trim()) return;
     const txt = input.value;
@@ -228,6 +251,15 @@ document.addEventListener('click', (e) => {
 
   return card;
 }
+  
+
+  
+
+      
+
+
+
+
 
 
 
