@@ -33,12 +33,12 @@
         <span id="totalThumbsDown">0 👎</span>
       </div>
       <% if(username === loggedInUser){ %>
-     <form id="avatarForm" class="avatar-upload" style="display: flex; align-items: center; gap: 10px;">
-     <label for="avatarInput" style="margin: 0;">Chagua Faili:</label>
-     <input id="avatarInput" type="file" name="avatar" accept="image/*">
-     <button type="submit">Sasisha Avatar</button>
-     </form>
-     <% } %>
+     <form id="avatarForm" class="avatar-upload">
+     <label for="avatarInput" class="custom-file-btn">Chagua Faili</label>
+    <input id="avatarInput" type="file" name="avatar" accept="image/*">
+    <button type="submit">Sasisha Avatar</button>
+  </form>
+  <% } %>
     </div>
   </div>
 
