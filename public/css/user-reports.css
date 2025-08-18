@@ -112,10 +112,11 @@ nav button:hover {
   align-items: center;
 }
 
+/* Avatar upload section */
 .avatar-upload {
   display: flex;
   align-items: center;
-  gap: 8px; /* slightly tighter spacing */
+  gap: 8px; /* spacing between buttons */
   flex-wrap: wrap;
   margin-top: 10px;
 }
@@ -124,8 +125,8 @@ nav button:hover {
   display: none; /* hide default file input */
 }
 
-/* Style the label to look like the button */
-.avatar-upload label {
+.avatar-upload label,
+.avatar-upload button {
   padding: 6px 12px;
   border-radius: 6px;
   background: #405DE6;
@@ -136,25 +137,15 @@ nav button:hover {
   transition: background 0.3s, transform 0.1s ease;
 }
 
-.avatar-upload label:hover {
-  background: #833AB4;
-  transform: scale(1.05); /* slight hover scale effect on desktop */
-}
-
-.avatar-upload button {
-  padding: 6px 12px;
-  border-radius: 6px;
-  background: #405DE6;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.3s, transform 0.1s ease;
-}
-
+.avatar-upload label:hover,
 .avatar-upload button:hover {
   background: #833AB4;
   transform: scale(1.05);
+}
+
+.avatar-upload button {
+  border: none;
+  flex: 0 0 auto;
 }
 
 /* Small screens adjustment */
@@ -169,45 +160,15 @@ nav button:hover {
   .avatar-upload button {
     width: 100%;
     text-align: center;
-    transition: transform 0.1s ease, background 0.3s ease;
   }
 
   .avatar-upload label:active,
   .avatar-upload button:active {
-    transform: scale(0.95); /* tap feedback */
+    transform: scale(0.95);
   }
 }
 
-.custom-file-btn {
-  padding: 6px 12px;
-  background: #405DE6;
-  color: #fff;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: 0.3s;
-}
-
-.custom-file-btn:hover {
-  background: #2e3cb5;
-  }
-
-.avatar-upload button {
-  flex: 0 0 auto;
-}
-
-@media (max-width: 480px) {
-  .avatar-upload {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .avatar-upload input[type="file"],
-  .avatar-upload button {
-    width: 100%;
-  }
-}
-
+/* Reports grid */
 .reports-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill,minmax(min(100%,350px),1fr));
@@ -215,6 +176,7 @@ nav button:hover {
   margin-top: 10px;
 }
 
+/* Report card */
 .card {
   background: #fff;
   border-radius: 16px;
@@ -385,4 +347,4 @@ nav button:hover {
 @keyframes fadeIn {
   from {opacity:0; transform:translateY(10px)}
   to {opacity:1; transform:translateY(0)}
-                              }
+}
