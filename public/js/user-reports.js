@@ -1,15 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const username = window.USERNAME;
-  const loggedInUser = window.LOGGED_IN_USER;
+  const username = window.USERNAME;        // the user whose page is viewed
+  const loggedInUser = window.LOGGED_IN_USER; // currently logged-in user
 
   let currentPage = 1;
   let totalPages = 1;
-  const limit = 10;
+  const limit = 10; // reports per page
 
+  // @mentions become clickable links
   function linkUsernames(text) {
     return text.replace(/@(\w+)/g, '<a href="/user/$1" class="mention">@$1</a>');
   }
 
+  // render one report card
   function renderReportCard(r) {
     const card = document.createElement("div");
     card.className = "card";
@@ -48,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return card;
   }
 
+  // attach thumbs, comments, toggles
   function attachReportCardEvents(card, r) {
     const thumbsUp = card.querySelector(".thumb-up");
     const thumbsDown = card.querySelector(".thumb-down");
@@ -56,9 +59,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = card.querySelector('.comment-form');
     const ul = card.querySelector('.comments-list');
 
+    // grey-out thumbs if already reacted
     if (r.user_thumb === "up") thumbsUp.classList.add("reacted");
     if (r.user_thumb === "down") thumbsDown.classList.add("reacted");
 
+    // reaction handler
     async function react(type) {
       try {
         const res = await fetch(`/api/reactions/${r.id}`, {
@@ -66,9 +71,9 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ type })
         });
-        if (!res.ok) return alert(await res.text() || "Tatizo kupiga thumb");
-        const data = await res.json();
+        if(!res.ok) return alert(await res.text() || "Tatizo kupiga thumb");
 
+        const data = await res.json();
         thumbsUp.querySelector(".count").textContent = data.thumbs_up;
         thumbsDown.querySelector(".count").textContent = data.thumbs_down;
         thumbsUp.classList.toggle("reacted", type==="up");
@@ -76,10 +81,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const deltaUp = (type==="up" ? 1 : 0) - (r.user_thumb==="up" ? 1 : 0);
         const deltaDown = (type==="down" ? 1 : 0) - (r.user_thumb==="down" ? 1 : 0);
-
         r.user_thumb = type;
         updateTotalThumbs(deltaUp, deltaDown);
-
       } catch(err){
         console.error(err);
         alert("Tatizo kupiga thumb");
@@ -94,6 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleBtn.addEventListener('click', () => commentSection.classList.toggle('active'));
     form.style.display = r.username === loggedInUser ? 'none' : 'flex';
 
+    // populate comments
     r.comments.forEach(c => {
       const li = document.createElement('li');
       li.className = 'comment-item';
@@ -107,19 +111,19 @@ document.addEventListener("DOMContentLoaded", () => {
       ul.appendChild(li);
     });
 
+    // submit new comment
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const input = form.comment;
-      if (!input.value.trim()) return;
-      const txt = input.value; 
-      input.value = "";
+      if(!input.value.trim()) return;
+      const txt = input.value; input.value = "";
       try {
         const res = await fetch(`/api/comments/${r.id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ comment: txt })
         });
-        if (!res.ok) throw new Error();
+        if(!res.ok) throw new Error();
         const c = await res.json();
         const li = document.createElement('li');
         li.className = 'comment-item';
@@ -133,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ul.prepend(li);
 
         toggleBtn.innerHTML = `💬 ${ul.children.length} Maoni`;
-        updateTotalComments(1); // update total comment count
+        updateTotalComments(1);
 
       } catch {
         alert("Tatizo kutuma maoni");
@@ -141,7 +145,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  async function loadReports(page=1) {
+  // load paginated reports
+  async function loadReports(page=1){
     const wrap = document.getElementById('reports-container');
     wrap.innerHTML = "<div>Inapakia...</div>";
 
@@ -157,13 +162,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       renderPagination();
       updateCounters();
-
-    } catch (err) {
+    } catch(err){
       wrap.innerHTML = `<div class="error">Hitilafu katika kupakia ripoti</div>`;
       console.error(err);
     }
   }
 
+  // pagination buttons
   function renderPagination() {
     const wrap = document.getElementById('reports-container');
     let old = wrap.querySelector(".pagination");
@@ -197,12 +202,11 @@ document.addEventListener("DOMContentLoaded", () => {
     wrap.appendChild(p);
   }
 
-  function updateCounters() {
+  // update total counters dynamically
+  function updateCounters(){
     const cards = document.querySelectorAll(".card");
     const totalP = cards.length;
-    let totalUp = 0;
-    let totalDown = 0;
-    let totalComments = 0;
+    let totalUp=0, totalDown=0, totalComments=0;
 
     cards.forEach(card => {
       totalUp += parseInt(card.querySelector(".thumb-up .count").textContent,10) || 0;
@@ -213,13 +217,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('totalPosts').textContent = totalP + " Ripoti";
     document.getElementById('totalThumbsUp').textContent = totalUp + " 👍";
     document.getElementById('totalThumbsDown').textContent = totalDown + " 👎";
-    document.getElementById('totalComments').textContent = totalComments + " Maoni"; // new element
+    document.getElementById('totalComments').textContent = totalComments + " Maoni";
   }
 
-  function updateTotalThumbs(deltaUp, deltaDown) {
+  function updateTotalThumbs(deltaUp, deltaDown){
     const totalUpEl = document.getElementById('totalThumbsUp');
     const totalDownEl = document.getElementById('totalThumbsDown');
-
     const currentUp = parseInt(totalUpEl.textContent,10) || 0;
     const currentDown = parseInt(totalDownEl.textContent,10) || 0;
 
@@ -227,7 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
     totalDownEl.textContent = (currentDown + deltaDown) + " 👎";
   }
 
-  function updateTotalComments(delta) {
+  function updateTotalComments(delta){
     const totalCommentsEl = document.getElementById('totalComments');
     const current = parseInt(totalCommentsEl.textContent,10) || 0;
     totalCommentsEl.textContent = (current + delta) + " Maoni";
