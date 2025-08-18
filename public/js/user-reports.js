@@ -1,15 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const username = window.USERNAME;        // the user whose page is viewed
+  const username = window.USERNAME;        // user whose page is viewed
   const loggedInUser = window.LOGGED_IN_USER; // currently logged-in user
-  const reports = window.REPORTS || [];    // pre-rendered reports from EJS
-  let currentPage = 1;
-  const limit = 10;
-  const totalPages = Math.ceil(reports.length / limit);
 
+  let currentPage = 1;
+  let totalPages = 1;
+  const limit = 10;
+
+  // make @mentions clickable
   function linkUsernames(text) {
     return text.replace(/@(\w+)/g, '<a href="/user/$1" class="mention">@$1</a>');
   }
 
+  // render single report card
   function renderReportCard(r) {
     const card = document.createElement("div");
     card.className = "card";
@@ -18,23 +20,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     card.innerHTML = `
       <div class="card-header">
-        <div class="report-avatar">
-          <a href="/user/${r.username}">
-            <img src="${r.avatar || '/default-avatar.png'}" alt="${r.username}">
-          </a>
-        </div>
+        <div class="report-avatar"><a href="/user/${r.username}">${r.username.charAt(0).toUpperCase()}</a></div>
         <div>
-          <div class="report-title">${linkUsernames(r.title || '')}</div>
+          <div class="report-title">${linkUsernames(r.title||'')}</div>
           <div class="report-meta"><a href="/user/${r.username}">${r.username}</a> - ${r.clinic} | ${r.timestamp}</div>
         </div>
       </div>
-      <div class="report-description">${linkUsernames(r.description || '')}</div>
+      <div class="report-description">${linkUsernames(r.description||'')}</div>
       ${r.image ? `<img class="report-image" src="${r.image}">` : ''}
       <div class="card-footer">
         <div class="reaction-container">
           <div class="report-thumbs">
-            <span class="thumb-up">👍 <span class="count">${r.thumbs_up || 0}</span></span>
-            <span class="thumb-down">👎 <span class="count">${r.thumbs_down || 0}</span></span>
+            <span class="thumb-up">👍 <span class="count">${r.thumbs_up||0}</span></span>
+            <span class="thumb-down">👎 <span class="count">${r.thumbs_down||0}</span></span>
           </div>
           <span class="comment-toggle">💬 ${totalComments} Maoni</span>
         </div>
@@ -52,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return card;
   }
 
+  // attach thumbs, comments, toggles
   function attachReportCardEvents(card, r) {
     const thumbsUp = card.querySelector(".thumb-up");
     const thumbsDown = card.querySelector(".thumb-down");
@@ -70,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ type })
         });
-        if (!res.ok) return alert(await res.text() || "Tatizo kupiga thumb");
+        if(!res.ok) return alert(await res.text() || "Tatizo kupiga thumb");
 
         const data = await res.json();
         thumbsUp.querySelector(".count").textContent = data.thumbs_up;
@@ -82,14 +81,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const deltaDown = (type==="down" ? 1 : 0) - (r.user_thumb==="down" ? 1 : 0);
         r.user_thumb = type;
         updateTotalThumbs(deltaUp, deltaDown);
-
       } catch(err){
         console.error(err);
         alert("Tatizo kupiga thumb");
       }
     }
 
-    if (!r.user_thumb) {
+    if(!r.user_thumb){
       thumbsUp.addEventListener("click", () => react("up"));
       thumbsDown.addEventListener("click", () => react("down"));
     }
@@ -97,15 +95,12 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleBtn.addEventListener('click', () => commentSection.classList.toggle('active'));
     form.style.display = r.username === loggedInUser ? 'none' : 'flex';
 
+    // populate comments
     r.comments.forEach(c => {
       const li = document.createElement('li');
       li.className = 'comment-item';
       li.innerHTML = `
-        <div class="comment-avatar">
-          <a href="/user/${c.username}">
-            <img src="${c.avatar || '/default-avatar.png'}" alt="${c.username}">
-          </a>
-        </div>
+        <div class="comment-avatar"><a href="/user/${c.username}">${c.username.charAt(0).toUpperCase()}</a></div>
         <div>
           <div class="comment-user"><a href="/user/${c.username}">${c.username}</a></div>
           <div class="comment-text">${linkUsernames(c.comment)}</div>
@@ -114,10 +109,11 @@ document.addEventListener("DOMContentLoaded", () => {
       ul.appendChild(li);
     });
 
+    // submit new comment
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const input = form.comment;
-      if (!input.value.trim()) return;
+      if(!input.value.trim()) return;
       const txt = input.value; input.value = "";
       try {
         const res = await fetch(`/api/comments/${r.id}`, {
@@ -125,16 +121,12 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ comment: txt })
         });
-        if (!res.ok) throw new Error();
+        if(!res.ok) throw new Error();
         const c = await res.json();
         const li = document.createElement('li');
         li.className = 'comment-item';
         li.innerHTML = `
-          <div class="comment-avatar">
-            <a href="/user/${c.username}">
-              <img src="${c.avatar || '/default-avatar.png'}" alt="${c.username}">
-            </a>
-          </div>
+          <div class="comment-avatar"><a href="/user/${c.username}">${c.username.charAt(0).toUpperCase()}</a></div>
           <div>
             <div class="comment-user"><a href="/user/${c.username}">${c.username}</a></div>
             <div class="comment-text">${linkUsernames(c.comment)}</div>
@@ -151,59 +143,73 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function renderPage(page=1) {
+  // load reports
+  async function loadReports(page=1){
     const wrap = document.getElementById('reports-container');
-    wrap.innerHTML = "";
-    const start = (page - 1) * limit;
-    const end = start + limit;
-    const pageReports = reports.slice(start, end);
-    pageReports.forEach(r => wrap.appendChild(renderReportCard(r)));
-    renderPagination();
-    updateCounters();
+    wrap.innerHTML = "<div>Inapakia...</div>";
+
+    try {
+      const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}&page=${page}&limit=${limit}`);
+      const data = await res.json();
+
+      wrap.innerHTML = "";
+      totalPages = data.totalPages || 1;
+      currentPage = page;
+
+      data.reports.forEach(r => wrap.appendChild(renderReportCard(r)));
+
+      renderPagination();
+      updateCounters();
+    } catch(err){
+      wrap.innerHTML = `<div class="error">Hitilafu katika kupakia ripoti</div>`;
+      console.error(err);
+    }
   }
 
+  // pagination
   function renderPagination() {
     const wrap = document.getElementById('reports-container');
     let old = wrap.querySelector(".pagination");
-    if (old) old.remove();
+    if(old) old.remove();
 
     const p = document.createElement("div");
     p.className = "pagination";
 
-    if (currentPage > 1) {
+    if(currentPage > 1){
       const prev = document.createElement("button");
       prev.textContent = "Prev";
-      prev.onclick = () => { currentPage--; renderPage(currentPage); };
+      prev.onclick = () => loadReports(currentPage-1);
       p.appendChild(prev);
     }
 
-    for (let i = 1; i <= totalPages; i++) {
+    for(let i=1;i<=totalPages;i++){
       const btn = document.createElement("button");
       btn.textContent = i;
-      if (i === currentPage) { btn.disabled = true; btn.classList.add("current"); }
-      btn.onclick = () => { currentPage = i; renderPage(currentPage); };
+      if(i===currentPage){ btn.disabled=true; btn.classList.add("current"); }
+      btn.onclick = () => loadReports(i);
       p.appendChild(btn);
     }
 
-    if (currentPage < totalPages) {
+    if(currentPage < totalPages){
       const next = document.createElement("button");
       next.textContent = "Next";
-      next.onclick = () => { currentPage++; renderPage(currentPage); };
+      next.onclick = () => loadReports(currentPage+1);
       p.appendChild(next);
     }
 
     wrap.appendChild(p);
   }
 
-  function updateCounters() {
+  // update totals
+  function updateCounters(){
     const cards = document.querySelectorAll(".card");
     const totalP = cards.length;
-    let totalUp = 0, totalDown = 0, totalComments = 0;
+    let totalUp=0, totalDown=0, totalComments=0;
 
     cards.forEach(card => {
-      totalUp += parseInt(card.querySelector(".thumb-up .count").textContent, 10) || 0;
-      totalDown += parseInt(card.querySelector(".thumb-down .count").textContent, 10) || 0;
-      totalComments += parseInt(card.querySelector(".comment-toggle").textContent.match(/\d+/)[0], 10) || 0;
+      totalUp += parseInt(card.querySelector(".thumb-up .count").textContent,10) || 0;
+      totalDown += parseInt(card.querySelector(".thumb-down .count").textContent,10) || 0;
+      totalComments += parseInt(card.querySelector(".comment-toggle").textContent.match(/\d+/)[0],10) || 0;
     });
 
     document.getElementById('totalPosts').textContent = totalP + " Ripoti";
@@ -212,21 +218,21 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('totalComments').textContent = totalComments + " Maoni";
   }
 
-  function updateTotalThumbs(deltaUp, deltaDown) {
+  function updateTotalThumbs(deltaUp, deltaDown){
     const totalUpEl = document.getElementById('totalThumbsUp');
     const totalDownEl = document.getElementById('totalThumbsDown');
-    const currentUp = parseInt(totalUpEl.textContent, 10) || 0;
-    const currentDown = parseInt(totalDownEl.textContent, 10) || 0;
+    const currentUp = parseInt(totalUpEl.textContent,10) || 0;
+    const currentDown = parseInt(totalDownEl.textContent,10) || 0;
+
     totalUpEl.textContent = (currentUp + deltaUp) + " 👍";
     totalDownEl.textContent = (currentDown + deltaDown) + " 👎";
   }
 
-  function updateTotalComments(delta) {
+  function updateTotalComments(delta){
     const totalCommentsEl = document.getElementById('totalComments');
-    const current = parseInt(totalCommentsEl.textContent, 10) || 0;
+    const current = parseInt(totalCommentsEl.textContent,10) || 0;
     totalCommentsEl.textContent = (current + delta) + " Maoni";
   }
 
-  // initial render
-  renderPage(currentPage);
+  loadReports();
 });
