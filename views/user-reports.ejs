@@ -4,62 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ripoti za <%= username %></title>
-<style>
-  :root { }
-  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;}
-  body{background-color:#FAFAFA;color:#262626;padding-top:60px;}
-  nav{position:fixed;top:0;width:100%;background:linear-gradient(45deg,#405DE6,#833AB4);color:#fff;padding:12px 5%;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.1);z-index:1000;}
-  nav h1{font-size:1.5rem;font-weight:600}
-  .nav-actions{display:flex;align-items:center;gap:15px}
-  nav button{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:6px 12px;border-radius:20px;cursor:pointer;transition:.3s;}
-  nav button:hover{background:rgba(255,255,255,.25)}
-  .container{max-width:1200px;margin:0 auto;padding:20px;}
-
-  /* Improved user header */
-  .user-header{
-    display:flex;align-items:center;gap:30px;margin-bottom:40px;padding:30px;
-    background:#fff;border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.15);position:relative;overflow:hidden;
-  }
-  .user-header::before{content:'';position:absolute;top:0;left:0;width:100%;height:6px;background:linear-gradient(to right,#405DE6,#833AB4,#E1306C);}
-  .user-header img{width:140px;height:140px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.1);}
-  .user-header .info{flex:1;}
-  .user-header .info h2{margin-bottom:15px;font-size:1.5rem;}
-  .stats{display:flex;gap:30px;margin-top:15px;}
-  .stats span{font-size:1.1rem;font-weight:500;display:flex;flex-direction:column;align-items:center}
-  .avatar-upload{margin-top:15px}
-
-  /* Improved cards grid */
-  .reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,350px),1fr));gap:25px;margin-top:20px}
-  .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);transition:.3s;animation:fadeIn .5s forwards;opacity:0}
-  .card:hover{transform:translateY(-6px);box-shadow:0 8px 25px rgba(0,0,0,.1);}
-  
-  /* Improved card header */
-  .card-header{display:flex;align-items:center;padding:15px;border-bottom:1px solid #DBDBDB;gap:12px;}
-  .report-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#DBDBDB;color:#fff;font-weight:bold;border:2px solid #405DE6;object-fit:cover;font-size:1.1rem;flex-shrink:0;}
-  .report-title{font-weight:600;font-size:1.1rem;line-height:1.3;}
-  .report-meta{font-size:.85rem;color:#8E8E8E;margin-top:2px;}
-  
-  /* Improved description spacing */
-  .report-description{padding:15px;line-height:1.6;border-bottom:1px solid #f0f0f0;}
-  .report-image{width:100%;max-height:350px;object-fit:cover;display:block;padding:0 15px 15px;}
-
-  /* Improved footer with better icon spacing */
-  .card-footer{padding:15px; display:flex; flex-direction: column; gap:10px;}
-  .reaction-container{display:flex;justify-content:space-between;align-items:center;}
-  .report-thumbs{display:flex;gap:15px;font-weight:500;align-items:center;}
-  .comment-toggle{cursor:pointer;color:#405DE6;font-weight:bold;display:flex;align-items:center;gap:5px;}
-  
-  .report-comments{display:none; flex-direction: column; gap:8px; margin-top:10px;}
-  .report-comments.active{display:flex;}
-  .comment-item{display:flex;gap:8px;margin-bottom:8px;padding:8px;border-radius:8px;transition:.2s;}
-  .comment-item:hover{background:rgba(0,0,0,.03);}
-  .comment-avatar{width:32px;height:32px;border-radius:50%;background:#DBDBDB;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;flex-shrink:0;}
-  .comment-user{font-weight:600;font-size:.9rem;}
-  .comment-form{display:flex;gap:8px;margin-top:5px;}
-  .comment-form input{flex:1;padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
-  .comment-form button{padding:6px 12px;border-radius:6px;background:#405DE6;color:#fff;border:none;cursor:pointer;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-</style>
+<link rel="stylesheet" href="/css/user-reports.css">
 </head>
 <body>
 
@@ -73,8 +18,6 @@
 </nav>
 
 <div class="container">
-
-  <!-- User header -->
   <div class="user-header">
     <img id="userAvatar" src="https://ui-avatars.com/api/?name=<%= username %>&background=405DE6&color=fff" alt="avatar">
     <div class="info">
@@ -99,24 +42,27 @@
 <script>
 const username = "<%= username %>";
 const loggedInUser = "<%= loggedInUser %>";
+let totalP = 0, totalUp = 0, totalDown = 0;
 
-let totalP=0, totalUp=0, totalDown=0;
+// Convert @username to clickable links
+function linkUsernames(text) {
+  return text.replace(/@(\w+)/g, '<a href="/user/$1" class="mention">@$1</a>');
+}
 
 function createReportCard(r){
   const card = document.createElement('div');
-  card.className="card";
-
+  card.className = "card";
   const totalComments = r.comments.length || 0;
 
   card.innerHTML = `
     <div class="card-header">
       <div class="report-avatar">${r.username.charAt(0).toUpperCase()}</div>
       <div>
-        <div class="report-title">${r.title||''}</div>
+        <div class="report-title">${linkUsernames(r.title||'')}</div>
         <div class="report-meta">${r.username} - ${r.clinic} | ${r.timestamp}</div>
       </div>
     </div>
-    <div class="report-description">${r.description}</div>
+    <div class="report-description">${linkUsernames(r.description||'')}</div>
     ${r.image ? `<img class="report-image" src="${r.image}">` : ''}
     <div class="card-footer">
       <div class="reaction-container">
@@ -140,47 +86,40 @@ function createReportCard(r){
   totalUp += r.thumbs_up || 0; 
   totalDown += r.thumbs_down || 0;
 
-  // append comments
   const ul = card.querySelector('.comments-list');
-  r.comments.forEach(c => {
+  r.comments.forEach(c=>{
     const li = document.createElement('li');
     li.className = 'comment-item';
     li.innerHTML = `
       <div class="comment-avatar">${c.username.charAt(0).toUpperCase()}</div>
       <div>
         <div class="comment-user">${c.username}</div>
-        <div class="comment-text">${c.comment}</div>
+        <div class="comment-text">${linkUsernames(c.comment)}</div>
         <div class="comment-time">${c.timestamp}</div>
       </div>`;
     ul.appendChild(li);
   });
 
-  // toggle comment form
   const toggleBtn = card.querySelector('.comment-toggle');
   const commentSection = card.querySelector('.report-comments');
   toggleBtn.addEventListener('click', () => commentSection.classList.toggle('active'));
 
-  // Send new comments
   const form = card.querySelector('.comment-form');
   if(r.username === loggedInUser){ form.style.display = 'none'; }
-  
+
   form.addEventListener('submit', async(e) => {
     e.preventDefault();
     const input = form.comment;
     if(!input.value.trim()) return;
-    
     const txt = input.value;
     input.value = "";
-    
     try {
       const res = await fetch(`/api/comments/${r.id}`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({comment: txt})
       });
-      
       if(!res.ok) throw new Error();
-      
       const c = await res.json();
       const li = document.createElement('li');
       li.className = 'comment-item';
@@ -188,17 +127,12 @@ function createReportCard(r){
         <div class="comment-avatar">${c.username.charAt(0).toUpperCase()}</div>
         <div>
           <div class="comment-user">${c.username}</div>
-          <div class="comment-text">${c.comment}</div>
+          <div class="comment-text">${linkUsernames(c.comment)}</div>
           <div class="comment-time">${c.timestamp}</div>
         </div>`;
       ul.prepend(li);
-      
-      // Update comment count
-      const commentCount = ul.children.length;
-      toggleBtn.innerHTML = `💬 ${commentCount} Maoni`;
-    } catch(err) {
-      alert("Tatizo kutuma maoni");
-    }
+      toggleBtn.innerHTML = `💬 ${ul.children.length} Maoni`;
+    } catch(err) { alert("Tatizo kutuma maoni"); }
   });
 
   return card;
@@ -207,15 +141,9 @@ function createReportCard(r){
 async function loadReports(){
   const wrap = document.getElementById('reports-container');
   wrap.innerHTML = "<div>Inapakia...</div>";
-  
   try {
     const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
     const data = await res.json();
-    
-    if(!data.reports || !Array.isArray(data.reports)) {
-      throw new Error("Invalid data format");
-    }
-    
     wrap.innerHTML = "";
     data.reports.forEach(r => wrap.appendChild(createReportCard(r)));
 
@@ -230,5 +158,6 @@ async function loadReports(){
 
 loadReports();
 </script>
+
 </body>
 </html>
