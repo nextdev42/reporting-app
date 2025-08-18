@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ripoti za <%= username %></title>
 <style>
-  :root { /* … your CSS variables … */ }
+  :root { }
   *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;}
   body{background-color:#FAFAFA;color:#262626;padding-top:60px;}
   nav{position:fixed;top:0;width:100%;background:linear-gradient(45deg,#405DE6,#833AB4);color:#fff;padding:12px 5%;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.1);z-index:1000;}
@@ -17,40 +17,40 @@
   .container{max-width:1200px;margin:0 auto;padding:20px;}
 
   /* USER HEADER SPACING IMPROVED */
-  .user-header{display:flex;align-items:center;gap:30px;margin-bottom:40px;padding:30px 25px;background:#fff;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.1);position:relative;overflow:hidden}
+  .user-header{
+    display:flex;align-items:center;gap:30px;margin-bottom:40px;padding:30px 25px;
+    background:#fff;border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.15);position:relative;overflow:hidden;
+  }
   .user-header::before{content:'';position:absolute;top:0;left:0;width:100%;height:6px;background:linear-gradient(to right,#405DE6,#833AB4,#E1306C);}
   .user-header img{width:140px;height:140px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.1);}
   .user-header .info{flex:1;}
   .user-header .info h2{margin-bottom:15px;font-size:1.5rem;}
-  .stats{display:flex;gap:25px;margin-top:10px;}
+  .stats{display:flex;gap:30px;margin-top:15px;}
   .stats span{font-size:1.1rem;font-weight:500;display:flex;flex-direction:column;align-items:center}
   .avatar-upload{margin-top:15px}
 
   .reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:25px;margin-top:20px}
   .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);transition:.3s;animation:fadeIn .5s forwards;opacity:0}
   .card:hover{transform:translateY(-6px);box-shadow:0 8px 25px rgba(0,0,0,.1);}
-  .card-header{display:flex;align-items:center;padding:15px;border-bottom:1px solid #DBDBDB;}
-  .report-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#DBDBDB;color:#fff;font-weight:bold;border:2px solid #405DE6;object-fit:cover;margin-right:12px;}
-  .report-title{font-weight:600;font-size:1.1rem;}
-  .report-meta{font-size:.85rem;color:#8E8E8E}
-  .report-description{padding:15px;line-height:1.6}
-  .report-image{width:100%;max-height:350px;object-fit:cover;border-radius:8px;margin:0 15px 15px 15px;display:none}
-  
+  .card-header{display:flex;align-items:center;padding:15px;border-bottom:1px solid #DBDBDB;gap:15px;}
+  .report-avatar{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#DBDBDB;color:#fff;font-weight:bold;border:2px solid #405DE6;object-fit:cover;margin-right:12px;font-size:1.2rem;}
+  .report-title{font-weight:600;font-size:1.15rem;}
+  .report-meta{font-size:.85rem;color:#8E8E8E;margin-top:3px;}
+  .report-description{padding:15px 15px 10px 15px;line-height:1.6;}
+  .report-image{width:100%;max-height:350px;object-fit:cover;border-radius:8px;margin:0 15px 15px 15px;display:none;}
+
   .card-footer{padding:15px;border-top:1px solid #DBDBDB; display:flex; flex-direction: column; gap:10px;}
   .report-thumbs{display:flex;gap:20px;font-weight:500;align-items:center;}
-  
-  .comment-item{display:flex;gap:8px;margin-bottom:12px;padding:8px;border-radius:8px;transition:.2s;}
+  .comment-toggle{cursor:pointer;color:#405DE6;font-weight:bold;margin-left:auto;}
+  .report-comments{display:none; flex-direction: column; gap:8px; margin-top:10px;}
+  .report-comments.active{display:flex;}
+  .comment-item{display:flex;gap:8px;margin-bottom:8px;padding:8px;border-radius:8px;transition:.2s;}
   .comment-item:hover{background:rgba(0,0,0,.03);}
   .comment-avatar{width:32px;height:32px;border-radius:50%;background:#DBDBDB;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;}
   .comment-user{font-weight:600;font-size:.9rem;}
-  
-  .report-comments{display:none; flex-direction: column;}
-  .report-comments.active{display:flex;}
-  .comment-form{display:flex;gap:8px;margin-top:10px;}
+  .comment-form{display:flex;gap:8px;margin-top:5px;}
   .comment-form input{flex:1;padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
   .comment-form button{padding:6px 12px;border-radius:6px;background:#405DE6;color:#fff;border:none;cursor:pointer;}
-  .comment-toggle{cursor:pointer;color:#405DE6;font-weight:bold; margin-top:5px;}
-
   @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
@@ -99,6 +99,8 @@ function createReportCard(r){
   const card = document.createElement('div');
   card.className="card";
 
+  const totalComments = r.comments.length || 0;
+
   card.innerHTML = `
     <div class="card-header">
       <div class="report-avatar">${r.username.charAt(0).toUpperCase()}</div>
@@ -113,7 +115,7 @@ function createReportCard(r){
       <div class="report-thumbs">
         <span>👍 <span class="thumbs-up">${r.thumbs_up||0}</span></span>
         <span>👎 <span class="thumbs-down">${r.thumbs_down||0}</span></span>
-        <span class="comment-toggle">💬 Ongeza maoni</span>
+        <span class="comment-toggle">💬 ${totalComments} Maoni</span>
       </div>
       <div class="report-comments">
         <ul class="comments-list"></ul>
@@ -126,23 +128,23 @@ function createReportCard(r){
   `;
 
   // image
-  if(r.image){ const img=card.querySelector('.report-image');img.src=r.image;img.style.display='block';}
+  if(r.image){ const img=card.querySelector('.report-image'); img.src=r.image; img.style.display='block'; }
 
   totalP++; totalUp+=r.thumbs_up; totalDown+=r.thumbs_down;
 
   // append comments
   const ul = card.querySelector('.comments-list');
   r.comments.forEach(c=>{
-     const li=document.createElement('li');
-     li.className='comment-item';
-     li.innerHTML = `
-        <div class="comment-avatar">${c.username.charAt(0).toUpperCase()}</div>
-        <div>
-          <div class="comment-user">${c.username}</div>
-          <div class="comment-text">${c.comment}</div>
-          <div class="comment-time">${c.timestamp}</div>
-        </div>`;
-     ul.appendChild(li);
+    const li=document.createElement('li');
+    li.className='comment-item';
+    li.innerHTML = `
+      <div class="comment-avatar">${c.username.charAt(0).toUpperCase()}</div>
+      <div>
+        <div class="comment-user">${c.username}</div>
+        <div class="comment-text">${c.comment}</div>
+        <div class="comment-time">${c.timestamp}</div>
+      </div>`;
+    ul.appendChild(li);
   });
 
   // toggle comment form
@@ -173,6 +175,7 @@ function createReportCard(r){
         <div class="comment-text">${c.comment}</div>
         <div class="comment-time">${c.timestamp}</div></div>`;
       ul.prepend(li);
+      toggleBtn.textContent = `💬 ${ul.children.length} Maoni`;
     }catch(err){alert("Tatizo kutuma maoni")}
   });
 
