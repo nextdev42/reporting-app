@@ -310,6 +310,9 @@ nav button:hover {
   font-weight: bold;
   flex-shrink: 0;
 }
+.mention-suggestions div:hover {
+  background-color: #f0f0f0;
+}
 
 .comment-user {
   font-weight: 600;
