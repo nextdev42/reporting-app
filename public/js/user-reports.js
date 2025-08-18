@@ -4,14 +4,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let currentPage = 1;
   let totalPages = 1;
-  const limit = 10; // reports per page
+  const limit = 10;
 
   function linkUsernames(text) {
-    // @mentions become clickable
     return text.replace(/@(\w+)/g, '<a href="/user/$1" class="mention">@$1</a>');
   }
 
-  function createReportCard(r) {
+  function renderReportCard(r) {
     const card = document.createElement("div");
     card.className = "card";
 
@@ -45,6 +44,11 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
+    attachReportCardEvents(card, r);
+    return card;
+  }
+
+  function attachReportCardEvents(card, r) {
     const thumbsUp = card.querySelector(".thumb-up");
     const thumbsDown = card.querySelector(".thumb-down");
     const toggleBtn = card.querySelector('.comment-toggle');
@@ -52,7 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = card.querySelector('.comment-form');
     const ul = card.querySelector('.comments-list');
 
-    // grey-out if already reacted
     if (r.user_thumb === "up") thumbsUp.classList.add("reacted");
     if (r.user_thumb === "down") thumbsDown.classList.add("reacted");
 
@@ -63,13 +66,24 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ type })
         });
-        if(!res.ok) return alert(await res.text() || "Tatizo kupiga thumb");
+        if (!res.ok) return alert(await res.text() || "Tatizo kupiga thumb");
         const data = await res.json();
+
         thumbsUp.querySelector(".count").textContent = data.thumbs_up;
         thumbsDown.querySelector(".count").textContent = data.thumbs_down;
         thumbsUp.classList.toggle("reacted", type==="up");
         thumbsDown.classList.toggle("reacted", type==="down");
-      } catch(err){ console.error(err); alert("Tatizo kupiga thumb"); }
+
+        const deltaUp = (type==="up" ? 1 : 0) - (r.user_thumb==="up" ? 1 : 0);
+        const deltaDown = (type==="down" ? 1 : 0) - (r.user_thumb==="down" ? 1 : 0);
+
+        r.user_thumb = type;
+        updateTotalThumbs(deltaUp, deltaDown);
+
+      } catch(err){
+        console.error(err);
+        alert("Tatizo kupiga thumb");
+      }
     }
 
     if(!r.user_thumb){
@@ -80,7 +94,6 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleBtn.addEventListener('click', () => commentSection.classList.toggle('active'));
     form.style.display = r.username === loggedInUser ? 'none' : 'flex';
 
-    // populate comments
     r.comments.forEach(c => {
       const li = document.createElement('li');
       li.className = 'comment-item';
@@ -94,12 +107,12 @@ document.addEventListener("DOMContentLoaded", () => {
       ul.appendChild(li);
     });
 
-    // submit new comment
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const input = form.comment;
       if (!input.value.trim()) return;
-      const txt = input.value; input.value = "";
+      const txt = input.value; 
+      input.value = "";
       try {
         const res = await fetch(`/api/comments/${r.id}`, {
           method: "POST",
@@ -118,12 +131,14 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="comment-time">${c.timestamp}</div>
           </div>`;
         ul.prepend(li);
-        toggleBtn.innerHTML = `💬 ${ul.children.length} Maoni`;
-        updateCounters(); // update totals dynamically
-      } catch { alert("Tatizo kutuma maoni"); }
-    });
 
-    return card;
+        toggleBtn.innerHTML = `💬 ${ul.children.length} Maoni`;
+        updateTotalComments(1); // update total comment count
+
+      } catch {
+        alert("Tatizo kutuma maoni");
+      }
+    });
   }
 
   async function loadReports(page=1) {
@@ -138,10 +153,10 @@ document.addEventListener("DOMContentLoaded", () => {
       totalPages = data.totalPages || 1;
       currentPage = page;
 
-      data.reports.forEach(r => wrap.appendChild(createReportCard(r)));
+      data.reports.forEach(r => wrap.appendChild(renderReportCard(r)));
 
       renderPagination();
-      updateCounters(data.reports);
+      updateCounters();
 
     } catch (err) {
       wrap.innerHTML = `<div class="error">Hitilafu katika kupakia ripoti</div>`;
@@ -182,15 +197,40 @@ document.addEventListener("DOMContentLoaded", () => {
     wrap.appendChild(p);
   }
 
-  function updateCounters(reports=[]) {
-    // update dynamic totals per current page
-    const totalP = reports.length;
-    const totalUp = reports.reduce((sum,r) => sum+(r.thumbs_up||0), 0);
-    const totalDown = reports.reduce((sum,r) => sum+(r.thumbs_down||0), 0);
+  function updateCounters() {
+    const cards = document.querySelectorAll(".card");
+    const totalP = cards.length;
+    let totalUp = 0;
+    let totalDown = 0;
+    let totalComments = 0;
+
+    cards.forEach(card => {
+      totalUp += parseInt(card.querySelector(".thumb-up .count").textContent,10) || 0;
+      totalDown += parseInt(card.querySelector(".thumb-down .count").textContent,10) || 0;
+      totalComments += parseInt(card.querySelector(".comment-toggle").textContent.match(/\d+/)[0],10) || 0;
+    });
 
     document.getElementById('totalPosts').textContent = totalP + " Ripoti";
     document.getElementById('totalThumbsUp').textContent = totalUp + " 👍";
     document.getElementById('totalThumbsDown').textContent = totalDown + " 👎";
+    document.getElementById('totalComments').textContent = totalComments + " Maoni"; // new element
+  }
+
+  function updateTotalThumbs(deltaUp, deltaDown) {
+    const totalUpEl = document.getElementById('totalThumbsUp');
+    const totalDownEl = document.getElementById('totalThumbsDown');
+
+    const currentUp = parseInt(totalUpEl.textContent,10) || 0;
+    const currentDown = parseInt(totalDownEl.textContent,10) || 0;
+
+    totalUpEl.textContent = (currentUp + deltaUp) + " 👍";
+    totalDownEl.textContent = (currentDown + deltaDown) + " 👎";
+  }
+
+  function updateTotalComments(delta) {
+    const totalCommentsEl = document.getElementById('totalComments');
+    const current = parseInt(totalCommentsEl.textContent,10) || 0;
+    totalCommentsEl.textContent = (current + delta) + " Maoni";
   }
 
   loadReports();
