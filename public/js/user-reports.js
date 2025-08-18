@@ -125,6 +125,67 @@ document.addEventListener("DOMContentLoaded", () => {
     ul.appendChild(li);
   });
 
+    // === MENTION AUTOCOMPLETE FOR THIS COMMENT FORM ===
+const suggestionBox = document.createElement('div');
+suggestionBox.className = 'mention-suggestions';
+suggestionBox.style.position = 'absolute';
+suggestionBox.style.background = '#fff';
+suggestionBox.style.border = '1px solid #ccc';
+suggestionBox.style.display = 'none';
+suggestionBox.style.zIndex = 1000;
+suggestionBox.style.maxHeight = '150px';
+suggestionBox.style.overflowY = 'auto';
+form.appendChild(suggestionBox);
+
+const input = form.comment;
+
+input.addEventListener('input', async () => {
+  const cursorPos = input.selectionStart;
+  const textBeforeCursor = input.value.slice(0, cursorPos);
+  const match = textBeforeCursor.match(/@(\w*)$/);
+  if(!match){
+    suggestionBox.style.display = 'none';
+    return;
+  }
+  const query = match[1].toLowerCase();
+
+  // Fetch usernames from your API
+  const res = await fetch('/api/users?search=' + encodeURIComponent(query));
+  const users = await res.json();
+
+  if(users.length === 0){
+    suggestionBox.style.display = 'none';
+    return;
+  }
+
+  // Build suggestion list
+  suggestionBox.innerHTML = '';
+  users.forEach(u => {
+    const div = document.createElement('div');
+    div.textContent = u.username;
+    div.style.padding = '5px';
+    div.style.cursor = 'pointer';
+    div.addEventListener('click', () => {
+      const start = textBeforeCursor.lastIndexOf('@');
+      input.value = input.value.slice(0, start) + '@' + u.username + ' ' + input.value.slice(cursorPos);
+      input.focus();
+      suggestionBox.style.display = 'none';
+    });
+    suggestionBox.appendChild(div);
+  });
+
+  // Position the box
+  suggestionBox.style.left = input.offsetLeft + 'px';
+  suggestionBox.style.top = (input.offsetTop + input.offsetHeight) + 'px';
+  suggestionBox.style.width = input.offsetWidth + 'px';
+  suggestionBox.style.display = 'block';
+});
+
+document.addEventListener('click', (e) => {
+  if(!form.contains(e.target)){
+    suggestionBox.style.display = 'none';
+  }
+});
   // Handle new comment submission
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
