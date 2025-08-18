@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ripoti za Mtumiaji</title>
+<link rel="stylesheet" href="/css/user-reports.css">
+</head>
+<body>
+
+<nav>
+  <h1 id="pageTitle">Ripoti za Mtumiaji</h1>
+  <div class="nav-actions">
+    <span>Umeingia kama: <strong id="loggedInUser"></strong></span>
+    <button onclick="location.href='/dashboard.html'">Nyumbani</button>
+    <button onclick="location.href='/logout'">Toka</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="user-header">
+    <img id="userAvatar" src="" alt="avatar">
+    <div class="info">
+      <h2>Ripoti za <strong id="username"></strong></h2>
+      <div class="stats">
+        <span id="totalPosts">0 Ripoti</span>
+        <span id="totalThumbsUp">0 👍</span>
+        <span id="totalThumbsDown">0 👎</span>
+      </div>
+      <form id="avatarForm" class="avatar-upload" style="display:none;">
+        <label for="avatarInput" class="custom-file-btn">Chagua Faili</label>
+        <input id="avatarInput" type="file" name="avatar" accept="image/*">
+        <button type="submit">Sasisha Avatar</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="reports-container" class="reports-grid"></div>
+
+  <div id="pagination"></div>
+</div>
+
+<script src="/js/user-reports.js"></script>
+</body>
+</html>
