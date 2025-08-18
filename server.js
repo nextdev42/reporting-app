@@ -229,15 +229,28 @@ app.get("/api/users", auth, async (req, res) => {
 
 // Route to render user page
 // Route to render user page like dashboard
+
+    // Route to render user page like dashboard with pagination
 app.get("/user/:username", auth, async (req, res) => {
   const username = req.params.username;
   const loggedInUser = req.session.jina;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
 
   try {
-    // Fetch the user's reports from DB
-    const reportsResult = await pool.query(
-      "SELECT * FROM reports WHERE username=$1 ORDER BY timestamp DESC",
+    // Get total count for pagination
+    const countResult = await pool.query(
+      "SELECT COUNT(*) FROM reports WHERE username=$1",
       [username]
+    );
+    const totalReports = parseInt(countResult.rows[0].count, 10);
+    const totalPages = Math.ceil(totalReports / limit);
+
+    // Fetch reports for current page
+    const reportsResult = await pool.query(
+      "SELECT * FROM reports WHERE username=$1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3",
+      [username, limit, offset]
     );
 
     const reports = reportsResult.rows.map(r => ({
@@ -246,7 +259,7 @@ app.get("/user/:username", auth, async (req, res) => {
       user_thumb: r.user_thumb || null
     }));
 
-    // Calculate totals like dashboard
+    // Totals for current page
     const totalPosts = reports.length;
     const totalThumbsUp = reports.reduce((sum, r) => sum + (r.thumbs_up || 0), 0);
     const totalThumbsDown = reports.reduce((sum, r) => sum + (r.thumbs_down || 0), 0);
@@ -257,7 +270,9 @@ app.get("/user/:username", auth, async (req, res) => {
       reports,
       totalPosts,
       totalThumbsUp,
-      totalThumbsDown
+      totalThumbsDown,
+      totalPages,
+      currentPage: page
     });
 
   } catch (err) {
@@ -269,11 +284,12 @@ app.get("/user/:username", auth, async (req, res) => {
       totalPosts: 0,
       totalThumbsUp: 0,
       totalThumbsDown: 0,
+      totalPages: 1,
+      currentPage: 1,
       error: "Tatizo kupakia ripoti"
     });
   }
 });
-    
     
 // ====== Submit report ======
 
