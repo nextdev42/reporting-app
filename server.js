@@ -235,142 +235,66 @@ app.get("/api/users", auth, async (req, res) => {
     // Route to render user page with pagination
 
     // Route to render user page with pagination
-app.get("/user/:username", auth, async (req, res) => {
+
+
+    app.get("/user/:username", auth, async (req, res) => {
   const username = req.params.username;
-  const loggedInUser = req.session.jina;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
 
+  const wantsJSON = req.headers.accept?.includes("application/json");
+
   try {
-    // 1. Get the user ID
-    const userRes = await pool.query("SELECT id, kituo FROM users WHERE LOWER(jina) = LOWER($1)", [username]);
-    if (!userRes.rows.length) {
-      return res.status(404).render("user-reports", {
-        username,
-        loggedInUser,
-        reports: [],
-        totalPosts: 0,
-        totalThumbsUp: 0,
-        totalThumbsDown: 0,
-        totalPages: 1,
-        currentPage: 1,
-        error: "Mtumiaji haipo"
-      });
-    }
+    const userRes = await pool.query("SELECT id, kituo FROM users WHERE LOWER(jina)=LOWER($1)", [username]);
+    if(!userRes.rows.length) return res.status(404).json({ error: "Mtumiaji haipo" });
 
     const userId = userRes.rows[0].id;
-    const clinic = userRes.rows[0].kituo;
 
-    // 2. Total reports for pagination
-    const countRes = await pool.query("SELECT COUNT(*) FROM reports WHERE user_id = $1", [userId]);
-    const totalReports = parseInt(countRes.rows[0].count, 10);
-    const totalPages = Math.ceil(totalReports / limit);
+    const countRes = await pool.query("SELECT COUNT(*) FROM reports WHERE user_id=$1", [userId]);
+    const totalReports = parseInt(countRes.rows[0].count,10);
+    const totalPages = Math.ceil(totalReports/limit);
 
-    // 3. Fetch reports with user info
     const reportRes = await pool.query(
       `SELECT r.*, u.jina AS username, u.kituo AS clinic
        FROM reports r
-       JOIN users u ON r.user_id = u.id
-       WHERE r.user_id = $1
+       JOIN users u ON r.user_id=u.id
+       WHERE r.user_id=$1
        ORDER BY r.timestamp DESC
        LIMIT $2 OFFSET $3`,
       [userId, limit, offset]
     );
 
-    const reports = reportRes.rows;
-    const reportIds = reports.map(r => r.id);
+    const reports = reportRes.rows.map(r => ({
+      ...r,
+      timestamp: formatTanzaniaTime(r.timestamp)
+    }));
 
-    // 4. Fetch comments for all reports in one query
-    let comments = [];
-    if (reportIds.length) {
-      const commentRes = await pool.query(
-        `SELECT c.*, u.jina AS username
-         FROM comments c
-         JOIN users u ON c.user_id = u.id
-         WHERE report_id = ANY($1::int[])
-         ORDER BY c.timestamp DESC`,
-        [reportIds]
-      );
-      comments = commentRes.rows;
+    if(wantsJSON){
+      return res.json({ reports, page, totalPages, totalReports, limit });
     }
 
-    // 5. Fetch reactions for all reports in one query
-    let reactions = [];
-    if (reportIds.length) {
-      const reactRes = await pool.query(
-        `SELECT report_id,
-                COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
-                COUNT(*) FILTER (WHERE type='down') AS thumbs_down
-         FROM reactions
-         WHERE report_id = ANY($1::int[])
-         GROUP BY report_id`,
-        [reportIds]
-      );
-      reactions = reactRes.rows;
-    }
-
-    // 6. Fetch logged-in user reactions in bulk
-    let userReactsMap = {};
-    if (reportIds.length) {
-      const userReactRes = await pool.query(
-        `SELECT report_id, type FROM reactions 
-         WHERE report_id = ANY($1::int[]) AND user_id = $2`,
-        [reportIds, req.session.userId]
-      );
-      userReactsMap = Object.fromEntries(userReactRes.rows.map(r => [r.report_id, r.type]));
-    }
-
-    // 7. Attach comments, reactions, user reaction, and format timestamps
-    reports.forEach(r => {
-      r.comments = comments
-        .filter(c => c.report_id === r.id)
-        .map(c => ({
-          ...c,
-          timestamp: formatTanzaniaTime(c.timestamp)
-        }));
-
-      const react = reactions.find(re => re.report_id === r.id);
-      r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
-      r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
-
-      r.user_thumb = userReactsMap[r.id] || null;
-
-      r.timestamp = formatTanzaniaTime(r.timestamp);
-    });
-
-    // 8. Totals for display
-    const totalPosts = totalReports;
-    const totalThumbsUp = reports.reduce((sum, r) => sum + (r.thumbs_up || 0), 0);
-    const totalThumbsDown = reports.reduce((sum, r) => sum + (r.thumbs_down || 0), 0);
-
-    // 9. Render the page
+    // fallback: render EJS for old behavior
     res.render("user-reports", {
       username,
-      loggedInUser,
+      loggedInUser: req.session.jina,
       reports,
-      totalPosts,
-      totalThumbsUp,
-      totalThumbsDown,
+      totalPosts: reports.length,
+      totalThumbsUp: reports.reduce((sum,r)=>sum+r.thumbs_up,0),
+      totalThumbsDown: reports.reduce((sum,r)=>sum+r.thumbs_down,0),
       totalPages,
       currentPage: page
     });
-
-  } catch (err) {
+  } catch(err){
     console.error(err);
-    res.render("user-reports", {
-      username,
-      loggedInUser,
-      reports: [],
-      totalPosts: 0,
-      totalThumbsUp: 0,
-      totalThumbsDown: 0,
-      totalPages: 1,
-      currentPage: 1,
-      error: "Tatizo kupakia ripoti"
-    });
+    res.status(500).json({ error: "Tatizo kupakia ripoti" });
   }
 });
+
+    
+
+    
+      
 
     
       
