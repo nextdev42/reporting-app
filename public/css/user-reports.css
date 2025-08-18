@@ -350,48 +350,6 @@ nav button:hover {
   text-decoration: underline;
 }
 
-/* === Mention Autocomplete Suggestions === */
-/* Mobile-friendly mention suggestions */
-.mention-suggestions {
-  position: absolute;
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  max-height: 150px;
-  overflow-y: auto;
-  display: none;
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0,0,0,.1);
-}
-
-.mention-suggestions .suggestion-item {
-  padding: 10px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  border-bottom: 1px solid #eee;
-}
-
-.mention-suggestions .suggestion-item:last-child {
-  border-bottom: none;
-}
-
-.mention-suggestions .suggestion-item:hover {
-  background-color: #f0f0f0;
-}
-
-@media (max-width: 480px) {
-  .mention-suggestions .suggestion-item {
-    padding: 14px;
-    font-size: 1rem;
-  }
-}
-
-
-  .mention-suggestions div {
-    padding: 14px 12px;
-  }
-}
-
 @keyframes fadeIn {
   from {opacity:0; transform:translateY(10px)}
   to {opacity:1; transform:translateY(0)}
