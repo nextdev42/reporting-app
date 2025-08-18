@@ -357,6 +357,7 @@ nav button:hover {
   width: 250px;
   display: none;
   scroll-behavior: smooth; /* smooth internal scrolling */
+  overscroll-behavior: contain;
 }
 
 /* Show suggestions when input is focused */
