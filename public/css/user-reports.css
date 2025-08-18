@@ -1,5 +1,4 @@
-/* user-reports.css */
-
+/* ========== GLOBAL ========== */
 * {
   margin: 0;
   padding: 0;
@@ -14,6 +13,7 @@ body {
   scroll-behavior: smooth;
 }
 
+/* ========== NAVIGATION ========== */
 nav {
   position: fixed;
   top: 0;
@@ -53,12 +53,14 @@ nav button:hover {
   background: rgba(255, 255, 255, .25);
 }
 
+/* ========== CONTAINER ========== */
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 10px;
 }
 
+/* ========== USER HEADER ========== */
 .user-header {
   display: flex;
   align-items: center;
@@ -114,7 +116,7 @@ nav button:hover {
   align-items: center;
 }
 
-/* Avatar upload section */
+/* ========== AVATAR UPLOAD ========== */
 .avatar-upload {
   display: flex;
   align-items: center;
@@ -150,7 +152,6 @@ nav button:hover {
   flex: 0 0 auto;
 }
 
-/* Small screens adjustment */
 @media (max-width: 480px) {
   .avatar-upload {
     flex-direction: column;
@@ -170,12 +171,7 @@ nav button:hover {
   }
 }
 
-.report-thumbs .reacted {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-/* Reports grid */
+/* ========== REPORTS GRID ========== */
 .reports-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr));
@@ -183,11 +179,11 @@ nav button:hover {
   margin-top: 10px;
 }
 
-/* Report card */
+/* ========== REPORT CARD ========== */
 .card {
   background: #fff;
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible; /* allow suggestions to escape */
   box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
   transition: .3s;
   animation: fadeIn .5s forwards;
@@ -321,11 +317,13 @@ nav button:hover {
   font-size: .9rem;
 }
 
+/* ========== COMMENT FORM & MENTION SUGGESTIONS ========== */
 .comment-form {
   display: flex;
   gap: 8px;
   margin-top: 5px;
   position: relative;
+  z-index: 1;
 }
 
 .comment-form input {
@@ -344,38 +342,26 @@ nav button:hover {
   cursor: pointer;
 }
 
-.mention {
-  color: #405DE6;
-  text-decoration: none;
-}
-
-.mention:hover {
-  text-decoration: underline;
-}
-
 /* Mention suggestions */
 .mention-suggestions {
-  position: absolute;
+  position: fixed; /* escape card clipping */
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 10000;
+  z-index: 9999;
   max-height: 200px;
   overflow-y: auto;
-  width: 100%;
+  width: 250px;
   display: none;
-  bottom: 100%;
-  margin-bottom: 5px;
-  transform: translateY(0);
-  transition: transform 0.3s ease;
 }
 
-.mention-suggestions.active {
+/* Show suggestions when input focused */
+.comment-form:focus-within + .mention-suggestions {
   display: block;
-  transform: translateY(0);
 }
 
+/* Individual suggestion item */
 .mention-suggestions div {
   padding: 8px 12px;
   cursor: pointer;
@@ -391,7 +377,34 @@ nav button:hover {
   background-color: #f0f0f0;
 }
 
+/* Mention styling */
+.mention {
+  color: #405DE6;
+  text-decoration: none;
+}
+
+.mention:hover {
+  text-decoration: underline;
+}
+
+/* ========== ANIMATIONS ========== */
 @keyframes fadeIn {
   from {opacity:0; transform:translateY(10px)}
   to {opacity:1; transform:translateY(0)}
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 480px) {
+  .report-image {
+    padding: 0 6px 6px;
+  }
+
+  .card {
+    border-radius: 12px;
+  }
+
+  .user-header img {
+    width: 120px;
+    height: 120px;
+  }
 }
