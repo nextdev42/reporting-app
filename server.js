@@ -231,6 +231,8 @@ app.get("/api/users", auth, async (req, res) => {
 // Route to render user page like dashboard
 
     // Route to render user page like dashboard with pagination
+
+    // Route to render user page with pagination
 app.get("/user/:username", auth, async (req, res) => {
   const username = req.params.username;
   const loggedInUser = req.session.jina;
@@ -239,27 +241,95 @@ app.get("/user/:username", auth, async (req, res) => {
   const offset = (page - 1) * limit;
 
   try {
-    // Get total count for pagination
-    const countResult = await pool.query(
-      "SELECT COUNT(*) FROM reports WHERE username=$1",
-      [username]
-    );
-    const totalReports = parseInt(countResult.rows[0].count, 10);
+    // 1. Get the user id from users table
+    const userRes = await pool.query("SELECT id, kituo FROM users WHERE LOWER(jina)=LOWER($1)", [username]);
+    if (!userRes.rows.length) {
+      return res.status(404).render("user-reports", {
+        username,
+        loggedInUser,
+        reports: [],
+        totalPosts: 0,
+        totalThumbsUp: 0,
+        totalThumbsDown: 0,
+        totalPages: 1,
+        currentPage: 1,
+        error: "Mtumiaji haipo"
+      });
+    }
+    const userId = userRes.rows[0].id;
+    const clinic = userRes.rows[0].kituo;
+
+    // 2. Get total count for pagination
+    const countRes = await pool.query("SELECT COUNT(*) FROM reports WHERE user_id=$1", [userId]);
+    const totalReports = parseInt(countRes.rows[0].count, 10);
     const totalPages = Math.ceil(totalReports / limit);
 
-    // Fetch reports for current page
-    const reportsResult = await pool.query(
-      "SELECT * FROM reports WHERE username=$1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3",
-      [username, limit, offset]
+    // 3. Fetch reports for current page with user info
+    const reportRes = await pool.query(
+      `SELECT r.*, u.jina AS username, u.kituo AS clinic
+       FROM reports r
+       JOIN users u ON r.user_id=u.id
+       WHERE r.user_id=$1
+       ORDER BY r.timestamp DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
     );
+    const reports = reportRes.rows;
 
-    const reports = reportsResult.rows.map(r => ({
-      ...r,
-      comments: r.comments || [],
-      user_thumb: r.user_thumb || null
-    }));
+    // 4. Fetch comments for these reports
+    const reportIds = reports.map(r => r.id);
+    let comments = [];
+    if (reportIds.length) {
+      const commentRes = await pool.query(
+        `SELECT c.*, u.jina AS username
+         FROM comments c
+         JOIN users u ON c.user_id=u.id
+         WHERE report_id = ANY($1::int[])
+         ORDER BY c.timestamp DESC`,
+        [reportIds]
+      );
+      comments = commentRes.rows;
+    }
 
-    // Totals for current page
+    // 5. Fetch reactions for these reports
+    let reactions = [];
+    if (reportIds.length) {
+      const reactRes = await pool.query(
+        `SELECT report_id,
+                COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
+                COUNT(*) FILTER (WHERE type='down') AS thumbs_down
+         FROM reactions
+         WHERE report_id = ANY($1::int[])
+         GROUP BY report_id`,
+        [reportIds]
+      );
+      reactions = reactRes.rows;
+    }
+
+    // 6. Attach comments, reactions, and format timestamps
+    reports.forEach(r => {
+      r.comments = comments
+        .filter(c => c.report_id === r.id)
+        .map(c => ({
+          ...c,
+          timestamp: formatTanzaniaTime(c.timestamp)
+        }));
+
+      const react = reactions.find(re => re.report_id === r.id);
+      r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
+      r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
+
+      // Check if logged-in user reacted
+      const userReact = await pool.query(
+        "SELECT type FROM reactions WHERE report_id=$1 AND user_id=$2",
+        [r.id, req.session.userId]
+      );
+      r.user_thumb = userReact.rows[0]?.type || null;
+
+      r.timestamp = formatTanzaniaTime(r.timestamp);
+    });
+
+    // 7. Totals
     const totalPosts = reports.length;
     const totalThumbsUp = reports.reduce((sum, r) => sum + (r.thumbs_up || 0), 0);
     const totalThumbsDown = reports.reduce((sum, r) => sum + (r.thumbs_down || 0), 0);
@@ -290,7 +360,6 @@ app.get("/user/:username", auth, async (req, res) => {
     });
   }
 });
-    
 // ====== Submit report ======
 
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
