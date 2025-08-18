@@ -343,32 +343,6 @@ nav button:hover {
 }
 
 /* Mention suggestions */
-/* ========== COMMENT FORM & MENTION SUGGESTIONS ========== */
-.comment-form {
-  display: flex;
-  gap: 8px;
-  margin-top: 5px;
-  position: relative; /* relative for positioning input if needed */
-  z-index: 1; /* ensure above other elements */
-}
-
-.comment-form input {
-  flex: 1;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-.comment-form button {
-  padding: 6px 12px;
-  border-radius: 6px;
-  background: #405DE6;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-}
-
-/* Mention suggestions */
 .mention-suggestions {
   position: fixed; /* fixes clipping inside card */
   background: #fff;
@@ -418,27 +392,6 @@ nav button:hover {
   background: #999;
 }
 
-/* Show suggestions when input focused */
-.comment-form:focus-within + .mention-suggestions {
-  display: block;
-}
-
-/* Individual suggestion item */
-.mention-suggestions div {
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.mention-suggestions div:last-child {
-  border-bottom: none;
-}
-
-.mention-suggestions div:hover {
-  background-color: #f0f0f0;
-}
-
 /* Mention styling */
 .mention {
   color: #405DE6;
@@ -453,20 +406,3 @@ nav button:hover {
 @keyframes fadeIn {
   from {opacity:0; transform:translateY(10px)}
   to {opacity:1; transform:translateY(0)}
-}
-
-/* ========== RESPONSIVE ========== */
-@media (max-width: 480px) {
-  .report-image {
-    padding: 0 6px 6px;
-  }
-
-  .card {
-    border-radius: 12px;
-  }
-
-  .user-header img {
-    width: 120px;
-    height: 120px;
-  }
-}
