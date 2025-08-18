@@ -344,20 +344,28 @@ nav button:hover {
 
 /* Mention suggestions */
 .mention-suggestions {
-  position: absolute; /* changed from fixed */
-  top: 100%; /* right below input */
-  left: 0;
+.mention-suggestions {
+  position: absolute;
   background: #fff;
   border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 999; /* above other content */
-  max-height: 200px;
-  overflow-y: auto; /* scroll inside dropdown */
-  width: 250px;
   display: none;
-  scroll-behavior: smooth; /* smooth internal scrolling */
-  overscroll-behavior: contain;
+  z-index: 1000;
+  max-height: 150px;
+  overflow-y: auto;
+  width: 100%;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.mention-suggestions .suggestion-item {
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.mention-suggestions .suggestion-item:hover,
+.mention-suggestions .suggestion-item.selected {
+  background-color: #007bff;
+  color: #fff;
 }
 
 /* Show suggestions when input is focused */
