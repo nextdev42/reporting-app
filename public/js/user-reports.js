@@ -1,61 +1,48 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  const pathParts = window.location.pathname.split("/");
-  const username = pathParts[2]; // /user/:username
-  const userAvatar = document.getElementById("userAvatar");
-  const pageTitle = document.getElementById("pageTitle");
-  const usernameEl = document.getElementById("username");
-  const loggedInUserEl = document.getElementById("loggedInUser");
-  const avatarForm = document.getElementById("avatarForm");
-  const reportsContainer = document.getElementById("reports-container");
+document.addEventListener("DOMContentLoaded", () => {
+  const username = window.USERNAME;
+  const loggedInUser = window.LOGGED_IN_USER;
+  const container = document.getElementById("reports-container");
   const totalPostsEl = document.getElementById("totalPosts");
   const totalThumbsUpEl = document.getElementById("totalThumbsUp");
   const totalThumbsDownEl = document.getElementById("totalThumbsDown");
-  const paginationEl = document.getElementById("pagination");
 
-  const limit = 10;
-  let currentPage = 1;
+  async function loadReports(page = 1, limit = 10) {
+    try {
+      const res = await fetch(`/user/${encodeURIComponent(username)}?page=${page}&limit=${limit}`);
+      const data = await res.json();  // <-- we assume server returns JSON
+      console.log("API response:", data);
 
-  async function fetchReports(page = 1) {
-    const res = await fetch(`/api/user/${username}?page=${page}&limit=${limit}`);
-    if (!res.ok) return;
-    const data = await res.json();
+      if (!data.reports || data.reports.length === 0) {
+        container.innerHTML = `<p>Hakuna ripoti zilizopatikana</p>`;
+        totalPostsEl.textContent = "0 Ripoti";
+        totalThumbsUpEl.textContent = "0 👍";
+        totalThumbsDownEl.textContent = "0 👎";
+        return;
+      }
 
-    usernameEl.textContent = data.username;
-    loggedInUserEl.textContent = data.loggedInUser;
-    pageTitle.textContent = `Ripoti za ${data.username}`;
-    userAvatar.src = `https://ui-avatars.com/api/?name=${data.username}&background=405DE6&color=fff`;
+      // Update stats
+      totalPostsEl.textContent = `${data.totalPosts} Ripoti`;
+      totalThumbsUpEl.textContent = `${data.totalThumbsUp} 👍`;
+      totalThumbsDownEl.textContent = `${data.totalThumbsDown} 👎`;
 
-    if (data.username === data.loggedInUser) avatarForm.style.display = "block";
-
-    totalPostsEl.textContent = `${data.stats.totalPosts} Ripoti`;
-    totalThumbsUpEl.textContent = `${data.stats.totalThumbsUp} 👍`;
-    totalThumbsDownEl.textContent = `${data.stats.totalThumbsDown} 👎`;
-
-    reportsContainer.innerHTML = data.reports.map(r => `
-      <div class="report-card">
-        <h3>${r.title}</h3>
-        <p>${r.description}</p>
-        ${r.image ? `<img src="${r.image}" alt="report image">` : ""}
-        <small>${r.timestamp}</small>
-        <div>
-          👍 ${r.thumbs_up} | 👎 ${r.thumbs_down} | Maoni: ${r.comments.length}
+      // Render reports
+      container.innerHTML = data.reports.map(r => `
+        <div class="report-card">
+          <h3>${r.title}</h3>
+          <p>${r.description}</p>
+          ${r.image ? `<img src="${r.image}" alt="report image">` : ""}
+          <div class="report-stats">
+            <span>${r.thumbs_up} 👍</span>
+            <span>${r.thumbs_down} 👎</span>
+          </div>
         </div>
-      </div>
-    `).join("");
+      `).join("");
 
-    // Pagination
-    paginationEl.innerHTML = "";
-    for (let i = 1; i <= data.stats.totalPages; i++) {
-      const btn = document.createElement("button");
-      btn.textContent = i;
-      btn.disabled = i === data.stats.currentPage;
-      btn.addEventListener("click", () => {
-        currentPage = i;
-        fetchReports(i);
-      });
-      paginationEl.appendChild(btn);
+    } catch(err) {
+      console.error("Error fetching reports:", err);
+      container.innerHTML = `<p>Hitilafu katika kupakia ripoti</p>`;
     }
   }
 
-  fetchReports(currentPage);
+  loadReports();
 });
