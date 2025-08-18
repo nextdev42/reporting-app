@@ -319,10 +319,10 @@ nav button:hover {
 
 /* ========== COMMENT FORM & MENTION SUGGESTIONS ========== */
 .comment-form {
+  position: relative; /* parent for absolute positioning */
   display: flex;
   gap: 8px;
   margin-top: 5px;
-  position: relative;
   z-index: 1;
 }
 
@@ -344,21 +344,23 @@ nav button:hover {
 
 /* Mention suggestions */
 .mention-suggestions {
-  position: fixed; /* fixes clipping inside card */
+  position: absolute; /* changed from fixed */
+  top: 100%; /* right below input */
+  left: 0;
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 9999; /* on top of everything */
+  z-index: 999; /* above other content */
   max-height: 200px;
   overflow-y: auto; /* scroll inside dropdown */
-  width: 250px; /* set suitable width */
+  width: 250px;
   display: none;
   scroll-behavior: smooth; /* smooth internal scrolling */
 }
 
-/* Show suggestions when input focused */
-.comment-form:focus-within + .mention-suggestions {
+/* Show suggestions when input is focused */
+.comment-form:focus-within .mention-suggestions {
   display: block;
 }
 
