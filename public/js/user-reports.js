@@ -114,69 +114,67 @@ document.addEventListener("DOMContentLoaded", () => {
   
 
       // === MENTION AUTOCOMPLETE ===
+
+    // Mobile-friendly mention autocomplete
 const input = form.comment;
 const suggestionBox = document.createElement('div');
 suggestionBox.className = 'mention-suggestions';
-suggestionBox.style.position = 'absolute';
-suggestionBox.style.background = '#fff';
-suggestionBox.style.border = '1px solid #ccc';
-suggestionBox.style.display = 'none';
-suggestionBox.style.zIndex = 1000;
-suggestionBox.style.maxHeight = '150px';
-suggestionBox.style.overflowY = 'auto';
+form.style.position = 'relative';
+form.appendChild(suggestionBox);
 
-// Attach suggestion box relative to the form
-const formContainer = form.closest('.card-footer');
-formContainer.style.position = 'relative';
-formContainer.appendChild(suggestionBox);
-
-let currentQuery = '';
 let fetchController = null;
 
 input.addEventListener('input', async () => {
   const cursorPos = input.selectionStart;
   const textBeforeCursor = input.value.slice(0, cursorPos);
-  const match = textBeforeCursor.match(/@([a-zA-Z0-9_.-]*)$/);
-  
-  if (!match) { 
+  const match = textBeforeCursor.match(/@([\w\s.-]*)$/); // includes spaces in query
+
+  if (!match) {
     suggestionBox.style.display = 'none';
-    return; 
+    return;
   }
 
-  currentQuery = match[1].toLowerCase();
+  const query = match[1].trim();
+
+  if (!query) {
+    suggestionBox.style.display = 'none';
+    return;
+  }
 
   if(fetchController) fetchController.abort();
   fetchController = new AbortController();
 
   try {
-    const res = await fetch('/api/users?search=' + encodeURIComponent(currentQuery), { signal: fetchController.signal });
-    if(!res.ok) throw new Error('Failed to fetch users');
-    const users = await res.json();
+    const res = await fetch('/api/users?search=' + encodeURIComponent(query), {
+      signal: fetchController.signal
+    });
+    if(!res.ok) throw new Error();
 
-    if(!users || !users.length){
-      suggestionBox.style.display='none';
+    const users = await res.json();
+    if(!users.length) {
+      suggestionBox.style.display = 'none';
       return;
     }
 
     suggestionBox.innerHTML = '';
     users.forEach(u => {
-      const username = u.trim(); // remove extra spaces
       const div = document.createElement('div');
-      div.textContent = username;
+      div.textContent = u.username.trim();
       div.className = 'suggestion-item';
-      div.style.padding = '5px';
-      div.style.cursor = 'pointer';
-
       div.addEventListener('click', () => {
         const start = textBeforeCursor.lastIndexOf('@');
-        input.value = input.value.slice(0, start) + '@' + username + ' ' + input.value.slice(cursorPos);
+        input.value = input.value.slice(0, start) + '@' + u.username.trim() + ' ';
         input.focus();
         suggestionBox.style.display = 'none';
       });
-
       suggestionBox.appendChild(div);
     });
 
+    // Position below input
+    const rect = input.getBoundingClientRect();
+    suggestionBox.style.left = '0px';
+    suggestionBox.style.top = input.offsetHeight + 'px';
+    suggestionBox.style.width = '100%';
     suggestionBox.style.display = 'block';
 
   } catch(err) {
@@ -185,8 +183,9 @@ input.addEventListener('input', async () => {
   }
 });
 
-document.addEventListener('click', (e) => {
-  if(!input.contains(e.target) && !suggestionBox.contains(e.target)){
+// Hide on outside tap
+document.addEventListener('click', (e)=>{
+  if(!form.contains(e.target) && !suggestionBox.contains(e.target)){
     suggestionBox.style.display = 'none';
   }
 });
