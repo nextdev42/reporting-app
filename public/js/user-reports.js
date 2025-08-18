@@ -13,9 +13,7 @@ function createReportCard(r) {
   card.className = "card";
 
   const totalComments = r.comments.length || 0;
-
-  // Check if the user has already reacted: 'up', 'down', or null
-  let userThumb = r.user_thumb;
+  const userThumb = r.user_thumb; // 'up', 'down', or null
 
   card.innerHTML = `
     <div class="card-header">
@@ -45,11 +43,7 @@ function createReportCard(r) {
     </div>
   `;
 
-  totalP++;
-  totalUp += r.thumbs_up || 0;
-  totalDown += r.thumbs_down || 0;
-
-  // Comments
+  // Populate comments
   const ul = card.querySelector('.comments-list');
   r.comments.forEach(c => {
     const li = document.createElement('li');
@@ -64,16 +58,16 @@ function createReportCard(r) {
     ul.appendChild(li);
   });
 
-  // Comment toggle
+  // Toggle comment section
   const toggleBtn = card.querySelector('.comment-toggle');
   const commentSection = card.querySelector('.report-comments');
   toggleBtn.addEventListener('click', () => commentSection.classList.toggle('active'));
 
-  // Comment form visibility
+  // Hide comment form if the report belongs to logged-in user
   const form = card.querySelector('.comment-form');
   form.style.display = r.username === loggedInUser ? 'none' : 'flex';
 
-  // Comment submission
+  // Submit new comment
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const input = form.comment;
@@ -104,49 +98,60 @@ function createReportCard(r) {
     }
   });
 
-  // Thumbs click handling
-  const thumbUpEl = card.querySelector('.thumb-up');
-  const thumbDownEl = card.querySelector('.thumb-down');
+  // ======= Thumb functionality with header stats update =======
+  const thumbsUp = card.querySelector(".thumb-up");
+  const thumbsDown = card.querySelector(".thumb-down");
 
-  const updateThumbsUI = (type) => {
-    if(type==='up') {
-      thumbUpEl.classList.add('reacted');
-      thumbDownEl.classList.remove('reacted');
-    } else if(type==='down') {
-      thumbDownEl.classList.add('reacted');
-      thumbUpEl.classList.remove('reacted');
-    }
+  function updateThumbsUI(userThumb) {
+    thumbsUp.classList.toggle("reacted", userThumb === "up");
+    thumbsDown.classList.toggle("reacted", userThumb === "down");
   }
 
-  const handleThumbClick = async (type) => {
-    if(userThumb === type) return; // already reacted same
+  async function react(type) {
+    if ((type==='up' && thumbsUp.classList.contains("reacted")) || 
+        (type==='down' && thumbsDown.classList.contains("reacted")) ||
+        r.username === loggedInUser) return;
+
     try {
-      const res = await fetch(`/api/thumb/${r.id}`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+      const res = await fetch(`/api/reactions/${r.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type })
       });
-      if(!res.ok) throw new Error();
-      const data = await res.json(); // return updated counts
+      if (!res.ok) throw new Error();
+      const data = await res.json();
 
-      thumbUpEl.querySelector('.count').textContent = data.thumbs_up;
-      thumbDownEl.querySelector('.count').textContent = data.thumbs_down;
-
-      userThumb = type;
+      // Update card thumbs
+      thumbsUp.querySelector(".count").textContent = data.thumbs_up;
+      thumbsDown.querySelector(".count").textContent = data.thumbs_down;
       updateThumbsUI(type);
-    } catch(err) {
+
+      // Update global header stats
+      const headerUp = document.getElementById('totalThumbsUp');
+      const headerDown = document.getElementById('totalThumbsDown');
+
+      if (type === "up") {
+        totalUp += 1;
+      } else {
+        totalDown += 1;
+      }
+
+      headerUp.textContent = totalUp + " 👍";
+      headerDown.textContent = totalDown + " 👎";
+
+    } catch {
       alert("Tatizo kupiga thumb");
     }
   }
 
-  thumbUpEl.addEventListener('click', () => handleThumbClick('up'));
-  thumbDownEl.addEventListener('click', () => handleThumbClick('down'));
-
-  // Set initial grey state if already reacted
-  if(userThumb) updateThumbsUI(userThumb);
+  thumbsUp.addEventListener("click", () => react("up"));
+  thumbsDown.addEventListener("click", () => react("down"));
 
   return card;
 }
+
+
+  
     
 
   async function loadReports() {
