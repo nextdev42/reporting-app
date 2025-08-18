@@ -167,7 +167,10 @@ nav button:hover {
     transform: scale(0.95);
   }
 }
-
+.report-thumbs .reacted {
+  opacity: 0.5;
+  pointer-events: none; /* prevent clicking again */
+}
 /* Reports grid */
 .reports-grid {
   display: grid;
