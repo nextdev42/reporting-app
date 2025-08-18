@@ -6,17 +6,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return text.replace(/@(\w+)/g, '<a href="/user/$1" class="mention">@$1</a>');
   }
 
-  
   function createReportCard(r) {
   const card = document.createElement("div");
   card.className = "card";
 
   const totalComments = r.comments.length || 0;
-
-  // Helper to convert @username to links
-  function linkUsernames(text) {
-    return text.replace(/@([a-zA-Z0-9_.-]+)/g, '<a href="/user/$1" class="mention">@$1</a>');
-  }
 
   card.innerHTML = `
     <div class="card-header">
@@ -46,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
   `;
 
-  // --- Thumb reactions ---
+  // Thumb elements
   const thumbsUp = card.querySelector(".thumb-up");
   const thumbsDown = card.querySelector(".thumb-down");
 
@@ -74,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
         thumbsUp.classList.remove("reacted");
       }
 
-      // Update total thumbs
+      // Update overall totals
       let totalUp = 0, totalDown = 0;
       document.querySelectorAll(".card").forEach(c => {
         totalUp += parseInt(c.querySelector(".thumb-up .count").textContent) || 0;
@@ -82,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       document.getElementById('totalThumbsUp').textContent = totalUp + " 👍";
       document.getElementById('totalThumbsDown').textContent = totalDown + " 👎";
+
     } catch(err){
       console.error(err);
       alert("Tatizo kupiga thumb");
@@ -93,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
     thumbsDown.addEventListener("click", () => react("down"));
   }
 
-  // --- Comment toggle ---
+  // Comment toggle
   const toggleBtn = card.querySelector('.comment-toggle');
   const commentSection = card.querySelector('.report-comments');
   toggleBtn.addEventListener('click', () => commentSection.classList.toggle('active'));
@@ -115,105 +110,88 @@ document.addEventListener("DOMContentLoaded", () => {
     ul.appendChild(li);
   });
 
-  // --- Mention autocomplete ---
-  const input = form.comment;
-  const suggestionBox = document.createElement('div');
-  suggestionBox.className = 'mention-suggestions';
-  suggestionBox.style.position = 'absolute';
-  suggestionBox.style.background = '#fff';
-  suggestionBox.style.border = '1px solid #ccc';
-  suggestionBox.style.display = 'none';
-  suggestionBox.style.zIndex = 1000;
-  suggestionBox.style.maxHeight = '150px';
-  suggestionBox.style.overflowY = 'auto';
-  form.style.position = 'relative';
-  form.appendChild(suggestionBox);
+  // === MENTION AUTOCOMPLETE ===
+  
 
-  let currentQuery = '';
-  let fetchController = null;
-  let selectedIndex = -1;
+      // === MENTION AUTOCOMPLETE ===
+const input = form.comment;
+const suggestionBox = document.createElement('div');
+suggestionBox.className = 'mention-suggestions';
+suggestionBox.style.position = 'absolute';
+suggestionBox.style.background = '#fff';
+suggestionBox.style.border = '1px solid #ccc';
+suggestionBox.style.display = 'none';
+suggestionBox.style.zIndex = 1000;
+suggestionBox.style.maxHeight = '150px';
+suggestionBox.style.overflowY = 'auto';
 
-  input.addEventListener('input', async () => {
-    const cursorPos = input.selectionStart;
-    const textBeforeCursor = input.value.slice(0, cursorPos);
-    const match = textBeforeCursor.match(/@([a-zA-Z0-9_.-]*)$/);
-    
-    if (!match) { 
+// Attach suggestion box relative to the form
+const formContainer = form.closest('.card-footer');
+formContainer.style.position = 'relative';
+formContainer.appendChild(suggestionBox);
+
+let currentQuery = '';
+let fetchController = null;
+
+input.addEventListener('input', async () => {
+  const cursorPos = input.selectionStart;
+  const textBeforeCursor = input.value.slice(0, cursorPos);
+  const match = textBeforeCursor.match(/@([a-zA-Z0-9_.-]*)$/);
+  
+  if (!match) { 
+    suggestionBox.style.display = 'none';
+    return; 
+  }
+
+  currentQuery = match[1].toLowerCase();
+
+  if(fetchController) fetchController.abort();
+  fetchController = new AbortController();
+
+  try {
+    const res = await fetch('/api/users?search=' + encodeURIComponent(currentQuery), { signal: fetchController.signal });
+    if(!res.ok) throw new Error('Failed to fetch users');
+    const users = await res.json();
+
+    if(!users || !users.length){
       suggestionBox.style.display='none';
-      return; 
+      return;
     }
 
-    currentQuery = match[1];
-    selectedIndex = -1;
+    suggestionBox.innerHTML = '';
+    users.forEach(u => {
+      const username = u.trim(); // remove extra spaces
+      const div = document.createElement('div');
+      div.textContent = username;
+      div.className = 'suggestion-item';
+      div.style.padding = '5px';
+      div.style.cursor = 'pointer';
 
-    if(fetchController) fetchController.abort();
-    fetchController = new AbortController();
-
-    try {
-      const res = await fetch('/api/users?search=' + encodeURIComponent(currentQuery), { signal: fetchController.signal });
-      if(!res.ok) throw new Error('Failed to fetch users');
-      const users = await res.json();
-      if(!users.length){ suggestionBox.style.display='none'; return; }
-
-      suggestionBox.innerHTML='';
-      users.forEach(u=>{
-        const div = document.createElement('div');
-        div.textContent = u.username;
-        div.className = 'suggestion-item';
-        div.addEventListener('click', ()=>insertUsername(u.username));
-        suggestionBox.appendChild(div);
+      div.addEventListener('click', () => {
+        const start = textBeforeCursor.lastIndexOf('@');
+        input.value = input.value.slice(0, start) + '@' + username + ' ' + input.value.slice(cursorPos);
+        input.focus();
+        suggestionBox.style.display = 'none';
       });
 
-      suggestionBox.style.display='block';
-    } catch(err){
-      if(err.name !== 'AbortError') console.error(err);
-      suggestionBox.style.display='none';
-    }
-  });
-
-  function insertUsername(username) {
-    const cursorPos = input.selectionStart;
-    const textBeforeCursor = input.value.slice(0, cursorPos);
-    const start = textBeforeCursor.lastIndexOf('@');
-    input.value = input.value.slice(0, start) + '@' + username + ' ' + input.value.slice(cursorPos);
-    input.focus();
-    suggestionBox.style.display='none';
-  }
-
-  // Keyboard navigation
-  input.addEventListener('keydown', (e) => {
-    const items = Array.from(suggestionBox.children);
-    if (!items.length) return;
-
-    if (e.key === 'ArrowDown') {
-      selectedIndex = (selectedIndex + 1) % items.length;
-      updateHighlight(items);
-      e.preventDefault();
-    } else if (e.key === 'ArrowUp') {
-      selectedIndex = (selectedIndex - 1 + items.length) % items.length;
-      updateHighlight(items);
-      e.preventDefault();
-    } else if (e.key === 'Enter' && selectedIndex > -1) {
-      insertUsername(items[selectedIndex].textContent);
-      e.preventDefault();
-    } else if (e.key === 'Escape') {
-      suggestionBox.style.display = 'none';
-    }
-  });
-
-  function updateHighlight(items) {
-    items.forEach((item, i) => {
-      item.style.background = i === selectedIndex ? '#eef' : '#fff';
+      suggestionBox.appendChild(div);
     });
+
+    suggestionBox.style.display = 'block';
+
+  } catch(err) {
+    if(err.name !== 'AbortError') console.error(err);
+    suggestionBox.style.display = 'none';
   }
+});
 
-  document.addEventListener('click', (e)=>{
-    if(!input.contains(e.target) && !suggestionBox.contains(e.target)){
-      suggestionBox.style.display='none';
-    }
-  });
+document.addEventListener('click', (e) => {
+  if(!input.contains(e.target) && !suggestionBox.contains(e.target)){
+    suggestionBox.style.display = 'none';
+  }
+});
 
-  // --- Comment submission ---
+  // Handle new comment submission
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
     if(!input.value.trim()) return;
@@ -244,11 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
   return card;
 }
 
-
-
-      
-
-
+  
 
 
   async function loadReports() {
