@@ -228,11 +228,50 @@ app.get("/api/users", auth, async (req, res) => {
 
 
 // Route to render user page
-app.get("/user/:username", auth, (req, res) => {
-  res.render("user-reports", { 
-    username: req.params.username,    // The user whose page is being viewed
-    loggedInUser: req.session.jina    // The currently logged-in user
-  });
+// Route to render user page like dashboard
+app.get("/user/:username", auth, async (req, res) => {
+  const username = req.params.username;
+  const loggedInUser = req.session.jina;
+
+  try {
+    // Fetch the user's reports from DB
+    const reportsResult = await pool.query(
+      "SELECT * FROM reports WHERE username=$1 ORDER BY timestamp DESC",
+      [username]
+    );
+
+    const reports = reportsResult.rows.map(r => ({
+      ...r,
+      comments: r.comments || [],
+      user_thumb: r.user_thumb || null
+    }));
+
+    // Calculate totals like dashboard
+    const totalPosts = reports.length;
+    const totalThumbsUp = reports.reduce((sum, r) => sum + (r.thumbs_up || 0), 0);
+    const totalThumbsDown = reports.reduce((sum, r) => sum + (r.thumbs_down || 0), 0);
+
+    res.render("user-reports", {
+      username,
+      loggedInUser,
+      reports,
+      totalPosts,
+      totalThumbsUp,
+      totalThumbsDown
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.render("user-reports", {
+      username,
+      loggedInUser,
+      reports: [],
+      totalPosts: 0,
+      totalThumbsUp: 0,
+      totalThumbsDown: 0,
+      error: "Tatizo kupakia ripoti"
+    });
+  }
 });
     
     
