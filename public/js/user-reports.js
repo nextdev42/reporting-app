@@ -182,6 +182,10 @@ input.addEventListener('input', async () => {
 
     suggestionBox.style.display = 'block';
 
+/* Ensure input is visible on mobile with smooth scrolling */
+setTimeout(() => {
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}, 100);
   } catch(err) {
     if(err.name !== 'AbortError') console.error(err);
     suggestionBox.style.display = 'none';
