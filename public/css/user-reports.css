@@ -343,17 +343,79 @@ nav button:hover {
 }
 
 /* Mention suggestions */
+/* ========== COMMENT FORM & MENTION SUGGESTIONS ========== */
+.comment-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 5px;
+  position: relative; /* relative for positioning input if needed */
+  z-index: 1; /* ensure above other elements */
+}
+
+.comment-form input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.comment-form button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #405DE6;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+/* Mention suggestions */
 .mention-suggestions {
-  position: fixed; /* escape card clipping */
+  position: fixed; /* fixes clipping inside card */
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 9999;
+  z-index: 9999; /* on top of everything */
   max-height: 200px;
-  overflow-y: auto;
-  width: 250px;
+  overflow-y: auto; /* scroll inside dropdown */
+  width: 250px; /* set suitable width */
   display: none;
+  scroll-behavior: smooth; /* smooth internal scrolling */
+}
+
+/* Show suggestions when input focused */
+.comment-form:focus-within + .mention-suggestions {
+  display: block;
+}
+
+/* Individual suggestion item */
+.mention-suggestions div {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.mention-suggestions div:last-child {
+  border-bottom: none;
+}
+
+.mention-suggestions div:hover {
+  background-color: #f0f0f0;
+}
+
+/* Optional: modern scrollbar for better UX */
+.mention-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mention-suggestions::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.mention-suggestions::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
 
 /* Show suggestions when input focused */
