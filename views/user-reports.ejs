@@ -1,4 +1,3 @@
-<!-- views/user-reports.ejs -->
 <!DOCTYPE html>
 <html lang="sw">
 <head>
@@ -16,9 +15,9 @@
   nav button:hover{background:rgba(255,255,255,.25)}
   .container{max-width:1200px;margin:0 auto;padding:20px;}
 
-  /* USER HEADER SPACING IMPROVED */
+  /* Improved user header */
   .user-header{
-    display:flex;align-items:center;gap:30px;margin-bottom:40px;padding:30px 25px;
+    display:flex;align-items:center;gap:30px;margin-bottom:40px;padding:30px;
     background:#fff;border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.15);position:relative;overflow:hidden;
   }
   .user-header::before{content:'';position:absolute;top:0;left:0;width:100%;height:6px;background:linear-gradient(to right,#405DE6,#833AB4,#E1306C);}
@@ -29,24 +28,32 @@
   .stats span{font-size:1.1rem;font-weight:500;display:flex;flex-direction:column;align-items:center}
   .avatar-upload{margin-top:15px}
 
-  .reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:25px;margin-top:20px}
+  /* Improved cards grid */
+  .reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,350px),1fr));gap:25px;margin-top:20px}
   .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);transition:.3s;animation:fadeIn .5s forwards;opacity:0}
   .card:hover{transform:translateY(-6px);box-shadow:0 8px 25px rgba(0,0,0,.1);}
-  .card-header{display:flex;align-items:center;padding:15px;border-bottom:1px solid #DBDBDB;gap:15px;}
-  .report-avatar{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#DBDBDB;color:#fff;font-weight:bold;border:2px solid #405DE6;object-fit:cover;margin-right:12px;font-size:1.2rem;}
-  .report-title{font-weight:600;font-size:1.15rem;}
-  .report-meta{font-size:.85rem;color:#8E8E8E;margin-top:3px;}
-  .report-description{padding:15px 15px 10px 15px;line-height:1.6;}
-  .report-image{width:100%;max-height:350px;object-fit:cover;border-radius:8px;margin:0 15px 15px 15px;display:none;}
+  
+  /* Improved card header */
+  .card-header{display:flex;align-items:center;padding:15px;border-bottom:1px solid #DBDBDB;gap:12px;}
+  .report-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#DBDBDB;color:#fff;font-weight:bold;border:2px solid #405DE6;object-fit:cover;font-size:1.1rem;flex-shrink:0;}
+  .report-title{font-weight:600;font-size:1.1rem;line-height:1.3;}
+  .report-meta{font-size:.85rem;color:#8E8E8E;margin-top:2px;}
+  
+  /* Improved description spacing */
+  .report-description{padding:15px;line-height:1.6;border-bottom:1px solid #f0f0f0;}
+  .report-image{width:100%;max-height:350px;object-fit:cover;display:block;padding:0 15px 15px;}
 
-  .card-footer{padding:15px;border-top:1px solid #DBDBDB; display:flex; flex-direction: column; gap:10px;}
-  .report-thumbs{display:flex;gap:20px;font-weight:500;align-items:center;}
-  .comment-toggle{cursor:pointer;color:#405DE6;font-weight:bold;margin-left:auto;}
+  /* Improved footer with better icon spacing */
+  .card-footer{padding:15px; display:flex; flex-direction: column; gap:10px;}
+  .reaction-container{display:flex;justify-content:space-between;align-items:center;}
+  .report-thumbs{display:flex;gap:15px;font-weight:500;align-items:center;}
+  .comment-toggle{cursor:pointer;color:#405DE6;font-weight:bold;display:flex;align-items:center;gap:5px;}
+  
   .report-comments{display:none; flex-direction: column; gap:8px; margin-top:10px;}
   .report-comments.active{display:flex;}
   .comment-item{display:flex;gap:8px;margin-bottom:8px;padding:8px;border-radius:8px;transition:.2s;}
   .comment-item:hover{background:rgba(0,0,0,.03);}
-  .comment-avatar{width:32px;height:32px;border-radius:50%;background:#DBDBDB;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;}
+  .comment-avatar{width:32px;height:32px;border-radius:50%;background:#DBDBDB;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;flex-shrink:0;}
   .comment-user{font-weight:600;font-size:.9rem;}
   .comment-form{display:flex;gap:8px;margin-top:5px;}
   .comment-form input{flex:1;padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
@@ -110,11 +117,13 @@ function createReportCard(r){
       </div>
     </div>
     <div class="report-description">${r.description}</div>
-    <img class="report-image">
+    ${r.image ? `<img class="report-image" src="${r.image}">` : ''}
     <div class="card-footer">
-      <div class="report-thumbs">
-        <span>👍 <span class="thumbs-up">${r.thumbs_up||0}</span></span>
-        <span>👎 <span class="thumbs-down">${r.thumbs_down||0}</span></span>
+      <div class="reaction-container">
+        <div class="report-thumbs">
+          <span>👍 <span class="thumbs-up">${r.thumbs_up||0}</span></span>
+          <span>👎 <span class="thumbs-down">${r.thumbs_down||0}</span></span>
+        </div>
         <span class="comment-toggle">💬 ${totalComments} Maoni</span>
       </div>
       <div class="report-comments">
@@ -127,16 +136,15 @@ function createReportCard(r){
     </div>
   `;
 
-  // image
-  if(r.image){ const img=card.querySelector('.report-image'); img.src=r.image; img.style.display='block'; }
-
-  totalP++; totalUp+=r.thumbs_up; totalDown+=r.thumbs_down;
+  totalP++; 
+  totalUp += r.thumbs_up || 0; 
+  totalDown += r.thumbs_down || 0;
 
   // append comments
   const ul = card.querySelector('.comments-list');
-  r.comments.forEach(c=>{
-    const li=document.createElement('li');
-    li.className='comment-item';
+  r.comments.forEach(c => {
+    const li = document.createElement('li');
+    li.className = 'comment-item';
     li.innerHTML = `
       <div class="comment-avatar">${c.username.charAt(0).toUpperCase()}</div>
       <div>
@@ -150,49 +158,74 @@ function createReportCard(r){
   // toggle comment form
   const toggleBtn = card.querySelector('.comment-toggle');
   const commentSection = card.querySelector('.report-comments');
-  toggleBtn.addEventListener('click', ()=>commentSection.classList.toggle('active'));
+  toggleBtn.addEventListener('click', () => commentSection.classList.toggle('active'));
 
   // Send new comments
   const form = card.querySelector('.comment-form');
-  if(r.username===loggedInUser){ form.style.display='none'; }
-  form.addEventListener('submit',async(e)=>{
+  if(r.username === loggedInUser){ form.style.display = 'none'; }
+  
+  form.addEventListener('submit', async(e) => {
     e.preventDefault();
     const input = form.comment;
-    if(!input.value.trim())return;
-    const txt=input.value;
-    input.value="";
+    if(!input.value.trim()) return;
+    
+    const txt = input.value;
+    input.value = "";
+    
     try {
-      const res= await fetch(`/api/comments/${r.id}`,{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({comment:txt})
+      const res = await fetch(`/api/comments/${r.id}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({comment: txt})
       });
+      
       if(!res.ok) throw new Error();
+      
       const c = await res.json();
-      const li=document.createElement('li');
-      li.className='comment-item';
-      li.innerHTML=`<div class="comment-avatar">${c.username.charAt(0).toUpperCase()}</div>
-        <div><div class="comment-user">${c.username}</div>
-        <div class="comment-text">${c.comment}</div>
-        <div class="comment-time">${c.timestamp}</div></div>`;
+      const li = document.createElement('li');
+      li.className = 'comment-item';
+      li.innerHTML = `
+        <div class="comment-avatar">${c.username.charAt(0).toUpperCase()}</div>
+        <div>
+          <div class="comment-user">${c.username}</div>
+          <div class="comment-text">${c.comment}</div>
+          <div class="comment-time">${c.timestamp}</div>
+        </div>`;
       ul.prepend(li);
-      toggleBtn.textContent = `💬 ${ul.children.length} Maoni`;
-    }catch(err){alert("Tatizo kutuma maoni")}
+      
+      // Update comment count
+      const commentCount = ul.children.length;
+      toggleBtn.innerHTML = `💬 ${commentCount} Maoni`;
+    } catch(err) {
+      alert("Tatizo kutuma maoni");
+    }
   });
 
   return card;
 }
 
 async function loadReports(){
-  const wrap=document.getElementById('reports-container');
+  const wrap = document.getElementById('reports-container');
   wrap.innerHTML = "<div>Inapakia...</div>";
-  const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
-  const data = await res.json();
-  wrap.innerHTML="";
-  data.reports.forEach(r=>wrap.appendChild(createReportCard(r)));
+  
+  try {
+    const res = await fetch(`/api/reports?username=${encodeURIComponent(username)}`);
+    const data = await res.json();
+    
+    if(!data.reports || !Array.isArray(data.reports)) {
+      throw new Error("Invalid data format");
+    }
+    
+    wrap.innerHTML = "";
+    data.reports.forEach(r => wrap.appendChild(createReportCard(r)));
 
-  document.getElementById('totalPosts').textContent = totalP+" Ripoti";
-  document.getElementById('totalThumbsUp').textContent = totalUp+" 👍";
-  document.getElementById('totalThumbsDown').textContent = totalDown+" 👎";
+    document.getElementById('totalPosts').textContent = totalP + " Ripoti";
+    document.getElementById('totalThumbsUp').textContent = totalUp + " 👍";
+    document.getElementById('totalThumbsDown').textContent = totalDown + " 👎";
+  } catch(err) {
+    wrap.innerHTML = `<div class="error">Hitilafu katika kupakia ripoti</div>`;
+    console.error(err);
+  }
 }
 
 loadReports();
