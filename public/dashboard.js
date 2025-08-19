@@ -161,27 +161,35 @@ async function fetchReports(page=1) {
     </div>
 
     <!-- Comments section -->
-    <div class="comments-section">
-      <div class="commentsList">
-        ${report.comments.map(c => `
-          <div class="comment-item">
-            <div class="comment-header">
+    // ===== Comments section =====
+  <div class="commentsList">
+    ${report.comments.map(c => {
+      const avatarHtml = c.avatar 
+        ? `<img class="comment-avatar-img" src="${c.avatar}" alt="${c.username}"/>`
+        : `<div class="comment-avatar-initial"><a href="/user/${c.username}">${c.username.charAt(0).toUpperCase()}</a></div>`;
+      return `
+        <div class="comment-item">
+          <div class="comment-header">
+            ${avatarHtml}
+            <div>
               <a href="/user/${c.username}" class="username">${c.username}</a>
               <span class="clinic">(${c.clinic})</span>
               <span class="time">${formatDate(c.timestamp)}</span>
             </div>
-            <p>${highlightMentions(c.comment)}</p>
           </div>
-        `).join('')}
-      </div>
+          <p>${highlightMentions(c.comment)}</p>
+        </div>
+      `;
+    }).join('')}
+  </div>
 
-      <!-- Hidden input initially -->
-      <div class="comment-input" style="display:none;">
-        <input type="text" placeholder="Andika maoni yako" name="commentText">
-        <div class="mentionBox" style="display:none;"></div>
-        <button class="sendCommentBtn">Tuma</button>
-      </div>
-    </div>
+  <!-- Hidden input initially -->
+  <div class="comment-input" style="display:none;">
+    <input type="text" placeholder="Andika maoni yako" name="commentText">
+    <div class="mentionBox" style="display:none;"></div>
+    <button class="sendCommentBtn">Tuma</button>
+  </div>
+</div>
   `;
 
   const commentsList = card.querySelector(".commentsList");
