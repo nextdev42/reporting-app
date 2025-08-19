@@ -64,7 +64,12 @@ function createReportCard(r) {
     </div>
 
     <div class="report-description">${linkUsernames(r.description || '')}</div>
-    ${r.image ? `<img class="report-image" src="${r.image}">` : ''}
+
+    ${r.image ? `
+  <div class="report-image">
+    <img src="${r.image}" alt="Ripoti Image">
+  </div>
+` : ''}
 
     <div class="card-footer">
       <div class="reaction-container">
