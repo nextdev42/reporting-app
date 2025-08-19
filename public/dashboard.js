@@ -161,7 +161,6 @@ async function fetchReports(page=1) {
     </div>
 
     <!-- Comments section -->
-    // ===== Comments section =====
   <div class="commentsList">
     ${report.comments.map(c => {
       const avatarHtml = c.avatar 
