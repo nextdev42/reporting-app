@@ -121,56 +121,6 @@ nav button:hover {
   flex-shrink: 0;
   overflow: hidden;
 }
-
-.stats {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 1em;
-  margin-top: 8px;
-  flex-wrap: wrap; /* allow wrapping if really small */
-}
-
-.bell-container {
-  position: relative;
-  display: inline-block;
-  font-size: 1.2em; /* bell size */
-}
-
-.bell-count {
-  position: absolute;
-  top: -6px;
-  right: -8px;
-  background: red;
-  color: white;
-  font-size: 0.65em;
-  min-width: 16px;
-  height: 16px;
-  line-height: 16px;
-  border-radius: 50%;
-  text-align: center;
-  padding: 0 4px;
-  font-weight: bold;
-}
-
-/* Responsive adjustments for small screens */
-@media (max-width: 480px) {
-  .stats {
-    gap: 8px;
-    font-size: 0.9em;
-  }
-  .bell-container {
-    font-size: 1em;
-  }
-  .bell-count {
-    top: -4px;
-    right: -6px;
-    font-size: 0.6em;
-    min-width: 14px;
-    height: 14px;
-    line-height: 14px;
-  }
-}
 #nav-bell.highlight {
   color: red;
   font-weight: bold;
