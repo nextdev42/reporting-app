@@ -277,10 +277,9 @@ document.addEventListener("DOMContentLoaded", () => {
       totalUp = data.reports.reduce((sum,r) => sum+(r.thumbs_up||0), 0);
       totalDown = data.reports.reduce((sum,r) => sum+(r.thumbs_down||0), 0);
 
-      document.getElementById('totalPosts').textContent = totalP + " Ripoti";
-      document.getElementById('totalThumbsUp').textContent = totalUp + " 👍";
-      document.getElementById('totalThumbsDown').textContent = totalDown + " 👎";
-
+      document.getElementById('totalPosts').textContent = "Ripoti " + totalP;
+      document.getElementById('totalThumbsUp').textContent = "👍 " + totalUp;
+      document.getElementById('totalThumbsDown').textContent = "👎 " + totalDown;
     } catch (err) {
       wrap.innerHTML = `<div class="error">Hitilafu katika kupakia ripoti</div>`;
       console.error(err);
