@@ -121,10 +121,35 @@ nav button:hover {
   flex-shrink: 0;
   overflow: hidden;
 }
+
+/* ========== GLOBAL BELL ========== */
+#nav-bell {
+  position: relative;
+  display: inline-block;
+  font-size: 1.2em;
+}
+
+#nav-bell .bell-count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: red;
+  color: white;
+  font-size: 0.65em;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  border-radius: 50%;
+  text-align: center;
+  padding: 0 4px;
+  font-weight: bold;
+}
+
 #nav-bell.highlight {
   color: red;
   font-weight: bold;
 }
+
 /* ========== AVATAR UPLOAD ========== */
 .avatar-upload {
   display: flex;
@@ -270,8 +295,7 @@ nav button:hover {
 
 .comment-item:hover,
 .comment-item.active {
-  background: #e6f0ff; /* light dashboard blue */
-  color: #262626;       /* keep text dark */
+  background: #e6f0ff;
   transform: scale(1.02);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
@@ -318,11 +342,10 @@ nav button:hover {
   left: 0;
   max-height: 150px;
   overflow-y: auto;
-  overscroll-behavior: contain;
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   z-index: 10000;
   width: 100%;
   display: none;
@@ -361,4 +384,23 @@ nav button:hover {
 @keyframes fadeIn {
   from {opacity:0; transform:translateY(10px);}
   to {opacity:1; transform:translateY(0);}
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 480px) {
+  .stats {
+    gap: 8px;
+    font-size: 0.9em;
+  }
+  #nav-bell {
+    font-size: 1em;
+  }
+  #nav-bell .bell-count {
+    top: -4px;
+    right: -6px;
+    font-size: 0.6em;
+    min-width: 14px;
+    height: 14px;
+    line-height: 14px;
+  }
 }
