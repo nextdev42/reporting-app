@@ -52,26 +52,46 @@ function createReportCard(r) {
   if (r.user_thumb === "up") thumbsUp.classList.add("reacted");
   if (r.user_thumb === "down") thumbsDown.classList.add("reacted");
 
-  async function react(type) {
-    try {
-      const res = await fetch(`/api/reactions/${r.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type })
-      });
-      if(!res.ok){ alert(await res.text() || "Tatizo kupiga thumb"); return; }
-      const data = await res.json();
-      thumbsUp.querySelector(".count").textContent = data.thumbs_up;
-      thumbsDown.querySelector(".count").textContent = data.thumbs_down;
-      if(type==="up"){
-        thumbsUp.classList.add("reacted");
-        thumbsDown.classList.remove("reacted");
-      } else {
-        thumbsDown.classList.add("reacted");
-        thumbsUp.classList.remove("reacted");
-      }
-    } catch(err){ console.error(err); alert("Tatizo kupiga thumb"); }
+async function react(type) {
+  try {
+    const res = await fetch(`/api/reactions/${r.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type })
+    });
+    if (!res.ok) {
+      alert(await res.text() || "Tatizo kupiga thumb");
+      return;
+    }
+    const data = await res.json();
+
+    // Update counts on this card
+    thumbsUp.querySelector(".count").textContent = data.thumbs_up;
+    thumbsDown.querySelector(".count").textContent = data.thumbs_down;
+
+    if (type === "up") {
+      thumbsUp.classList.add("reacted");
+      thumbsDown.classList.remove("reacted");
+    } else {
+      thumbsDown.classList.add("reacted");
+      thumbsUp.classList.remove("reacted");
+    }
+
+    // Recalculate totals across all cards
+    let totalUp = 0, totalDown = 0;
+    document.querySelectorAll(".card").forEach(card => {
+      totalUp   += parseInt(card.querySelector(".thumb-up .count").textContent)   || 0;
+      totalDown += parseInt(card.querySelector(".thumb-down .count").textContent) || 0;
+    });
+    document.getElementById('totalThumbsUp').textContent   = totalUp   + " 👍";
+    document.getElementById('totalThumbsDown').textContent = totalDown + " 👎";
+
+  } catch(err) {
+    console.error(err);
+    alert("Tatizo kupiga thumb");
   }
+}
+
   if(!r.user_thumb){
     thumbsUp.addEventListener("click", () => react("up"));
     thumbsDown.addEventListener("click", () => react("down"));
