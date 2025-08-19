@@ -174,17 +174,19 @@ nav button:hover {
 
 /* IMAGE FIXED */
 /* Container for the image */
+/* Container for the image */
 .report-image {
     width: 100%;
-    /* remove fixed max-height */
-    overflow: visible;  /* allow full image to show */
-    margin: 12px 0;     /* optional spacing */
+    height: auto;       /* container adapts to image height */
+    margin: 12px 0;    /* optional spacing */
 }
 
+/* Image itself */
 .report-image img {
-    width: 100%;   /* scale to container width */
-    height: auto;  /* maintain aspect ratio */
-    object-fit: cover;  /* cover keeps the container filled */
+    width: 100%;        /* scale to container width */
+    height: auto;       /* maintain aspect ratio */
+    object-fit: contain; /* show entire image, no cropping */
+    display: block;     /* remove extra inline space below image */
     border-radius: 8px; /* optional rounded corners */
 }
 
