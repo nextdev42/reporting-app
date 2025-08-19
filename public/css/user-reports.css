@@ -59,7 +59,15 @@ nav button:hover {
   margin: 0 auto;
   padding: 10px;
 }
+.greeting-user {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
 
+.greeting-user:hover {
+  text-decoration: underline;
+}
 /* ========== USER HEADER ========== */
 .user-header {
   display: flex;
