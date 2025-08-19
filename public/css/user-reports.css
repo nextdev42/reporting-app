@@ -122,26 +122,54 @@ nav button:hover {
   overflow: hidden;
 }
 
-.bell {
+.stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 1em;
+  margin-top: 8px;
+  flex-wrap: wrap; /* allow wrapping if really small */
+}
+
+.bell-container {
   position: relative;
   display: inline-block;
-  margin-left: 8px;
-  font-size: 1.1em;
+  font-size: 1.2em; /* bell size */
 }
 
 .bell-count {
   position: absolute;
   top: -6px;
-  right: -6px;
-  background: #d9534f;
-  color: #fff;
-  font-size: 0.7em;
-  font-weight: bold;
-  padding: 1px 5px;
-  border-radius: 50%;
-  line-height: 1;
+  right: -8px;
+  background: red;
+  color: white;
+  font-size: 0.65em;
   min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  border-radius: 50%;
   text-align: center;
+  padding: 0 4px;
+  font-weight: bold;
+}
+
+/* Responsive adjustments for small screens */
+@media (max-width: 480px) {
+  .stats {
+    gap: 8px;
+    font-size: 0.9em;
+  }
+  .bell-container {
+    font-size: 1em;
+  }
+  .bell-count {
+    top: -4px;
+    right: -6px;
+    font-size: 0.6em;
+    min-width: 14px;
+    height: 14px;
+    line-height: 14px;
+  }
 }
 #nav-bell.highlight {
   color: red;
