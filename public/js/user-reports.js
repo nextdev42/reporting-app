@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   
+  
   function createReportCard(r) {
   const card = document.createElement("div");
   card.className = "card";
@@ -157,18 +158,26 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       selectedIndex=0;
       updateSelection();
+
+      // Position the suggestion box
       const rect=input.getBoundingClientRect();
       suggestionBox.style.top=rect.bottom+'px';
       suggestionBox.style.left=rect.left+'px';
       suggestionBox.style.width=rect.width+'px';
       suggestionBox.style.display='block';
+
+      // --- SCROLL INTO VIEW FOR MOBILE KEYBOARD ---
+      setTimeout(() => {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+
     } catch(e){
       if(e.name!=='AbortError') console.error(e);
       suggestionBox.style.display='none';
     }
   });
 
-  // keyboard
+  // Keyboard navigation
   input.addEventListener('keydown',e=>{
     const items = suggestionBox.querySelectorAll('.suggestion-item');
     if(!items.length) return;
@@ -231,6 +240,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   return card;
 }
+
+  
+
+
+
+  
 
 
 
