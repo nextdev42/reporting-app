@@ -176,14 +176,16 @@ nav button:hover {
 /* Container for the image */
 .report-image {
     width: 100%;
-    max-height: 300px;
-    overflow: hidden;  /* optional if you want cropping at max height */
+    /* remove fixed max-height */
+    overflow: visible;  /* allow full image to show */
+    margin: 12px 0;     /* optional spacing */
 }
 
 .report-image img {
-    width: 100%;
-    height: auto;      /* prevents vertical cropping */
-    object-fit: contain;
+    width: 100%;   /* scale to container width */
+    height: auto;  /* maintain aspect ratio */
+    object-fit: cover;  /* cover keeps the container filled */
+    border-radius: 8px; /* optional rounded corners */
 }
 
 .card-footer {
