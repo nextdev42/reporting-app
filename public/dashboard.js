@@ -148,11 +148,11 @@ async function fetchReports(page=1) {
       </div>
     </div>
 
-    <!-- Report image -->
-    ${report.image ? `<div class="report-image"><img src="${report.image}" alt="Ripoti"></div>` : ""}
-
     <!-- Caption -->
     <div class="report-caption">${highlightMentions(report.description)}</div>
+    
+    <!-- Report image -->
+    ${report.image ? `<div class="report-image"><img src="${report.image}" alt="Ripoti"></div>` : ""}
 
     <!-- Actions: thumbs + chat icon -->
     <div class="report-actions">
