@@ -75,7 +75,7 @@ nav button:hover {
 }
 
 .user-header::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -100,11 +100,6 @@ nav button:hover {
 .user-header .info h2 {
   margin-bottom: 10px;
   font-size: 1.5rem;
-}
-
-
-body.dropdown-open {
-  overflow: hidden;
 }
 
 .stats {
@@ -188,11 +183,13 @@ body.dropdown-open {
 .card {
   background: #fff;
   border-radius: 16px;
-  overflow: visible; /* allow suggestions to escape */
+  overflow: visible !important;        /* allow dropdown to escape */
   box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
   transition: .3s;
   animation: fadeIn .5s forwards;
   opacity: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .card:hover {
@@ -324,11 +321,11 @@ body.dropdown-open {
 
 /* ========== COMMENT FORM & MENTION SUGGESTIONS ========== */
 .comment-form {
-  position: relative; /* parent for absolute positioning */
+  position: relative;
   display: flex;
   gap: 8px;
   margin-top: 5px;
-  z-index: 1;
+  z-index: 2;
 }
 
 .comment-form input {
@@ -347,31 +344,32 @@ body.dropdown-open {
   cursor: pointer;
 }
 
-/* Mention suggestions */
+/* Mention suggestions dropdown */
 .mention-suggestions {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
   max-height: 150px;
-  overflow-y: auto;
+  overflow-y: auto;          /* scroll inside drop */
+  overscroll-behavior: contain; /* stop page scrolling */
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  width: 250px;
+  z-index: 10000;
+  width: 100%;               /* match comment input */
+  display: none;
 }
 
-/* Show suggestions when input is focused */
+/* Show suggestions */
 .comment-form:focus-within .mention-suggestions {
   display: block;
 }
 
-/* Individual suggestion item */
+/* Suggestion item */
 .mention-suggestions div {
   padding: 8px 12px;
   cursor: pointer;
-  transition: background-color 0.2s;
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -379,30 +377,13 @@ body.dropdown-open {
   border-bottom: none;
 }
 
-.mention-suggestions div:hover {
-  background-color: #f0f0f0;
+.mention-suggestions div:hover,
+.mention-suggestions div.selected {
+  background-color: #405DE6;
+  color: #fff;
 }
 
-/* Optional: modern scrollbar for better UX */
-.mention-suggestions::-webkit-scrollbar {
-  width: 6px;
-}
-
-.mention-suggestions::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 3px;
-}
-
-.mention-suggestions::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 3px;
-}
-
-.mention-suggestions::-webkit-scrollbar-thumb:hover {
-  background: #999;
-}
-
-/* Mention styling */
+/* Mention link in output text */
 .mention {
   color: #405DE6;
   text-decoration: none;
@@ -416,3 +397,4 @@ body.dropdown-open {
 @keyframes fadeIn {
   from {opacity:0; transform:translateY(10px)}
   to {opacity:1; transform:translateY(0)}
+}
