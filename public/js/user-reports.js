@@ -16,7 +16,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   
-  function createReportCard(r) {
+  // --- Global mention suggestion box (only once per page) ---
+const suggestionBox = document.createElement('div');
+suggestionBox.className = 'mention-suggestions';
+suggestionBox.style.position = 'absolute';
+suggestionBox.style.background = '#fff';
+suggestionBox.style.border = '1px solid #ccc';
+suggestionBox.style.display = 'none';
+suggestionBox.style.zIndex = '9999';
+suggestionBox.style.maxHeight = '150px';
+suggestionBox.style.overflowY = 'auto';
+suggestionBox.style.borderRadius = '8px';
+document.body.appendChild(suggestionBox);
+
+function createReportCard(r) {
   const card = document.createElement("div");
   card.className = "card";
 
@@ -28,22 +41,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   card.innerHTML = `
     <div class="card-header">
-      <div class="report-avatar"><a href="/user/${r.username}">${r.username.charAt(0).toUpperCase()}</a></div>
+      <div class="report-avatar">
+        <a href="/user/${r.username}">${r.username.charAt(0).toUpperCase()}</a>
+      </div>
       <div>
-        <div class="report-title">${linkUsernames(r.title||'')}</div>
+        <div class="report-title">${linkUsernames(r.title || '')}</div>
         <div class="report-meta"><a href="/user/${r.username}">${r.username}</a> - ${r.clinic} | ${r.timestamp}</div>
       </div>
     </div>
-    <div class="report-description">${linkUsernames(r.description||'')}</div>
+
+    <div class="report-description">${linkUsernames(r.description || '')}</div>
     ${r.image ? `<img class="report-image" src="${r.image}">` : ''}
+
     <div class="card-footer">
       <div class="reaction-container">
         <div class="report-thumbs">
-          <span class="thumb-up">👍 <span class="count">${r.thumbs_up||0}</span></span>
-          <span class="thumb-down">👎 <span class="count">${r.thumbs_down||0}</span></span>
+          <span class="thumb-up">👍 <span class="count">${r.thumbs_up || 0}</span></span>
+          <span class="thumb-down">👎 <span class="count">${r.thumbs_down || 0}</span></span>
+          <span class="mention-count" style="display:none">0</span>
         </div>
         <span class="comment-toggle">💬 ${totalComments} Maoni</span>
       </div>
+
       <div class="report-comments">
         <ul class="comments-list"></ul>
         <form class="comment-form">
@@ -67,13 +86,13 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type })
       });
-      if(!res.ok){ alert(await res.text() || "Tatizo kupiga thumb"); return; }
+      if (!res.ok) { alert(await res.text() || "Tatizo kupiga thumb"); return; }
       const data = await res.json();
 
       thumbsUp.querySelector(".count").textContent = data.thumbs_up;
       thumbsDown.querySelector(".count").textContent = data.thumbs_down;
 
-      if(type==="up"){
+      if (type === "up") {
         thumbsUp.classList.add("reacted");
         thumbsDown.classList.remove("reacted");
       } else {
@@ -81,57 +100,56 @@ document.addEventListener("DOMContentLoaded", () => {
         thumbsUp.classList.remove("reacted");
       }
 
-      // Update global totals
+      // Update global thumbs totals
       let totalUp = 0, totalDown = 0;
-      document.querySelectorAll(".card").forEach(c=>{
+      document.querySelectorAll(".card").forEach(c => {
         totalUp += parseInt(c.querySelector(".thumb-up .count").textContent) || 0;
         totalDown += parseInt(c.querySelector(".thumb-down .count").textContent) || 0;
       });
-      document.getElementById('totalThumbsUp').textContent = totalUp + " 👍";
-      document.getElementById('totalThumbsDown').textContent = totalDown + " 👎";
+      document.getElementById('totalThumbsUp').textContent = `👍 ${totalUp}`;
+      document.getElementById('totalThumbsDown').textContent = `👎 ${totalDown}`;
 
     } catch(err){ console.error(err); alert("Tatizo kupiga thumb"); }
   }
 
-  if(!r.user_thumb){
+  if (!r.user_thumb) {
     thumbsUp.addEventListener("click", () => react("up"));
     thumbsDown.addEventListener("click", () => react("down"));
   }
 
-  // --- Toggle comments & mention notifications ---
+  // --- Comments & mention notifications ---
   const toggleBtn = card.querySelector('.comment-toggle');
   const commentSection = card.querySelector('.report-comments');
-  const bell = card.querySelector('.mention-bell');
-  const bellCountEl = bell.querySelector('.bell-count');
+  const mentionCountEl = card.querySelector('.mention-count');
 
   function checkMentions() {
     let unread = 0;
-    r.comments.forEach((c, idx)=>{
-      const key = `${r.id}_${idx}_@${loggedInUser}`;
-      if(c.comment.includes('@'+loggedInUser) && !localStorage.getItem(key)) unread++;
+    r.comments.forEach((c, idx) => {
+      const key = `${r.id}_${idx}_@${window.LOGGED_IN_USER}`;
+      if (c.comment.includes('@' + window.LOGGED_IN_USER) && !localStorage.getItem(key)) unread++;
     });
-    bellCountEl.textContent = unread;
+    mentionCountEl.textContent = unread; // hidden, used for global bell
+    updateGlobalBell();
   }
 
-  checkMentions(); // Initial check
+  checkMentions();
 
-  toggleBtn.addEventListener('click', ()=>{
+  toggleBtn.addEventListener('click', () => {
     commentSection.classList.toggle('active');
-    if(commentSection.classList.contains('active')) {
+    if (commentSection.classList.contains('active')) {
       // Mark mentions as read
-      r.comments.forEach((c, idx)=>{
-        const key = `${r.id}_${idx}_@${loggedInUser}`;
-        if(c.comment.includes('@'+loggedInUser)) localStorage.setItem(key,'read');
+      r.comments.forEach((c, idx) => {
+        const key = `${r.id}_${idx}_@${window.LOGGED_IN_USER}`;
+        if (c.comment.includes('@' + window.LOGGED_IN_USER)) localStorage.setItem(key, 'read');
       });
-      bellCountEl.textContent = 0;
+      mentionCountEl.textContent = 0;
       updateGlobalBell();
     }
   });
 
   // --- Load existing comments ---
-  const form = card.querySelector('.comment-form');
   const ul = card.querySelector('.comments-list');
-  r.comments.forEach((c, idx)=>{
+  r.comments.forEach((c, idx) => {
     const li = document.createElement('li');
     li.className = 'comment-item';
     li.innerHTML = `
@@ -144,116 +162,57 @@ document.addEventListener("DOMContentLoaded", () => {
     ul.appendChild(li);
   });
 
-  // Hide comment form if it's owner's card
+  // Hide comment form if it's user's own report
+  const form = card.querySelector('.comment-form');
   form.style.display = r.username === window.LOGGED_IN_USER ? 'none' : 'flex';
 
-  // --- Mention suggestion box (unchanged) ---
-  const input = form.comment;
-  const suggestionBox = document.createElement('div');
-  suggestionBox.className = 'mention-suggestions';
-  suggestionBox.style.position = 'fixed';
-  suggestionBox.style.background = '#fff';
-  suggestionBox.style.border = '1px solid #ccc';
-  suggestionBox.style.display = 'none';
-  suggestionBox.style.zIndex = '9999';
-  suggestionBox.style.maxHeight = '150px';
-  suggestionBox.style.overflowY = 'auto';
-  document.body.appendChild(suggestionBox);
-
-  let fetchController = null, selectedIndex = 0, currentQuery = '';
-  function updateSelection(){ const items = suggestionBox.querySelectorAll('.suggestion-item'); items.forEach((item,i)=>item.classList.toggle('selected',i===selectedIndex)); }
-
-  input.addEventListener('input', async ()=>{
+  // --- Suggestion box per input ---
+  const input = card.querySelector('.comment-form input[name="comment"]');
+  input.addEventListener('input', async () => {
     const cursorPos = input.selectionStart;
-    const textBefore = input.value.slice(0,cursorPos);
+    const textBefore = input.value.slice(0, cursorPos);
     const match = textBefore.match(/@([a-zA-Z0-9_.-]*)$/);
-    if(!match){ suggestionBox.style.display='none'; return; }
-    currentQuery = match[1].toLowerCase();
-    if(fetchController) fetchController.abort();
-    fetchController = new AbortController();
+    if (!match) { suggestionBox.style.display = 'none'; return; }
+
+    const query = match[1].toLowerCase();
+
     try {
-      const res = await fetch('/api/users?search='+encodeURIComponent(currentQuery), {signal: fetchController.signal});
+      const res = await fetch('/api/users?search=' + encodeURIComponent(query));
       const users = await res.json();
-      if(!users.length){ suggestionBox.style.display='none'; return; }
+      if (!users.length) { suggestionBox.style.display = 'none'; return; }
+
       suggestionBox.innerHTML = '';
-      users.forEach(u=>{
+      users.forEach(u => {
         const item = document.createElement('div');
         item.className = 'suggestion-item';
         item.textContent = u.trim();
-        item.addEventListener('click', ()=>{
-          const start = textBefore.lastIndexOf('@');
-          input.value = input.value.slice(0,start)+'@'+item.textContent+' '+input.value.slice(cursorPos);
-          suggestionBox.style.display='none';
+        item.addEventListener('click', () => {
+          const atPos = textBefore.lastIndexOf('@');
+          input.value = input.value.slice(0, atPos) + '@' + item.textContent + ' ' + input.value.slice(cursorPos);
+          suggestionBox.style.display = 'none';
           input.focus();
         });
         suggestionBox.appendChild(item);
       });
-      selectedIndex=0; updateSelection();
+
       const rect = input.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const boxHeight = Math.min(150, users.length*30);
-      suggestionBox.style.width = rect.width+'px';
-      suggestionBox.style.left = rect.left+'px';
-      suggestionBox.style.top = (rect.bottom + boxHeight > viewportHeight ? rect.top - boxHeight : rect.bottom)+'px';
-      suggestionBox.style.display='block';
-      setTimeout(()=>{ input.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); },50);
-    } catch(e){ if(e.name!=='AbortError') console.error(e); suggestionBox.style.display='none'; }
+      suggestionBox.style.width = rect.width + 'px';
+      suggestionBox.style.left = rect.left + 'px';
+      suggestionBox.style.top = rect.bottom + 'px';
+      suggestionBox.style.display = 'block';
+
+    } catch (err) { console.error(err); suggestionBox.style.display = 'none'; }
   });
 
-  input.addEventListener('keydown', e=>{
-    const items = suggestionBox.querySelectorAll('.suggestion-item');
-    if(!items.length) return;
-    if(e.key==='ArrowDown'){ selectedIndex=(selectedIndex+1)%items.length; updateSelection(); e.preventDefault(); }
-    else if(e.key==='ArrowUp'){ selectedIndex=(selectedIndex-1+items.length)%items.length; updateSelection(); e.preventDefault(); }
-    else if(e.key==='Enter'){
-      const item = items[selectedIndex];
-      const cursorPos = input.selectionStart;
-      const before = input.value.slice(0,cursorPos);
-      const atPos = before.lastIndexOf('@');
-      input.value = input.value.slice(0,atPos)+'@'+item.textContent+' '+input.value.slice(cursorPos);
-      suggestionBox.style.display='none';
-      e.preventDefault();
-    } else if(e.key==='Escape'){ suggestionBox.style.display='none'; }
-  });
-
-  document.addEventListener('click', e=>{
-    if(!input.contains(e.target) && !suggestionBox.contains(e.target)){ suggestionBox.style.display='none'; }
-  });
-
-  // --- Comment submission ---
-  form.addEventListener('submit', async e=>{
-    e.preventDefault();
-    if(!input.value.trim()) return;
-    const txt = input.value;
-    input.value = '';
-    try{
-      const res = await fetch(`/api/comments/${r.id}`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({comment:txt})
-      });
-      const c = await res.json();
-      const li = document.createElement('li');
-      li.className='comment-item';
-      li.innerHTML=`
-        <div class="comment-avatar"><a href="/user/${c.username}">${c.username.charAt(0).toUpperCase()}</a></div>
-        <div>
-          <div class="comment-user"><a href="/user/${c.username}">${c.username}</a></div>
-          <div class="comment-text">${linkUsernames(c.comment)}</div>
-          <div class="comment-time">${c.timestamp}</div>
-        </div>`;
-      ul.prepend(li);
-      toggleBtn.innerHTML = `💬 ${ul.children.length} Maoni`;
-      // Check mentions in newly added comment
-      checkMentions();
-      updateGlobalBell();
-    } catch(err){ alert("Tatizo kutuma maoni"); }
+  document.addEventListener('click', e => {
+    if (!input.contains(e.target) && !suggestionBox.contains(e.target)) {
+      suggestionBox.style.display = 'none';
+    }
   });
 
   return card;
 }
   
-
   async function loadReports() {
     const wrap = document.getElementById('reports-container');
     wrap.innerHTML = "<div>Inapakia...</div>";
