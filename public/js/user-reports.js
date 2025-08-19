@@ -3,14 +3,27 @@ document.addEventListener("DOMContentLoaded", () => {
   const loggedInUser = window.LOGGED_IN_USER;
 
   function updateGlobalBell() {
-  let totalUnread = 0;
-  document.querySelectorAll('.card').forEach(card => {
-    const bellEl = card.querySelector('.bell-count');
-    if(bellEl) totalUnread += parseInt(bellEl.textContent) || 0;
-  });
   const navBell = document.getElementById('nav-bell');
-  if(navBell) navBell.textContent = `🔔 ${totalUnread}`;
-}
+  if (!navBell) return;
+
+  let totalUnread = 0;
+
+  // Count only mentions for the logged-in owner
+  document.querySelectorAll('.mention-count').forEach(el => {
+    totalUnread += parseInt(el.textContent) || 0;
+  });
+
+  const isOwner = window.LOGGED_IN_USER === window.USERNAME; // owner check
+
+  if (isOwner && totalUnread > 0) {
+    navBell.style.display = 'inline-block';
+    navBell.querySelector('.bell-count').textContent = totalUnread;
+    navBell.classList.add('highlight');
+  } else {
+    navBell.style.display = 'none';
+    navBell.classList.remove('highlight');
+  }
+  }
   function linkUsernames(text) {
     return text.replace(/@(\w+)/g, '<a href="/user/$1" class="mention">@$1</a>');
   }
