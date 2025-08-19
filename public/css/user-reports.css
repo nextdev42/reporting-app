@@ -173,12 +173,21 @@ nav button:hover {
 }
 
 /* IMAGE FIXED */
+/* Container for the image */
 .report-image {
   width: 100%;
-  max-height: 350px;
+  max-height: 350px; /* limits very tall images */
+  overflow: hidden;
+  border-radius: 0 0 12px 12px; /* optional rounded bottom corners */
+  margin-top: 8px;
+}
+
+/* The actual image */
+.report-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* fills container without stretching */
   display: block;
-  object-fit: cover;
-  border-radius: 12px 12px 0 0; /* optional rounding */
 }
 
 .card-footer {
