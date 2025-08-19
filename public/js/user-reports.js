@@ -60,10 +60,8 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       if(!res.ok){ alert(await res.text() || "Tatizo kupiga thumb"); return; }
       const data = await res.json();
-
       thumbsUp.querySelector(".count").textContent = data.thumbs_up;
       thumbsDown.querySelector(".count").textContent = data.thumbs_down;
-
       if(type==="up"){
         thumbsUp.classList.add("reacted");
         thumbsDown.classList.remove("reacted");
@@ -82,17 +80,18 @@ document.addEventListener("DOMContentLoaded", () => {
     thumbsDown.addEventListener("click", () => react("down"));
   }
 
-  // Comment toggle
+  // Toggle comments
   const toggleBtn = card.querySelector('.comment-toggle');
   const commentSection = card.querySelector('.report-comments');
   toggleBtn.addEventListener('click', () => commentSection.classList.toggle('active'));
 
+  // Load existing comments
   const form = card.querySelector('.comment-form');
   const ul = card.querySelector('.comments-list');
-  r.comments.forEach(c => {
-    const li = document.createElement('li');
-    li.className = 'comment-item';
-    li.innerHTML = `
+  r.comments.forEach(c=>{
+    const li=document.createElement('li');
+    li.className='comment-item';
+    li.innerHTML=`
       <div class="comment-avatar"><a href="/user/${c.username}">${c.username.charAt(0).toUpperCase()}</a></div>
       <div>
         <div class="comment-user"><a href="/user/${c.username}">${c.username}</a></div>
@@ -102,9 +101,10 @@ document.addEventListener("DOMContentLoaded", () => {
     ul.appendChild(li);
   });
 
+  // Hide comment form if it's owner's card
   form.style.display = r.username === window.LOGGED_IN_USER ? 'none' : 'flex';
 
-  // --- Mention autocomplete with auto-select ---
+  // ========== GLOBAL SUGGESTION BOX ==========
   const input = form.comment;
   const suggestionBox = document.createElement('div');
   suggestionBox.className = 'mention-suggestions';
@@ -112,147 +112,110 @@ document.addEventListener("DOMContentLoaded", () => {
   suggestionBox.style.background = '#fff';
   suggestionBox.style.border = '1px solid #ccc';
   suggestionBox.style.display = 'none';
-  suggestionBox.style.zIndex = 9999;
+  suggestionBox.style.zIndex = '9999';
   suggestionBox.style.maxHeight = '150px';
   suggestionBox.style.overflowY = 'auto';
-
-// attach globally at bottom of <body>
   document.body.appendChild(suggestionBox);
-  suggestionBox.className = 'mention-suggestions';
-  suggestionBox.style.position = 'absolute';
-  suggestionBox.style.background = '#fff';
-  suggestionBox.style.border = '1px solid #ccc';
-  suggestionBox.style.display = 'none';
-  suggestionBox.style.zIndex = 1000;
-  suggestionBox.style.maxHeight = '150px';
-  suggestionBox.style.overflowY = 'auto';
 
-  const formContainer = form.closest('.card-footer');
-  formContainer.style.position = 'relative';
-  formContainer.appendChild(suggestionBox);
+  let fetchController=null, selectedIndex=0, currentQuery='';
 
-  let currentQuery = '';
-  let fetchController = null;
-  let selectedIndex = 0;
-
-  function updateSelection() {
+  function updateSelection(){
     const items = suggestionBox.querySelectorAll('.suggestion-item');
-    items.forEach((item,i)=>{
-      item.classList.toggle('selected', i===selectedIndex);
-    });
+    items.forEach((item,i)=>item.classList.toggle('selected',i===selectedIndex));
   }
 
   input.addEventListener('input', async () => {
     const cursorPos = input.selectionStart;
-    const textBeforeCursor = input.value.slice(0, cursorPos);
-    const match = textBeforeCursor.match(/@([a-zA-Z0-9_.-]*)$/);
-    
-    if (!match) { 
-      suggestionBox.style.display = 'none';
-      return; 
+    const textBefore = input.value.slice(0,cursorPos);
+    const match = textBefore.match(/@([a-zA-Z0-9_.-]*)$/);
+    if(!match){
+      suggestionBox.style.display='none';
+      return;
     }
-
-    currentQuery = match[1].toLowerCase();
-
+    currentQuery=match[1].toLowerCase();
     if(fetchController) fetchController.abort();
-    fetchController = new AbortController();
-
-    try {
-      const res = await fetch('/api/users?search=' + encodeURIComponent(currentQuery), { signal: fetchController.signal });
-      if(!res.ok) throw new Error('Failed to fetch users');
-      const users = await res.json();
-
-      if(!users || !users.length){
+    fetchController=new AbortController();
+    try{
+      const res=await fetch('/api/users?search='+encodeURIComponent(currentQuery),{signal:fetchController.signal});
+      const users=await res.json();
+      if(!users.length){
         suggestionBox.style.display='none';
         return;
       }
-
-      suggestionBox.innerHTML = '';
-      users.forEach(u => {
-        const username = u.trim();
-        const div = document.createElement('div');
-        div.textContent = username;
-        div.className = 'suggestion-item';
-        div.style.padding = '5px';
-        div.style.cursor = 'pointer';
-
-        div.addEventListener('click', () => {
-          const start = textBeforeCursor.lastIndexOf('@');
-          input.value = input.value.slice(0, start) + '@' + username + ' ' + input.value.slice(cursorPos);
+      suggestionBox.innerHTML='';
+      users.forEach(u=>{
+        const item=document.createElement('div');
+        item.className='suggestion-item';
+        item.textContent=u.trim();
+        item.addEventListener('click',()=>{
+          const start=textBefore.lastIndexOf('@');
+          input.value=input.value.slice(0,start)+'@'+item.textContent+' '+input.value.slice(cursorPos);
+          suggestionBox.style.display='none';
           input.focus();
-          suggestionBox.style.display = 'none';
         });
-
-        suggestionBox.appendChild(div);
+        suggestionBox.appendChild(item);
       });
-
-      selectedIndex = 0;
+      selectedIndex=0;
       updateSelection();
-      suggestionBox.style.display = 'block';
-      const rect = input.getBoundingClientRect();
-      suggestionBox.style.top  = rect.bottom + 'px';
-      suggestionBox.style.left = rect.left + 'px';
-      suggestionBox.style.width = rect.width + 'px';
-      setTimeout(() => { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
-
-    } catch(err) {
-      if(err.name !== 'AbortError') console.error(err);
-      suggestionBox.style.display = 'none';
+      const rect=input.getBoundingClientRect();
+      suggestionBox.style.top=rect.bottom+'px';
+      suggestionBox.style.left=rect.left+'px';
+      suggestionBox.style.width=rect.width+'px';
+      suggestionBox.style.display='block';
+    } catch(e){
+      if(e.name!=='AbortError') console.error(e);
+      suggestionBox.style.display='none';
     }
   });
 
-  // Keyboard navigation
-  input.addEventListener('keydown', e => {
+  // keyboard
+  input.addEventListener('keydown',e=>{
     const items = suggestionBox.querySelectorAll('.suggestion-item');
     if(!items.length) return;
-
-    if(e.key === 'ArrowDown'){
-      selectedIndex = (selectedIndex+1) % items.length;
+    if(e.key==='ArrowDown'){
+      selectedIndex=(selectedIndex+1)%items.length;
       updateSelection();
       e.preventDefault();
-    } else if(e.key === 'ArrowUp'){
-      selectedIndex = (selectedIndex-1+items.length) % items.length;
+    } else if(e.key==='ArrowUp'){
+      selectedIndex=(selectedIndex-1+items.length)%items.length;
       updateSelection();
       e.preventDefault();
-    } else if(e.key === 'Enter'){
-      const item = items[selectedIndex];
-      if(item){
-        const cursorPos = input.selectionStart;
-        const textBeforeCursor = input.value.slice(0, cursorPos);
-        const start = textBeforeCursor.lastIndexOf('@');
-        input.value = input.value.slice(0, start) + '@' + item.textContent + ' ' + input.value.slice(cursorPos);
-        suggestionBox.style.display = 'none';
-        input.focus();
-        e.preventDefault();
-      }
-    } else if(e.key === 'Escape'){
-      suggestionBox.style.display = 'none';
+    } else if(e.key==='Enter'){
+      const item=items[selectedIndex];
+      const cursorPos=input.selectionStart;
+      const before=input.value.slice(0,cursorPos);
+      const atPos=before.lastIndexOf('@');
+      input.value=input.value.slice(0,atPos)+'@'+item.textContent+' '+input.value.slice(cursorPos);
+      suggestionBox.style.display='none';
+      e.preventDefault();
+    } else if(e.key==='Escape'){
+      suggestionBox.style.display='none';
     }
   });
 
-  document.addEventListener('click', (e) => {
+  // click outside
+  document.addEventListener('click',(e)=>{
     if(!input.contains(e.target) && !suggestionBox.contains(e.target)){
-      suggestionBox.style.display = 'none';
+      suggestionBox.style.display='none';
     }
   });
 
-  // --- Comment submission ---
-  form.addEventListener('submit', async e=>{
+  // Comment submit
+  form.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    if(!input.value.trim()) return;
-    const txt = input.value;
-    input.value = "";
-    try {
-      const res = await fetch(`/api/comments/${r.id}`, {
+    if(!input.value.trim())return;
+    const txt=input.value;
+    input.value="";
+    try{
+      const res=await fetch(`/api/comments/${r.id}`,{
         method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({comment: txt})
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({comment:txt})
       });
-      if(!res.ok) throw new Error();
-      const c = await res.json();
-      const li = document.createElement('li');
-      li.className = 'comment-item';
-      li.innerHTML = `
+      const c=await res.json();
+      const li=document.createElement('li');
+      li.className='comment-item';
+      li.innerHTML=`
         <div class="comment-avatar"><a href="/user/${c.username}">${c.username.charAt(0).toUpperCase()}</a></div>
         <div>
           <div class="comment-user"><a href="/user/${c.username}">${c.username}</a></div>
@@ -260,12 +223,18 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="comment-time">${c.timestamp}</div>
         </div>`;
       ul.prepend(li);
-      toggleBtn.innerHTML = `💬 ${ul.children.length} Maoni`;
-    } catch(err){ alert("Tatizo kutuma maoni"); }
+      toggleBtn.innerHTML=`💬 ${ul.children.length} Maoni`;
+    }catch(err){
+      alert("Tatizo kutuma maoni");
+    }
   });
 
   return card;
 }
+
+
+
+
   
 
   
