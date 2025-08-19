@@ -7,8 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   
-  
-function createReportCard(r) {
+  function createReportCard(r) {
   const card = document.createElement("div");
   card.className = "card";
 
@@ -34,6 +33,7 @@ function createReportCard(r) {
           <span class="thumb-up">👍 <span class="count">${r.thumbs_up||0}</span></span>
           <span class="thumb-down">👎 <span class="count">${r.thumbs_down||0}</span></span>
         </div>
+        <span class="mention-bell">🔔 <span class="bell-count">0</span></span>
         <span class="comment-toggle">💬 ${totalComments} Maoni</span>
       </div>
       <div class="report-comments">
@@ -52,63 +52,81 @@ function createReportCard(r) {
   if (r.user_thumb === "up") thumbsUp.classList.add("reacted");
   if (r.user_thumb === "down") thumbsDown.classList.add("reacted");
 
-async function react(type) {
-  try {
-    const res = await fetch(`/api/reactions/${r.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type })
-    });
-    if (!res.ok) {
-      alert(await res.text() || "Tatizo kupiga thumb");
-      return;
-    }
-    const data = await res.json();
+  async function react(type) {
+    try {
+      const res = await fetch(`/api/reactions/${r.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type })
+      });
+      if(!res.ok){ alert(await res.text() || "Tatizo kupiga thumb"); return; }
+      const data = await res.json();
 
-    // Update counts on this card
-    thumbsUp.querySelector(".count").textContent = data.thumbs_up;
-    thumbsDown.querySelector(".count").textContent = data.thumbs_down;
+      thumbsUp.querySelector(".count").textContent = data.thumbs_up;
+      thumbsDown.querySelector(".count").textContent = data.thumbs_down;
 
-    if (type === "up") {
-      thumbsUp.classList.add("reacted");
-      thumbsDown.classList.remove("reacted");
-    } else {
-      thumbsDown.classList.add("reacted");
-      thumbsUp.classList.remove("reacted");
-    }
+      if(type==="up"){
+        thumbsUp.classList.add("reacted");
+        thumbsDown.classList.remove("reacted");
+      } else {
+        thumbsDown.classList.add("reacted");
+        thumbsUp.classList.remove("reacted");
+      }
 
-    // Recalculate totals across all cards
-    let totalUp = 0, totalDown = 0;
-    document.querySelectorAll(".card").forEach(card => {
-      totalUp   += parseInt(card.querySelector(".thumb-up .count").textContent)   || 0;
-      totalDown += parseInt(card.querySelector(".thumb-down .count").textContent) || 0;
-    });
-    document.getElementById('totalThumbsUp').textContent   = totalUp   + " 👍";
-    document.getElementById('totalThumbsDown').textContent = totalDown + " 👎";
+      // Update global totals
+      let totalUp = 0, totalDown = 0;
+      document.querySelectorAll(".card").forEach(c=>{
+        totalUp += parseInt(c.querySelector(".thumb-up .count").textContent) || 0;
+        totalDown += parseInt(c.querySelector(".thumb-down .count").textContent) || 0;
+      });
+      document.getElementById('totalThumbsUp').textContent = totalUp + " 👍";
+      document.getElementById('totalThumbsDown').textContent = totalDown + " 👎";
 
-  } catch(err) {
-    console.error(err);
-    alert("Tatizo kupiga thumb");
+    } catch(err){ console.error(err); alert("Tatizo kupiga thumb"); }
   }
-}
 
   if(!r.user_thumb){
     thumbsUp.addEventListener("click", () => react("up"));
     thumbsDown.addEventListener("click", () => react("down"));
   }
 
-  // --- Toggle comments ---
+  // --- Toggle comments & mention notifications ---
   const toggleBtn = card.querySelector('.comment-toggle');
   const commentSection = card.querySelector('.report-comments');
-  toggleBtn.addEventListener('click', () => commentSection.classList.toggle('active'));
+  const bell = card.querySelector('.mention-bell');
+  const bellCountEl = bell.querySelector('.bell-count');
+
+  function checkMentions() {
+    let unread = 0;
+    r.comments.forEach((c, idx)=>{
+      const key = `${r.id}_${idx}_@${loggedInUser}`;
+      if(c.comment.includes('@'+loggedInUser) && !localStorage.getItem(key)) unread++;
+    });
+    bellCountEl.textContent = unread;
+  }
+
+  checkMentions(); // Initial check
+
+  toggleBtn.addEventListener('click', ()=>{
+    commentSection.classList.toggle('active');
+    if(commentSection.classList.contains('active')) {
+      // Mark mentions as read
+      r.comments.forEach((c, idx)=>{
+        const key = `${r.id}_${idx}_@${loggedInUser}`;
+        if(c.comment.includes('@'+loggedInUser)) localStorage.setItem(key,'read');
+      });
+      bellCountEl.textContent = 0;
+      updateGlobalBell();
+    }
+  });
 
   // --- Load existing comments ---
   const form = card.querySelector('.comment-form');
   const ul = card.querySelector('.comments-list');
-  r.comments.forEach(c=>{
-    const li=document.createElement('li');
-    li.className='comment-item';
-    li.innerHTML=`
+  r.comments.forEach((c, idx)=>{
+    const li = document.createElement('li');
+    li.className = 'comment-item';
+    li.innerHTML = `
       <div class="comment-avatar"><a href="/user/${c.username}">${c.username.charAt(0).toUpperCase()}</a></div>
       <div>
         <div class="comment-user"><a href="/user/${c.username}">${c.username}</a></div>
@@ -121,7 +139,7 @@ async function react(type) {
   // Hide comment form if it's owner's card
   form.style.display = r.username === window.LOGGED_IN_USER ? 'none' : 'flex';
 
-  // --- GLOBAL MENTION SUGGESTION BOX ---
+  // --- Mention suggestion box (unchanged) ---
   const input = form.comment;
   const suggestionBox = document.createElement('div');
   suggestionBox.className = 'mention-suggestions';
@@ -135,20 +153,13 @@ async function react(type) {
   document.body.appendChild(suggestionBox);
 
   let fetchController = null, selectedIndex = 0, currentQuery = '';
+  function updateSelection(){ const items = suggestionBox.querySelectorAll('.suggestion-item'); items.forEach((item,i)=>item.classList.toggle('selected',i===selectedIndex)); }
 
-  function updateSelection(){
-    const items = suggestionBox.querySelectorAll('.suggestion-item');
-    items.forEach((item,i)=>item.classList.toggle('selected',i===selectedIndex));
-  }
-
-  input.addEventListener('input', async () => {
+  input.addEventListener('input', async ()=>{
     const cursorPos = input.selectionStart;
     const textBefore = input.value.slice(0,cursorPos);
     const match = textBefore.match(/@([a-zA-Z0-9_.-]*)$/);
-    if(!match){
-      suggestionBox.style.display='none';
-      return;
-    }
+    if(!match){ suggestionBox.style.display='none'; return; }
     currentQuery = match[1].toLowerCase();
     if(fetchController) fetchController.abort();
     fetchController = new AbortController();
@@ -169,10 +180,7 @@ async function react(type) {
         });
         suggestionBox.appendChild(item);
       });
-      selectedIndex = 0;
-      updateSelection();
-
-      // --- Position suggestion box dynamically ---
+      selectedIndex=0; updateSelection();
       const rect = input.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const boxHeight = Math.min(150, users.length*30);
@@ -180,13 +188,10 @@ async function react(type) {
       suggestionBox.style.left = rect.left+'px';
       suggestionBox.style.top = (rect.bottom + boxHeight > viewportHeight ? rect.top - boxHeight : rect.bottom)+'px';
       suggestionBox.style.display='block';
-
-      setTimeout(() => { input.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 50);
-
+      setTimeout(()=>{ input.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); },50);
     } catch(e){ if(e.name!=='AbortError') console.error(e); suggestionBox.style.display='none'; }
   });
 
-  // --- Keyboard navigation ---
   input.addEventListener('keydown', e=>{
     const items = suggestionBox.querySelectorAll('.suggestion-item');
     if(!items.length) return;
@@ -231,6 +236,9 @@ async function react(type) {
         </div>`;
       ul.prepend(li);
       toggleBtn.innerHTML = `💬 ${ul.children.length} Maoni`;
+      // Check mentions in newly added comment
+      checkMentions();
+      updateGlobalBell();
     } catch(err){ alert("Tatizo kutuma maoni"); }
   });
 
