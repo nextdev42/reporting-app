@@ -121,6 +121,28 @@ nav button:hover {
   flex-shrink: 0;
   overflow: hidden;
 }
+
+.bell {
+  position: relative;
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 1.1em;
+}
+
+.bell-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #d9534f;
+  color: #fff;
+  font-size: 0.7em;
+  font-weight: bold;
+  padding: 1px 5px;
+  border-radius: 50%;
+  line-height: 1;
+  min-width: 16px;
+  text-align: center;
+}
 #nav-bell.highlight {
   color: red;
   font-weight: bold;
