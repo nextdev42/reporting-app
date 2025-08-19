@@ -102,6 +102,11 @@ nav button:hover {
   font-size: 1.5rem;
 }
 
+
+body.dropdown-open {
+  overflow: hidden;
+}
+
 .stats {
   display: flex;
   gap: 20px;
@@ -344,19 +349,17 @@ nav button:hover {
 
 /* Mention suggestions */
 .mention-suggestions {
-  position: absolute; /* changed from fixed */
-  top: 100%; /* right below input */
+  position: absolute;
+  top: calc(100% + 4px);
   left: 0;
+  max-height: 150px;
+  overflow-y: auto;
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 999; /* above other content */
-  max-height: 200px;
-  overflow-y: auto; /* scroll inside dropdown */
+  z-index: 1000;
   width: 250px;
-  display: none;
-  scroll-behavior: smooth; /* smooth internal scrolling */
 }
 
 /* Show suggestions when input is focused */
@@ -383,6 +386,11 @@ nav button:hover {
 /* Optional: modern scrollbar for better UX */
 .mention-suggestions::-webkit-scrollbar {
   width: 6px;
+}
+
+.mention-suggestions::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
 }
 
 .mention-suggestions::-webkit-scrollbar-thumb {
