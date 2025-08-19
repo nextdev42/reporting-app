@@ -2,6 +2,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const username = window.USERNAME;
   const loggedInUser = window.LOGGED_IN_USER;
 
+  function updateGlobalBell() {
+  let totalUnread = 0;
+  document.querySelectorAll('.card').forEach(card => {
+    totalUnread += parseInt(card.querySelector('.bell-count').textContent) || 0;
+  });
+  const navBell = document.getElementById('nav-bell');
+  if(navBell) navBell.textContent = totalUnread;
+}
   function linkUsernames(text) {
     return text.replace(/@(\w+)/g, '<a href="/user/$1" class="mention">@$1</a>');
   }
