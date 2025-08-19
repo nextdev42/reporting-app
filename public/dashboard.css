@@ -1,18 +1,19 @@
-/* ========== GLOBAL ========== */
-* {
-  margin: 0;
-  padding: 0;
+/* ========== GLOBAL STYLES ========== */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-}
-body {
-  background: #FAFAFA;
-  color: #262626;
-  padding-top: 60px;
-  scroll-behavior: smooth;
 }
 
-/* ========== NAVBAR ========== */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f0f0f5; /* soft light gray */
+  color: #333;
+}
+
+/* ========== NAVIGATION ========== */
 nav {
   position: fixed;
   top: 0;
@@ -23,140 +24,345 @@ nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 1000;
 }
 
-nav button {
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.25);
-  color: #fff;
-  padding: 6px 12px;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: .3s;
-}
-nav button:hover { background: rgba(255,255,255,0.25); }
-
-/* ========== CONTAINER / HEADER  ========== */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 10px;
+nav h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
-.user-header {
+nav .nav-actions {
   display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-  padding: 20px;
+  align-items: center;
+  gap: 12px;
+}
+
+nav button {
+  cursor: pointer;
+  border: none;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-weight: bold;
+  background: linear-gradient(45deg, #405DE6, #833AB4);
+  transition: 0.3s;
+}
+
+nav button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ========== CONTAINER & GREETING ========== */
+.container {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 80px 15px 20px;
+}
+
+.greeting {
+  margin: 15px 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #405DE6;
+}
+
+.greeting-user {
+  color: #405DE6;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.greeting-user:hover {
+  text-decoration: underline;
+}
+
+/* ========== FORMS & FILTERS ========== */
+.form-section,
+.reports-section {
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-  position: relative;
-}
-.user-header::before{
-  content:"";position:absolute;top:0;left:0;width:100%;height:6px;
-  background:linear-gradient(to right,#405DE6,#833AB4,#E1306C);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
-.user-header img{
-  width:140px;height:140px;border-radius:50%;object-fit:cover;
-  border:4px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.1);
+input, select, textarea {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0 12px 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-family: inherit;
 }
 
-/* Stats & bell ONLY here (not for cards) */
-.stats{
-  display:flex;
-  align-items:center;
-  gap:16px;
-  flex-wrap:wrap;
-  margin-top:8px;
-  font-weight:bold;
+button.submit-btn {
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-weight: bold;
+  background: linear-gradient(45deg, #405DE6, #833AB4);
+  color: #fff;
+  transition: background 0.3s, transform 0.2s;
 }
-#nav-bell.bell{
-  position:relative;
-  display:inline-block;
-  font-size:1.2em;
-}
-#nav-bell .bell-count{
-  position:absolute;
-  top:-6px;
-  right:-8px;
-  background:red;
-  color:#fff;
-  font-size:0.65em;
-  width:16px;
-  height:16px;
-  line-height:16px;
-  border-radius:50%;
-  text-align:center;
+
+button.submit-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 /* ========== REPORT CARDS ========== */
-.reports-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(min(100%,350px),1fr));
-  gap:20px;
+.report-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* Card container */
-.card{
-  background:#fff;
-  border-radius:16px;
-  overflow:hidden;
-  box-shadow:0 4px 12px rgba(0,0,0,0.1);
-  transition:.3s;
-  opacity:0;animation:fadeIn .5s forwards;
-}
-.card:hover{
-  transform:translateY(-6px);
-  box-shadow:0 8px 25px rgba(0,0,0,0.1);
+.report-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  gap: 10px;
 }
 
-/* Card header */
-.card-header{
-  display:flex;
-  gap:10px;
-  padding:12px;
-  border-bottom:1px solid #DBDBDB;
-}
-.report-avatar,.comment-avatar{
-  width:44px;height:44px;border-radius:50%;
-  background:#DBDBDB;color:#fff;font-weight:bold;
-  display:flex;align-items:center;justify-content:center;
+.report-header .avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #405DE6, #833AB4);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  cursor: pointer;
 }
 
-/* Description/Image */
-.report-description{padding:12px;border-bottom:1px solid #f0f0f0;}
-.report-image img{width:100%;max-height:350px;object-fit:cover;display:block;margin-bottom:12px;}
-
-/* Footer & reactions */
-.card-footer{padding:12px;}
-.reaction-container{display:flex;align-items:center;gap:12px;font-weight:500;}
-.comment-toggle{cursor:pointer;color:#405DE6;font-weight:bold;}
-
-/* Comments */
-.report-comments{display:none;flex-direction:column;gap:8px;margin-top:8px;}
-.report-comments.active{display:flex;}
-.comment-item{
-  display:flex;gap:8px;padding:8px;border-radius:8px;
-  background:#fff;transition:.2s;
+.report-header .user-info {
+  display: flex;
+  flex-direction: column;
 }
-.comment-item:hover{background:#e6f0ff;}
-.comment-form{display:flex;gap:8px;margin-top:5px;}
-.comment-form input{flex:1;padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
-.comment-form button{background:#405DE6;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer}
+
+.report-header .username {
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+}
+
+.report-header .clinic {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.report-header .time {
+  font-size: 0.75rem;
+  color: #777;
+  display:block;
+  margin-top: 2px;
+}
+
+.report-image img {
+  width: 100%;
+  max-height: 500px;
+  object-fit: cover;
+  display: block;
+}
+
+.report-caption {
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.report-actions {
+  display: flex;
+  gap: 12px;
+  padding: 6px 12px;
+  align-items: center;
+}
+
+.report-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: transform 0.2s;
+}
+
+.report-actions button:hover {
+  transform: scale(1.1);
+}
+
+.comment-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.2s;
+  font-size: 1.3rem;
+  color: #444;
+}
+
+.comment-toggle:hover {
+  background: rgba(0,0,0,0.08);
+  transform: scale(1.1);
+}
+
+/* ========== COMMENTS ========== */
+.comments-section {
+  padding: 8px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.commentsList {
+  max-height: 250px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.comment-item {
+  background: #f3f0ff;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  word-wrap: break-word;
+}
+
+.comment-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.comment-header .username {
+  color: #833AB4;
+  cursor: pointer;
+}
+
+.comment-header .time {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+/* Comment avatars */
+.comment-avatar-img,
+.comment-avatar-initial {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(45deg, #405DE6, #833AB4);
+  color: #fff;
+  font-weight: bold;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.comment-avatar-img {
+  object-fit: cover;
+}
+
+.comment-avatar-initial a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+/* Comment input */
+.comment-input {
+  display: none;
+  margin-top: 8px;
+  gap: 6px;
+  align-items: center;
+}
+
+.comment-input input[type="text"] {
+  flex: 1;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
+}
+
+.comment-input button {
+  background: linear-gradient(45deg, #405DE6, #833AB4);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.25s, transform 0.2s;
+}
+
+.comment-input button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
 
 /* Mention dropdown */
-.mention-suggestions{
-  position:absolute;top:calc(100% + 4px);left:0;z-index:10000;
-  display:none;width:100%;max-height:150px;overflow-y:auto;
-  background:#fff;border:1px solid #ccc;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);
+.mentionBox {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  background: #fff;
+  position: absolute;
+  z-index: 1000;
+  width: 100%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
-.comment-form:focus-within .mention-suggestions{display:block;}
-.mention-suggestions div{padding:8px 12px;cursor:pointer;}
-.mention-suggestions div:hover{background:#405DE6;color:#fff;}
 
-/* Animations */
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.mentionBox .sItem {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.mentionBox .sItem:hover {
+  background-color: #f0f0f0;
+}
+
+.mention {
+  color: #405DE6;
+  font-weight: 600;
+  background: #e3f2fd;
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+/* ========== RESPONSIVE ====== */
+@media(max-width:600px){
+  .report-header .username, 
+  .report-header .clinic {
+    font-size: 0.9rem;
+  }
+
+  .report-caption,
+  .comment-item,
+  .comment-input input[type="text"] {
+    font-size: 0.85rem;
+  }
+
+  .report-actions button {
+    font-size: 1rem;
+  }
+}
