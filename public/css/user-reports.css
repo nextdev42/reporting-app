@@ -121,7 +121,10 @@ nav button:hover {
   flex-shrink: 0;
   overflow: hidden;
 }
-
+#nav-bell.highlight {
+  color: red;
+  font-weight: bold;
+}
 /* ========== AVATAR UPLOAD ========== */
 .avatar-upload {
   display: flex;
