@@ -42,7 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
           <span class="thumb-up">👍 <span class="count">${r.thumbs_up||0}</span></span>
           <span class="thumb-down">👎 <span class="count">${r.thumbs_down||0}</span></span>
         </div>
-        <span class="mention-bell">🔔 <span class="bell-count">0</span></span>
         <span class="comment-toggle">💬 ${totalComments} Maoni</span>
       </div>
       <div class="report-comments">
