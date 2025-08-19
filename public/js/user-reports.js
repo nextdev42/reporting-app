@@ -108,6 +108,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const input = form.comment;
   const suggestionBox = document.createElement('div');
   suggestionBox.className = 'mention-suggestions';
+  suggestionBox.style.position = 'fixed';
+  suggestionBox.style.background = '#fff';
+  suggestionBox.style.border = '1px solid #ccc';
+  suggestionBox.style.display = 'none';
+  suggestionBox.style.zIndex = 9999;
+  suggestionBox.style.maxHeight = '150px';
+  suggestionBox.style.overflowY = 'auto';
+
+// attach globally at bottom of <body>
+  document.body.appendChild(suggestionBox);
+  suggestionBox.className = 'mention-suggestions';
   suggestionBox.style.position = 'absolute';
   suggestionBox.style.background = '#fff';
   suggestionBox.style.border = '1px solid #ccc';
@@ -178,6 +189,10 @@ document.addEventListener("DOMContentLoaded", () => {
       selectedIndex = 0;
       updateSelection();
       suggestionBox.style.display = 'block';
+      const rect = input.getBoundingClientRect();
+      suggestionBox.style.top  = rect.bottom + 'px';
+      suggestionBox.style.left = rect.left + 'px';
+      suggestionBox.style.width = rect.width + 'px';
       setTimeout(() => { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
 
     } catch(err) {
