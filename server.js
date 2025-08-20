@@ -292,91 +292,61 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
   
 
 // ====== Get reports ======
-app.get("/api/reports", auth, async (req,res)=>{
+
+// GET /api/reports?username=...
+app.get("/api/reports", auth, async (req, res) => {
   try {
-    let { page=1, limit=15, clinic, username, search, startDate, endDate } = req.query;
-    page = parseInt(page); limit = parseInt(limit);
-    if(page<1) page=1;
+    const username = (req.query.username || "").toLowerCase();
+    let query = `
+      SELECT 
+        r.id, r.timestamp, r.title, r.description, r.image, r.user_id, 
+        u.username, u.clinic,
+        COALESCE(ru.thumbs_up, 0) AS thumbs_up,
+        COALESCE(ru.thumbs_down, 0) AS thumbs_down,
+        ru.user_thumb
+      FROM reports r
+      JOIN users u ON r.user_id = u.id
+      LEFT JOIN (
+        SELECT report_id,
+               SUM(CASE WHEN type='up' THEN 1 ELSE 0 END) AS thumbs_up,
+               SUM(CASE WHEN type='down' THEN 1 ELSE 0 END) AS thumbs_down,
+               MAX(CASE WHEN user_id=$1 THEN type END) AS user_thumb
+        FROM reactions
+        GROUP BY report_id
+      ) ru ON ru.report_id = r.id
+    `;
 
-    let whereClauses=[]; let params=[]; let idx=1;
-
-    if(clinic){ whereClauses.push(`u.kituo ILIKE $${idx++}`); params.push(`%${clinic}%`); }
-    if(username){ whereClauses.push(`u.jina ILIKE $${idx++}`); params.push(`%${username}%`); }
-    if(search){ 
-      whereClauses.push(`(
-        r.title ILIKE $${idx} OR 
-        r.description ILIKE $${idx} OR
-        EXISTS (SELECT 1 FROM comments c WHERE c.report_id=r.id AND c.comment ILIKE $${idx})
-      )`);
-      params.push(`%${search}%`); idx++;
+    const params = [req.session.user_id]; // logged-in user for their reaction
+    if (username) {
+      query += ` WHERE u.username = $2`;
+      params.push(username);
     }
-    if(startDate){ whereClauses.push(`r.timestamp >= $${idx++}`); params.push(new Date(startDate)); }
-    if(endDate){ const end = new Date(endDate); end.setHours(23,59,59,999); whereClauses.push(`r.timestamp <= $${idx++}`); params.push(end); }
 
-    const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+    query += ` ORDER BY r.id DESC`;
 
-    const countRes = await pool.query(`SELECT COUNT(*) FROM reports r JOIN users u ON r.user_id=u.id ${whereSQL}`, params);
-    const totalReports = parseInt(countRes.rows[0].count);
-    const totalPages = Math.ceil(totalReports/limit);
-    const offset = (page - 1) * limit;
+    const { rows: reports } = await pool.query(query, params);
 
-    const reportRes = await pool.query(
-  `SELECT r.*, u.username AS username, u.kituo AS clinic
-   FROM reports r
-   JOIN users u ON r.user_id=u.id
-   ${whereSQL}
-   ORDER BY r.id DESC
-   LIMIT $${idx++} OFFSET $${idx}`,
-  [...params, limit, offset]
-);
-
-    const reportIds = reportRes.rows.map(r=>r.id);
-
-    let comments = [];
-    if(reportIds.length){
-      const commentRes = await pool.query(
-        `SELECT c.*, u.jina AS username, u.kituo AS clinic
-         FROM comments c
-         JOIN users u ON c.user_id=u.id
-         WHERE report_id = ANY($1::int[])
-         ORDER BY c.id DESC`,
-        [reportIds]
+    // Attach comments
+    for (let r of reports) {
+      const { rows: comments } = await pool.query(
+        `SELECT c.comment, c.timestamp, u.username 
+         FROM comments c 
+         JOIN users u ON c.user_id = u.id 
+         WHERE c.report_id = $1
+         ORDER BY c.id ASC`,
+        [r.id]
       );
-      comments = commentRes.rows;
+      r.comments = comments;
     }
 
-    let reactions = [];
-    if(reportIds.length){
-      const reactRes = await pool.query(
-        `SELECT report_id,
-                COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
-                COUNT(*) FILTER (WHERE type='down') AS thumbs_down
-         FROM reactions
-         WHERE report_id = ANY($1::int[])
-         GROUP BY report_id`,
-        [reportIds]
-      );
-      reactions = reactRes.rows;
-    }
-
-    reportRes.rows.forEach(r=>{
-      r.comments = comments
-        .filter(c=>c.report_id===r.id)
-        .map(c=>({...c, timestamp: formatTanzaniaTime(c.timestamp)}));
-
-      const react = reactions.find(re=>re.report_id===r.id);
-      r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
-      r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
-
-      r.timestamp = formatTanzaniaTime(r.timestamp);
-    });
-
-    res.json({ reports: reportRes.rows, page, totalPages, totalReports, limit });
-  } catch(err){
+    res.json({ reports });
+  } catch (err) {
     console.error(err);
-    res.status(500).send("Tatizo kupata ripoti");
+    res.status(500).send("Error fetching reports");
   }
 });
+    
+      
 
 // ====== Add comment ======
 // ====== Add comment ======
