@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const username = (window.USERNAME || "").toLowerCase();
-  const loggedInUser = (window.LOGGED_IN_USER || "").toLowerCase();
-
+  const username     = (window.USERNAME      || "").toLowerCase();      // the profile being viewed
+  const loggedInUser = (window.LOGGED_IN_USER || "").toLowerCase();     // the person who is logged-in
   const navBell = document.getElementById('nav-bell');
 
   // --- Global bell update ---
