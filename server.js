@@ -356,7 +356,24 @@ app.get("/api/reports", auth, async (req, res) => {
 });
     
     
-      
+  app.get("/api/mentions", auth, async (req, res) => {
+  const username = req.session.username.toLowerCase();
+  try {
+    const { rows } = await pool.query(`
+      SELECT c.id AS comment_id, c.comment, c.report_id, r.title, r.user_id AS report_owner, u.username AS comment_user
+      FROM comments c
+      JOIN reports r ON c.report_id = r.id
+      JOIN users u ON c.user_id = u.id
+      WHERE LOWER(c.comment) LIKE '%' || $1 || '%'
+      ORDER BY c.timestamp DESC
+    `, [username]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Tatizo ku-fetch mentions");
+  }
+});    
 
 // ====== Add comment ======
 // ====== Add comment ======
