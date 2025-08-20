@@ -405,7 +405,49 @@ app.post("/api/comments/:id", auth, async (req,res)=>{
   }
 });
 
+app.get("/fix-usernames", async (req, res) => {
+  try {
+    // Generate new usernames for users missing them
+    const result = await pool.query(`
+      WITH base AS (
+        SELECT 
+          id,
+          LOWER(REPLACE(jina || ukoo, ' ', '')) AS base_username
+        FROM users
+        WHERE username IS NULL OR username = ''
+      ),
+      numbered AS (
+        SELECT 
+          id,
+          base_username,
+          ROW_NUMBER() OVER (PARTITION BY base_username ORDER BY id) AS rn
+        FROM base
+      ),
+      unique_usernames AS (
+        SELECT 
+          id,
+          CASE 
+            WHEN rn = 1 THEN base_username
+            ELSE base_username || rn
+          END AS new_username
+        FROM numbered
+      )
+      UPDATE users u
+      SET username = uu.new_username
+      FROM unique_usernames uu
+      WHERE u.id = uu.id
+      RETURNING u.id, u.jina, u.ukoo, u.username AS old_username, uu.new_username;
+    `);
 
+    res.json({
+      message: "✅ Usernames updated successfully!",
+      updated: result.rows
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("❌ Failed to update usernames");
+  }
+});
 // ====== React to report (with validation) ======
 app.post("/api/reactions/:reportId", auth, async (req, res) => {
   const { reportId } = req.params;
