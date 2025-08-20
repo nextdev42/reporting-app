@@ -6,17 +6,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const navBell = document.getElementById('nav-bell');
   if (!navBell) return;
 
+  const loggedUser = window.LOGGED_IN_USER?.trim().toLowerCase();
+  const profileUser = window.USERNAME?.trim().toLowerCase();
+
+  if (!loggedUser || !profileUser) {
+    navBell.style.display = 'none';
+    return;
+  }
+
+  // Only show bell on own profile
+  if (loggedUser !== profileUser) {
+    navBell.style.display = 'none';
+    return;
+  }
+
   let totalUnread = 0;
   document.querySelectorAll('.mention-count').forEach(el => {
     totalUnread += parseInt(el.textContent) || 0;
   });
 
-  const isOwner =
-    window.LOGGED_IN_USER &&
-    window.USERNAME &&
-    window.LOGGED_IN_USER.toLowerCase() === window.USERNAME.toLowerCase();
-
-  if (isOwner && totalUnread > 0) {
+  if (totalUnread > 0) {
     navBell.style.display = 'inline-block';
     navBell.querySelector('.bell-count').textContent = totalUnread;
     navBell.classList.add('highlight');
