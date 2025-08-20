@@ -1,39 +1,79 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const username = window.USERNAME;
-  const loggedInUser = window.LOGGED_IN_USER;
+  const username = (window.USERNAME || "").toLowerCase();
+  const loggedInUser = (window.LOGGED_IN_USER || "").toLowerCase();
 
-  function updateGlobalBell() {
   const navBell = document.getElementById('nav-bell');
   if (!navBell) return;
 
-  const loggedUser = window.LOGGED_IN_USER?.trim().toLowerCase();
-  const profileUser = window.USERNAME?.trim().toLowerCase();
+  function updateGlobalBell() {
+    if (!username || !loggedInUser) {
+      navBell.style.display = 'none';
+      return;
+    }
 
-  if (!loggedUser || !profileUser) {
-    navBell.style.display = 'none';
-    return;
+    let totalUnread = 0;
+
+    // Count unread mentions in all reports
+    document.querySelectorAll('.mention-count').forEach(el => {
+      const count = parseInt(el.textContent) || 0;
+      totalUnread += count;
+    });
+
+    // Only show bell if viewing own profile
+    const isOwner = loggedInUser === username;
+
+    if (isOwner && totalUnread > 0) {
+      navBell.style.display = 'inline-block';
+      navBell.querySelector('.bell-count').textContent = totalUnread;
+      navBell.classList.add('highlight');
+    } else {
+      navBell.style.display = 'none';
+      navBell.classList.remove('highlight');
+    }
   }
 
-  // Only show bell on own profile
-  if (loggedUser !== profileUser) {
-    navBell.style.display = 'none';
-    return;
-  }
+  // Force check of mentions for all cards
+  document.querySelectorAll('.card').forEach(card => {
+    const mentionEl = card.querySelector('.mention-count');
+    if (!mentionEl) return;
 
-  let totalUnread = 0;
-  document.querySelectorAll('.mention-count').forEach(el => {
-    totalUnread += parseInt(el.textContent) || 0;
+    const comments = card.querySelectorAll('.comment-item');
+    let unread = 0;
+
+    comments.forEach((c, idx) => {
+      const text = c.querySelector('.comment-text')?.textContent || "";
+      const key = `${card.dataset.reportId}_${idx}_@${loggedInUser}`;
+      const mentionRegex = new RegExp(`@${loggedInUser}\\b`, 'i');
+
+      if (mentionRegex.test(text) && !localStorage.getItem(key)) unread++;
+    });
+
+    mentionEl.textContent = unread;
   });
 
-  if (totalUnread > 0) {
-    navBell.style.display = 'inline-block';
-    navBell.querySelector('.bell-count').textContent = totalUnread;
-    navBell.classList.add('highlight');
-  } else {
-    navBell.style.display = 'none';
-    navBell.classList.remove('highlight');
-  }
-}
+  // Initial update
+  updateGlobalBell();
+
+  // Optional: click handler to mark mentions as read
+  document.querySelectorAll('.comment-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.card');
+      const comments = card.querySelectorAll('.comment-item');
+      comments.forEach((c, idx) => {
+        const text = c.querySelector('.comment-text')?.textContent || "";
+        const key = `${card.dataset.reportId}_${idx}_@${loggedInUser}`;
+        const mentionRegex = new RegExp(`@${loggedInUser}\\b`, 'i');
+        if (mentionRegex.test(text)) localStorage.setItem(key, 'read');
+      });
+      // Reset mention count and bell
+      const mentionEl = card.querySelector('.mention-count');
+      if (mentionEl) mentionEl.textContent = 0;
+      updateGlobalBell();
+    });
+  });
+});
+
+  
   function linkUsernames(text) {
     return text.replace(/@(\w+)/g, '<a href="/user/$1" class="mention">@$1</a>');
   }
