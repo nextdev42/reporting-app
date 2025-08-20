@@ -275,7 +275,7 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
     const report = result.rows[0];
 
     // Add username, clinic, thumbs, comments
-    report.username = req.session.jina;
+    report.username = req.session.username;
     report.clinic = req.session.kituo;
     report.thumbs_up = 0;
     report.thumbs_down = 0;
@@ -321,14 +321,14 @@ app.get("/api/reports", auth, async (req,res)=>{
     const offset = (page - 1) * limit;
 
     const reportRes = await pool.query(
-      `SELECT r.*, u.jina AS username, u.kituo AS clinic
-       FROM reports r
-       JOIN users u ON r.user_id=u.id
-       ${whereSQL}
-       ORDER BY r.id DESC
-       LIMIT $${idx++} OFFSET $${idx}`,
-      [...params, limit, offset]
-    );
+  `SELECT r.*, u.username AS username, u.kituo AS clinic
+   FROM reports r
+   JOIN users u ON r.user_id=u.id
+   ${whereSQL}
+   ORDER BY r.id DESC
+   LIMIT $${idx++} OFFSET $${idx}`,
+  [...params, limit, offset]
+);
 
     const reportIds = reportRes.rows.map(r=>r.id);
 
@@ -394,7 +394,7 @@ app.post("/api/comments/:id", auth, async (req,res)=>{
     const newComment = result.rows[0];
 
     // Add username, clinic, formatted timestamp
-    newComment.username = req.session.jina;
+    newComment.username = req.session.username;
     newComment.clinic = req.session.kituo;
     newComment.timestamp = formatTanzaniaTime(newComment.timestamp);
 
