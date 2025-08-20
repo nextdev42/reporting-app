@@ -7,13 +7,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!navBell) return;
 
   let totalUnread = 0;
-
-  // Count only mentions for the logged-in owner
   document.querySelectorAll('.mention-count').forEach(el => {
     totalUnread += parseInt(el.textContent) || 0;
   });
 
-  const isOwner = window.LOGGED_IN_USER === window.USERNAME; // owner check
+  const isOwner =
+    window.LOGGED_IN_USER &&
+    window.USERNAME &&
+    window.LOGGED_IN_USER.toLowerCase() === window.USERNAME.toLowerCase();
 
   if (isOwner && totalUnread > 0) {
     navBell.style.display = 'inline-block';
@@ -23,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     navBell.style.display = 'none';
     navBell.classList.remove('highlight');
   }
-  }
+}
   function linkUsernames(text) {
     return text.replace(/@(\w+)/g, '<a href="/user/$1" class="mention">@$1</a>');
   }
@@ -141,14 +142,24 @@ function createReportCard(r) {
   const mentionCountEl = card.querySelector('.mention-count');
 
   function checkMentions() {
-    let unread = 0;
-    r.comments.forEach((c, idx) => {
-      const key = `${r.id}_${idx}_@${window.LOGGED_IN_USER}`;
-      if (c.comment.includes('@' + window.LOGGED_IN_USER) && !localStorage.getItem(key)) unread++;
-    });
-    mentionCountEl.textContent = unread; // hidden, used for global bell
-    updateGlobalBell();
-  }
+  let unread = 0;
+
+  const you = window.LOGGED_IN_USER.toLowerCase();        // normalize
+  const mentionRegex = new RegExp(`@${you}\\b`, 'i');      // word boundary + case-insensitive
+
+  r.comments.forEach((c, idx) => {
+    const key = `${r.id}_${idx}_@${you}`;
+    if (
+      mentionRegex.test(c.comment.toLowerCase()) &&       // mention matches
+      !localStorage.getItem(key)                          // not marked read
+    ) {
+      unread++;
+    }
+  });
+
+  mentionCountEl.textContent = unread; // hidden on card
+  updateGlobalBell();
+}
 
   checkMentions();
 
