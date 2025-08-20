@@ -144,22 +144,41 @@ function createReportCard(r) {
   function checkMentions() {
   let unread = 0;
 
-  const you = window.LOGGED_IN_USER.toLowerCase();        // normalize
-  const mentionRegex = new RegExp(`@${you}\\b`, 'i');      // word boundary + case-insensitive
+  // Normalize logged-in username
+  const loggedUser = window.LOGGED_IN_USER?.trim().toLowerCase();
+  if (!loggedUser) return;
 
   r.comments.forEach((c, idx) => {
-    const key = `${r.id}_${idx}_@${you}`;
-    if (
-      mentionRegex.test(c.comment.toLowerCase()) &&       // mention matches
-      !localStorage.getItem(key)                          // not marked read
-    ) {
+    const commentText = c.comment.toLowerCase();
+    const key = `${r.id}_${idx}_@${loggedUser}`;
+
+    // Check if comment mentions the logged-in user and not marked read
+    if (commentText.includes(`@${loggedUser}`) && !localStorage.getItem(key)) {
       unread++;
     }
   });
 
-  mentionCountEl.textContent = unread; // hidden on card
+  mentionCountEl.textContent = unread; // update hidden count
   updateGlobalBell();
 }
+
+// When comment section opens, mark mentions as read
+toggleBtn.addEventListener('click', () => {
+  commentSection.classList.toggle('active');
+
+  if (commentSection.classList.contains('active')) {
+    const loggedUser = window.LOGGED_IN_USER?.trim().toLowerCase();
+    r.comments.forEach((c, idx) => {
+      const commentText = c.comment.toLowerCase();
+      const key = `${r.id}_${idx}_@${loggedUser}`;
+      if (commentText.includes(`@${loggedUser}`)) {
+        localStorage.setItem(key, 'read');
+      }
+    });
+    mentionCountEl.textContent = 0;
+    updateGlobalBell();
+  }
+});
 
   checkMentions();
 
