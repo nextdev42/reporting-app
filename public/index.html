@@ -17,7 +17,7 @@
 
       <!-- Login Form -->
       <form id="loginForm" action="/login" method="POST">
-        <input type="text" name="jina" placeholder="Jina" required>
+        <input type="text" name="username" placeholder="Jina au Username" required>
         <input type="password" name="password" placeholder="Password" required>
         <button type="submit">Ingia</button>
       </form>
@@ -79,6 +79,12 @@
       .catch(err => {
         console.log("User not logged in, staying on public page.");
       });
+
+    // ===== Convert username to lowercase before login submission =====
+    loginForm.addEventListener('submit', (e) => {
+      const usernameInput = loginForm.querySelector('input[name="username"]');
+      if(usernameInput) usernameInput.value = usernameInput.value.toLowerCase().trim();
+    });
   </script>
 </body>
 </html>
