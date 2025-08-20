@@ -31,7 +31,9 @@ const pool = new Pool({
 });
 
 // ====== Ensure tables exist ======
-async function initTables() {
+
+
+  async function initTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -41,6 +43,11 @@ async function initTables() {
       kituo TEXT NOT NULL,
       password TEXT NOT NULL
     );
+  `);
+
+  // 👇 Ensure username column is present and unique
+  await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
   `);
 
   await pool.query(`
@@ -87,7 +94,6 @@ async function initTables() {
 initTables();
 
 
-// Now static files
 
 // ====== Middleware ======
 
@@ -165,30 +171,47 @@ function formatTanzaniaTime(date) {
 
 
 // Register
+// Register
 app.post("/register", async (req,res)=>{
   const { jina, ukoo, namba, kituo, password, confirmPassword } = req.body;
   if(!jina||!ukoo||!namba||!kituo||!password||!confirmPassword) return res.status(400).send("Jaza sehemu zote muhimu.");
   if(password !== confirmPassword) return res.status(400).send("Password hazifanani.");
-  const exists = await pool.query("SELECT * FROM users WHERE LOWER(jina) = LOWER($1)",[jina]);
-  if(exists.rows.length>0) return res.status(400).send("Jina tayari limechukuliwa.");
+
+  // generate username e.g. johndoe
+  const rawUsername = (jina + ukoo).replace(/\s+/g,'').toLowerCase();
+
+  // check uniqueness
+  const exists = await pool.query("SELECT * FROM users WHERE username=$1",[rawUsername]);
+  if(exists.rows.length>0) return res.status(400).send("Username tayari limechukuliwa, tumia jina tofauti.");
+
   const hash = await bcrypt.hash(password,10);
-  await pool.query("INSERT INTO users(jina,ukoo,namba,kituo,password) VALUES($1,$2,$3,$4,$5)",[jina,ukoo,namba,kituo,hash]);
+
+  await pool.query(
+    "INSERT INTO users(jina,ukoo,namba,kituo,username,password) VALUES($1,$2,$3,$4,$5,$6)",
+    [jina,ukoo,namba,kituo,rawUsername,hash]
+  );
   res.redirect("/index.html");
 });
 
 // Login
+// Login
 app.post("/login", async (req,res)=>{
-  const { jina, password } = req.body;
-  if(!jina||!password) return res.status(400).send("Jaza jina na password.");
-  const r = await pool.query("SELECT * FROM users WHERE LOWER(jina)=LOWER($1)",[jina]);
+  const { username, password } = req.body; // changed!
+
+  if(!username||!password) return res.status(400).send("Jaza username na password.");
+  const r = await pool.query("SELECT * FROM users WHERE username=$1",[username.toLowerCase()]);
   const user = r.rows[0];
-  if(!user) return res.status(400).send("Jina halijarejistri.");
+  if(!user) return res.status(400).send("User hajapatikana.");
   const ok = await bcrypt.compare(password,user.password);
   if(!ok) return res.status(400).send("Password si sahihi.");
+
+  // Save to session
   req.session.userId = user.id;
+  req.session.username = user.username;  // <--- username in session
   req.session.jina = user.jina;
   req.session.kituo = user.kituo;
-  res.redirect("/dashboard.html");
+
+  res.redirect(`/user/${user.username}`);
 });
 
 // Dashboard
@@ -209,17 +232,8 @@ app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req
 
 // List of all users for mention dropdown
 app.get("/api/users", auth, async (req, res) => {
-  try {
-    const r = await pool.query("SELECT DISTINCT LOWER(jina) AS jina FROM users ORDER BY LOWER(jina) ASC");
-    
-    // Capitalize first letter (optional)
-    const users = r.rows.map(u => u.jina.charAt(0).toUpperCase() + u.jina.slice(1));
-    
-    res.json(users);
-  } catch (err) {
-    console.error("Error fetching users", err);
-    res.status(500).send("Server error");
-  }
+  const result = await pool.query("SELECT username FROM users ORDER BY username ASC");
+  res.json(result.rows.map(u=>u.username)); // return just the lowercase username
 });
 
 // Route to show all reports of a specific user
@@ -230,8 +244,8 @@ app.get("/api/users", auth, async (req, res) => {
 // Route to render user page
 app.get("/user/:username", auth, (req, res) => {
   res.render("user-reports", { 
-    username: req.params.username,    // The user whose page is being viewed
-    loggedInUser: req.session.jina    // The currently logged-in user
+    username: req.params.username.toLowerCase(),   // profile being viewed
+    loggedInUser: req.session.username             // currently logged in
   });
 });
     
