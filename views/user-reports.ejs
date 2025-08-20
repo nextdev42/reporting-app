@@ -19,6 +19,13 @@
     <span>Umeingia kama: <strong><%= loggedInUser %></strong></span>
     <button onclick="location.href='/dashboard.html'">Nyumbani</button>
     <button onclick="location.href='/logout'">Toka</button>
+    <!-- Mention bell -->
+    <span id="mention-bell" style="cursor:pointer; margin-left:15px;">
+      🔔 <span id="mention-count"></span>
+    </span>
+    <div id="mentions-dropdown" style="display:none; position:absolute; background:#fff; border:1px solid #ccc; width:300px; max-height:400px; overflow-y:auto; z-index:1000;">
+      <div id="mentions-list"></div>
+    </div>
   </div>
 </nav>
 
@@ -28,26 +35,24 @@
     <div class="info">
       <h2>Ripoti za <strong><%= username %></strong></h2>
       <div class="stats">
-  <span id="totalPosts">Ripoti 0</span>
-  <span id="totalThumbsUp">👍 0</span>
-  <span id="totalThumbsDown">👎 0</span>
-  <!-- Global mention bell -->
- <span id="nav-bell" style="display:none;">
-  🔔 <span class="bell-count">0</span>
-</span>
-</div>
+        <span id="totalPosts">Ripoti 0</span>
+        <span id="totalThumbsUp">👍 0</span>
+        <span id="totalThumbsDown">👎 0</span>
+      </div>
       <% if(username === loggedInUser){ %>
-     <form id="avatarForm" class="avatar-upload">
-     <label for="avatarInput" class="custom-file-btn">Chagua Faili</label>
-    <input id="avatarInput" type="file" name="avatar" accept="image/*">
-    <button type="submit">Sasisha Avatar</button>
-  </form>
-  <% } %>
+      <form id="avatarForm" class="avatar-upload">
+        <label for="avatarInput" class="custom-file-btn">Chagua Faili</label>
+        <input id="avatarInput" type="file" name="avatar" accept="image/*">
+        <button type="submit">Sasisha Avatar</button>
+      </form>
+      <% } %>
     </div>
   </div>
 
   <div id="reports-container" class="reports-grid"></div>
 </div>
 
+<!-- Main JS -->
+<script src="/js/main.js"></script>
 </body>
 </html>
