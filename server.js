@@ -252,9 +252,13 @@ app.get("/user/:username", auth, (req, res) => {
     
 // ====== Submit report ======
 
+
+
+    // ====== Submit report ======
 app.post("/submit", auth, upload.single("image"), async (req, res) => {
   const { title, description } = req.body;
-  if (!title || !description) return res.status(400).json({ error: "Jaza title na description." });
+  if (!title || !description) 
+    return res.status(400).json({ error: "Jaza title na description." });
 
   let imageUrl = "";
   if (req.file) {
@@ -268,21 +272,22 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
 
   try {
     const result = await pool.query(
-      "INSERT INTO reports(timestamp, user_id, title, description, image) VALUES($1,$2,$3,$4,$5) RETURNING *",
+      `INSERT INTO reports(timestamp, user_id, title, description, image) 
+       VALUES($1,$2,$3,$4,$5) RETURNING *`,
       [getTanzaniaTimestamp(), req.session.userId, title, description, imageUrl]
     );
 
     const report = result.rows[0];
 
-    // Add username, clinic, thumbs, comments
+    // Attach extra fields for frontend
     report.username = req.session.username;
-    report.clinic = req.session.kituo;
+    report.clinic = req.session.kituo;  // use `kituo` as clinic
     report.thumbs_up = 0;
     report.thumbs_down = 0;
     report.comments = [];
     report.timestamp = formatTanzaniaTime(report.timestamp);
 
-    res.json(report); // <-- return JSON instead of redirect
+    res.json(report);  // frontend receives JSON and can render immediately
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Tatizo ku-hifadhi ripoti" });
@@ -294,13 +299,14 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
 // ====== Get reports ======
 
 // GET /api/reports?username=...
+
 app.get("/api/reports", auth, async (req, res) => {
   try {
     const username = (req.query.username || "").toLowerCase();
     let query = `
       SELECT 
         r.id, r.timestamp, r.title, r.description, r.image, r.user_id, 
-        u.username, u.clinic,
+        u.username, u.kituo AS clinic,
         COALESCE(ru.thumbs_up, 0) AS thumbs_up,
         COALESCE(ru.thumbs_down, 0) AS thumbs_down,
         ru.user_thumb
@@ -316,7 +322,7 @@ app.get("/api/reports", auth, async (req, res) => {
       ) ru ON ru.report_id = r.id
     `;
 
-    const params = [req.session.user_id]; // logged-in user for their reaction
+    const params = [req.session.userId]; // correct session variable
     if (username) {
       query += ` WHERE u.username = $2`;
       params.push(username);
@@ -336,15 +342,19 @@ app.get("/api/reports", auth, async (req, res) => {
          ORDER BY c.id ASC`,
         [r.id]
       );
-      r.comments = comments;
+      r.comments = comments.map(c => ({
+        ...c,
+        timestamp: formatTanzaniaTime(c.timestamp)
+      }));
     }
 
     res.json({ reports });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error fetching reports");
+    res.status(500).send("Hitilafu katika kupakia ripoti");
   }
 });
+    
     
       
 
