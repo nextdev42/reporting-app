@@ -69,10 +69,10 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="card-footer">
         <div class="reaction-container">
           <div class="report-thumbs">
-            <span class="thumb-up">👍 <span class="count">${r.thumbs_up || 0}</span></span>
-            <span class="thumb-down">👎 <span class="count">${r.thumbs_down || 0}</span></span>
-            <span class="mention-count" style="display:none">0</span>
-          </div>
+         <span class="thumb-up">👍 <span class="count">${parseInt(r.thumbs_up,10) || 0}</span></span>
+         <span class="thumb-down">👎 <span class="count">${parseInt(r.thumbs_down,10) || 0}</span></span>
+         <span class="mention-count" style="display:none">0</span>
+         </div>
           <span class="comment-toggle">💬 ${totalComments} Maoni</span>
         </div>
 
@@ -102,9 +102,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!res.ok) { alert(await res.text() || "Tatizo kupiga thumb"); return; }
         const data = await res.json();
 
-        thumbsUp.querySelector(".count").textContent = data.thumbs_up;
-        thumbsDown.querySelector(".count").textContent = data.thumbs_down;
-
+        thumbsUp.querySelector(".count").textContent = parseInt(data.thumbs_up, 10) || 0;
+        thumbsDown.querySelector(".count").textContent = parseInt(data.thumbs_down, 10) || 0;
         if (type === "up") {
           thumbsUp.classList.add("reacted");
           thumbsDown.classList.remove("reacted");
@@ -116,11 +115,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // Update global thumbs
         let totalUp = 0, totalDown = 0;
         document.querySelectorAll(".card").forEach(c => {
-          totalUp += parseInt(c.querySelector(".thumb-up .count").textContent) || 0;
-          totalDown += parseInt(c.querySelector(".thumb-down .count").textContent) || 0;
-        });
-        document.getElementById('totalThumbsUp').textContent = `👍 ${totalUp}`;
-        document.getElementById('totalThumbsDown').textContent = `👎 ${totalDown}`;
+        totalUp += parseInt(c.querySelector(".thumb-up .count").textContent, 10) || 0;
+        totalDown += parseInt(c.querySelector(".thumb-down .count").textContent, 10) || 0;
+       });
+
+      document.getElementById('totalThumbsUp').textContent = `👍 ${totalUp}`;
+      document.getElementById('totalThumbsDown').textContent = `👎 ${totalDown}`;
       } catch(err){ console.error(err); alert("Tatizo kupiga thumb"); }
     }
 
@@ -244,17 +244,16 @@ document.addEventListener("DOMContentLoaded", () => {
       let totalPosts = 0, totalUp = 0, totalDown = 0;
 
       data.reports.forEach(r => {
-        const card = createReportCard(r);
-        wrap.appendChild(card);
-        totalPosts++;
-        totalUp += r.thumbs_up || 0;
-        totalDown += r.thumbs_down || 0;
-      });
+     const card = createReportCard(r);
+     wrap.appendChild(card);
+     totalPosts++;
+    totalUp += parseInt(r.thumbs_up, 10) || 0;
+    totalDown += parseInt(r.thumbs_down, 10) || 0;
+});
 
-      document.getElementById('totalPosts').textContent = "Ripoti " + totalPosts;
-      document.getElementById('totalThumbsUp').textContent = `👍 ${totalUp}`;
-      document.getElementById('totalThumbsDown').textContent = `👎 ${totalDown}`;
-
+   document.getElementById('totalPosts').textContent = "Ripoti " + totalPosts;
+   document.getElementById('totalThumbsUp').textContent = `👍 ${totalUp}`;
+   document.getElementById('totalThumbsDown').textContent = `👎 ${totalDown}`;
       // After cards loaded, update mentions and bell
       document.querySelectorAll('.card').forEach(checkCard => {
         const evt = new Event('checkMentions');
