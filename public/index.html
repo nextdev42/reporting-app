@@ -71,18 +71,19 @@
     });
 
     // ===== Frontend redirect for logged-in users =====
-    fetch("/api/user")
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error("Not logged in");
-      })
-      .then(user => {
-        // Redirect logged-in user to their profile
-        window.location.href = `/user/${encodeURIComponent(user.jina)}`;
-      })
-      .catch(err => {
-        console.log("User not logged in, staying on public page.");
-      });
+    // ===== Frontend redirect for logged-in users =====
+   fetch("/api/user")
+  .then(res => {
+    if (res.ok) return res.json();
+    throw new Error("Not logged in");
+  })
+  .then(user => {
+    // Redirect logged-in user to their profile using username
+    window.location.href = `/user/${encodeURIComponent(user.username)}`;
+  })
+  .catch(err => {
+    console.log("User not logged in, staying on public page.");
+  });
   </script>
 </body>
 </html>
