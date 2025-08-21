@@ -518,20 +518,29 @@ app.post("/api/comments/:id", auth, async (req,res)=>{
   if(!comment) return res.status(400).json({ error: "Andika maoni." });
 
   try {
-    // Insert comment
     const result = await pool.query(
       "INSERT INTO comments(report_id,user_id,timestamp,comment) VALUES($1,$2,$3,$4) RETURNING *",
       [req.params.id, req.session.userId, getTanzaniaTimestamp(), comment]
     );
 
     const newComment = result.rows[0];
+    newComment.username = req.session.username;
+    newComment.clinic = req.session.kituo;
+    newComment.timestamp = formatTanzaniaTime(newComment.timestamp);
 
-    // Add username, clinic, formatted timestamp
-    // Add username, clinic, formatted timestamp
-     newComment.username = req.session.username; // now uses unique username
-     newComment.clinic = req.session.kituo;
-     newComment.timestamp = formatTanzaniaTime(newComment.timestamp);
-    res.json(newComment); // <-- frontend can now render immediately
+    // Add thumbs
+    const thumbsRes = await pool.query(
+      `SELECT
+         SUM(CASE WHEN type='up' THEN 1 ELSE 0 END) AS thumbs_up,
+         SUM(CASE WHEN type='down' THEN 1 ELSE 0 END) AS thumbs_down
+       FROM comment_reactions WHERE comment_id=$1`,
+      [newComment.id]
+    );
+    newComment.thumbs_up = parseInt(thumbsRes.rows[0].thumbs_up) || 0;
+    newComment.thumbs_down = parseInt(thumbsRes.rows[0].thumbs_down) || 0;
+
+    res.json(newComment);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Tatizo ku-hifadhi comment" });
@@ -625,7 +634,50 @@ app.post("/api/reactions/:reportId", auth, async (req, res) => {
     res.status(500).send("Tatizo ku-react");
   }
 });
+// ====== React to comment ======
+app.post("/api/comment-reactions/:commentId", auth, async (req, res) => {
+  const { type } = req.body;
+  const { commentId } = req.params;
+  const userId = req.session.userId;
 
+  if (!["up","down"].includes(type)) return res.status(400).send("Invalid reaction type.");
+
+  try {
+    const commentRes = await pool.query("SELECT user_id FROM comments WHERE id=$1", [commentId]);
+    if (!commentRes.rows.length) return res.status(404).send("Comment not found.");
+
+    if (commentRes.rows[0].user_id === userId)
+      return res.status(403).send("Huwezi kutoa thumbs kwenye comment yako.");
+
+    const existing = await pool.query(
+      "SELECT * FROM comment_reactions WHERE comment_id=$1 AND user_id=$2",
+      [commentId, userId]
+    );
+    if (existing.rows.length) return res.status(400).send("Umesha toa thumbs kwenye comment hii.");
+
+    await pool.query(
+      "INSERT INTO comment_reactions(comment_id, user_id, type) VALUES($1,$2,$3)",
+      [commentId, userId, type]
+    );
+
+    const thumbs = await pool.query(
+      `SELECT
+         SUM(CASE WHEN type='up' THEN 1 ELSE 0 END) AS thumbs_up,
+         SUM(CASE WHEN type='down' THEN 1 ELSE 0 END) AS thumbs_down
+       FROM comment_reactions WHERE comment_id=$1`,
+      [commentId]
+    );
+
+    res.json({
+      thumbs_up: parseInt(thumbs.rows[0].thumbs_up) || 0,
+      thumbs_down: parseInt(thumbs.rows[0].thumbs_down) || 0
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Tatizo ku-react kwenye comment");
+  }
+});
 // ====== Start server ======
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
