@@ -57,7 +57,7 @@ async function loadGreeting() {
   else if (hour >= 17 && hour < 21) greeting = "Habari ya jioni";
   else greeting = "Habari usiku";
 
-  greetingEl.innerHTML = `${greeting} <a href="/user/${currentUser.jina}" class="greeting-user">${currentUser.jina}</a> ${currentUser.kituo}`;
+  greetingEl.innerHTML = `${greeting} <a href="/user/${currentUser.username}" class="greeting-user">${currentUser.jina}</a> ${currentUser.kituo}`;
   // fetch usernames for mention
   const r = await fetch("/api/users");
   allUsers = await r.json();
