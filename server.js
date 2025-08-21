@@ -31,7 +31,10 @@ const pool = new Pool({
 });
 
 // ====== Ensure tables exist ======
+
+// ====== Ensure tables exist & migrate username ======
 async function initTables() {
+  // Users table
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -43,6 +46,33 @@ async function initTables() {
     );
   `);
 
+  // Add username column if missing
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+  `);
+  console.log("✅ Users table and username column ensured");
+
+  // Populate username for existing users (jina+ukoo)
+  const res = await pool.query("SELECT id, jina, ukoo FROM users WHERE username IS NULL");
+  for (const user of res.rows) {
+    let baseUsername = (user.jina + user.ukoo).replace(/\s+/g, '').toLowerCase();
+    let username = baseUsername;
+    let counter = 1;
+
+    // Ensure uniqueness
+    while (true) {
+      const exists = await pool.query("SELECT 1 FROM users WHERE username=$1", [username]);
+      if (exists.rows.length === 0) break;
+      username = baseUsername + counter;
+      counter++;
+    }
+
+    await pool.query("UPDATE users SET username=$1 WHERE id=$2", [username, user.id]);
+    console.log(`✅ Existing user ${user.jina} ${user.ukoo} assigned username: ${username}`);
+  }
+
+  // Session table
   await pool.query(`
     CREATE TABLE IF NOT EXISTS session (
       sid VARCHAR(255) PRIMARY KEY NOT NULL,
@@ -51,6 +81,7 @@ async function initTables() {
     );
   `);
 
+  // Reports table
   await pool.query(`
     CREATE TABLE IF NOT EXISTS reports (
       id SERIAL PRIMARY KEY,
@@ -62,6 +93,7 @@ async function initTables() {
     );
   `);
 
+  // Comments table
   await pool.query(`
     CREATE TABLE IF NOT EXISTS comments (
       id SERIAL PRIMARY KEY,
@@ -72,6 +104,7 @@ async function initTables() {
     );
   `);
 
+  // Reactions table
   await pool.query(`
     CREATE TABLE IF NOT EXISTS reactions (
       id SERIAL PRIMARY KEY,
@@ -82,11 +115,11 @@ async function initTables() {
     );
   `);
 
-  console.log("✅ Tables ensured");
+  console.log("✅ All tables ensured and existing users migrated with username");
 }
+
+// Call it at startup
 initTables();
-
-
 // Now static files
 
 // ====== Middleware ======
@@ -165,29 +198,50 @@ function formatTanzaniaTime(date) {
 
 
 // Register
+// Register
 app.post("/register", async (req,res)=>{
-  const { jina, ukoo, namba, kituo, password, confirmPassword } = req.body;
-  if(!jina||!ukoo||!namba||!kituo||!password||!confirmPassword) return res.status(400).send("Jaza sehemu zote muhimu.");
+  const { jina, ukoo, namba, kituo, username, password, confirmPassword } = req.body;
+  
+  if(!jina || !ukoo || !namba || !kituo || !username || !password || !confirmPassword)
+    return res.status(400).send("Jaza sehemu zote muhimu.");
+  
   if(password !== confirmPassword) return res.status(400).send("Password hazifanani.");
-  const exists = await pool.query("SELECT * FROM users WHERE LOWER(jina) = LOWER($1)",[jina]);
-  if(exists.rows.length>0) return res.status(400).send("Jina tayari limechukuliwa.");
-  const hash = await bcrypt.hash(password,10);
-  await pool.query("INSERT INTO users(jina,ukoo,namba,kituo,password) VALUES($1,$2,$3,$4,$5)",[jina,ukoo,namba,kituo,hash]);
+
+  // Check if username already exists
+  const exists = await pool.query("SELECT * FROM users WHERE LOWER(username) = LOWER($1)", [username]);
+  if(exists.rows.length > 0) return res.status(400).send("Username tayari imechukuliwa.");
+
+  const hash = await bcrypt.hash(password, 10);
+
+  await pool.query(
+    "INSERT INTO users(jina, ukoo, namba, kituo, username, password) VALUES($1,$2,$3,$4,$5,$6)",
+    [jina, ukoo, namba, kituo, username, hash]
+  );
+
   res.redirect("/index.html");
 });
 
 // Login
+// Login
 app.post("/login", async (req,res)=>{
-  const { jina, password } = req.body;
-  if(!jina||!password) return res.status(400).send("Jaza jina na password.");
-  const r = await pool.query("SELECT * FROM users WHERE LOWER(jina)=LOWER($1)",[jina]);
+  const { username, password } = req.body;
+
+  if(!username || !password) return res.status(400).send("Jaza username na password.");
+
+  const r = await pool.query("SELECT * FROM users WHERE LOWER(username)=LOWER($1)", [username]);
   const user = r.rows[0];
-  if(!user) return res.status(400).send("Jina halijarejistri.");
-  const ok = await bcrypt.compare(password,user.password);
+
+  if(!user) return res.status(400).send("Username haijarejistri.");
+
+  const ok = await bcrypt.compare(password, user.password);
   if(!ok) return res.status(400).send("Password si sahihi.");
+
+  // Set session
   req.session.userId = user.id;
+  req.session.username = user.username; // <-- use username for session
   req.session.jina = user.jina;
   req.session.kituo = user.kituo;
+
   res.redirect("/dashboard.html");
 });
 
@@ -210,10 +264,10 @@ app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req
 // List of all users for mention dropdown
 app.get("/api/users", auth, async (req, res) => {
   try {
-    const r = await pool.query("SELECT DISTINCT LOWER(jina) AS jina FROM users ORDER BY LOWER(jina) ASC");
+    const r = await pool.query("SELECT DISTINCT username FROM users ORDER BY LOWER(username) ASC");
     
-    // Capitalize first letter (optional)
-    const users = r.rows.map(u => u.jina.charAt(0).toUpperCase() + u.jina.slice(1));
+    // Optional: capitalize first letter
+    const users = r.rows.map(u => u.username.charAt(0).toUpperCase() + u.username.slice(1));
     
     res.json(users);
   } catch (err) {
@@ -230,8 +284,8 @@ app.get("/api/users", auth, async (req, res) => {
 // Route to render user page
 app.get("/user/:username", auth, (req, res) => {
   res.render("user-reports", { 
-    username: req.params.username,    // The user whose page is being viewed
-    loggedInUser: req.session.jina    // The currently logged-in user
+    username: req.params.username,    // profile being viewed
+    loggedInUser: req.session.username // currently logged-in user's username
   });
 });
     
@@ -307,26 +361,27 @@ app.get("/api/reports", auth, async (req,res)=>{
     const offset = (page - 1) * limit;
 
     const reportRes = await pool.query(
-      `SELECT r.*, u.jina AS username, u.kituo AS clinic
-       FROM reports r
-       JOIN users u ON r.user_id=u.id
-       ${whereSQL}
-       ORDER BY r.id DESC
-       LIMIT $${idx++} OFFSET $${idx}`,
-      [...params, limit, offset]
+     `SELECT r.*, u.username AS username, u.kituo AS clinic
+      FROM reports r
+      JOIN users u ON r.user_id=u.id
+     ${whereSQL}
+    ORDER BY r.id DESC
+     LIMIT $${idx++} OFFSET $${idx}`,
+    [...params, limit, offset]
+
     );
 
     const reportIds = reportRes.rows.map(r=>r.id);
 
     let comments = [];
     if(reportIds.length){
-      const commentRes = await pool.query(
-        `SELECT c.*, u.jina AS username, u.kituo AS clinic
-         FROM comments c
-         JOIN users u ON c.user_id=u.id
-         WHERE report_id = ANY($1::int[])
-         ORDER BY c.id DESC`,
-        [reportIds]
+    const commentRes = await pool.query(
+    `SELECT c.*, u.username AS username, u.kituo AS clinic
+     FROM comments c
+     JOIN users u ON c.user_id=u.id
+     WHERE report_id = ANY($1::int[])
+     ORDER BY c.id DESC`,
+    [reportIds]
       );
       comments = commentRes.rows;
     }
