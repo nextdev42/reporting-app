@@ -315,13 +315,14 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
     const report = result.rows[0];
 
     // Add username, clinic, thumbs, comments
-    report.username = req.session.jina;
+    // Add username, clinic, thumbs, comments
+    // Add username, clinic, thumbs, comments
+    report.username = req.session.username; // now uses unique username
     report.clinic = req.session.kituo;
     report.thumbs_up = 0;
     report.thumbs_down = 0;
     report.comments = [];
-    report.timestamp = formatTanzaniaTime(report.timestamp);
-
+    report.timestamp = formatTanzaniaTime(report.timestamp);(report.timestamp);
     res.json(report); // <-- return JSON instead of redirect
   } catch (err) {
     console.error(err);
@@ -435,10 +436,10 @@ app.post("/api/comments/:id", auth, async (req,res)=>{
     const newComment = result.rows[0];
 
     // Add username, clinic, formatted timestamp
-    newComment.username = req.session.jina;
-    newComment.clinic = req.session.kituo;
-    newComment.timestamp = formatTanzaniaTime(newComment.timestamp);
-
+    // Add username, clinic, formatted timestamp
+     newComment.username = req.session.username; // now uses unique username
+     newComment.clinic = req.session.kituo;
+     newComment.timestamp = formatTanzaniaTime(newComment.timestamp);
     res.json(newComment); // <-- frontend can now render immediately
   } catch (err) {
     console.error(err);
