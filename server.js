@@ -342,7 +342,7 @@ app.get("/api/reports", auth, async (req,res)=>{
     let whereClauses=[]; let params=[]; let idx=1;
 
     if(clinic){ whereClauses.push(`u.kituo ILIKE $${idx++}`); params.push(`%${clinic}%`); }
-    if(username){ whereClauses.push(`u.jina ILIKE $${idx++}`); params.push(`%${username}%`); }
+    if(username){ whereClauses.push(`u.username ILIKE $${idx++}`); params.push(`%${username}%`); }
     if(search){ 
       whereClauses.push(`(
         r.title ILIKE $${idx} OR 
