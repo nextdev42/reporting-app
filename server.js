@@ -242,11 +242,50 @@ app.get("/api/users", auth, async (req, res) => {
 
 
 // Route to render user page
-app.get("/user/:username", auth, (req, res) => {
-  res.render("user-reports", { 
-    username: req.params.username.toLowerCase(),   // profile being viewed
-    loggedInUser: req.session.username             // currently logged in
-  });
+app.get("/user/:username", auth, async (req, res) => {
+  try {
+    const username = req.params.username.toLowerCase();
+
+    // Find the user ID
+    const userRes = await pool.query("SELECT id, kituo FROM users WHERE username=$1", [username]);
+    if (!userRes.rows.length) return res.status(404).send("User not found");
+    const userId = userRes.rows[0].id;
+    const clinic = userRes.rows[0].kituo;
+
+    // Fetch reports for this user
+    const reportsRes = await pool.query(
+      `SELECT r.*, 
+              COALESCE(ru.thumbs_up, 0) AS thumbs_up,
+              COALESCE(ru.thumbs_down, 0) AS thumbs_down
+       FROM reports r
+       LEFT JOIN (
+         SELECT report_id,
+                SUM(CASE WHEN type='up' THEN 1 ELSE 0 END) AS thumbs_up,
+                SUM(CASE WHEN type='down' THEN 1 ELSE 0 END) AS thumbs_down
+         FROM reactions
+         GROUP BY report_id
+       ) ru ON ru.report_id = r.id
+       WHERE r.user_id = $1
+       ORDER BY r.id DESC`,
+      [userId]
+    );
+
+    const reports = reportsRes.rows.map(r => ({
+      ...r,
+      timestamp: formatTanzaniaTime(r.timestamp),
+      comments: [] // optional: fetch comments if needed
+    }));
+
+    res.render("user-reports", {
+      username,
+      loggedInUser: req.session.username,
+      clinic,
+      reports
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Tatizo kuonyesha ripoti za mtumiaji");
+  }
 });
     
     
