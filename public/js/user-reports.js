@@ -188,17 +188,8 @@ form.addEventListener('submit', async e => {
     if (!res.ok) { alert(await res.text() || "Tatizo ku-tuma comment"); return; }
     const newComment = await res.json();
 
-    // Append new comment (with linked mentions)
-    const li = document.createElement('li');
-    li.className = 'comment-item';
-    li.innerHTML = `
-      <div class="comment-avatar"><a href="/user/${newComment.username}">${newComment.username.charAt(0).toUpperCase()}</a></div>
-      <div>
-        <div class="comment-user"><a href="/user/${newComment.username}">${newComment.username}</a></div>
-        <div class="comment-text">${linkUsernames(newComment.comment)}</div>
-        <div class="comment-time">${newComment.timestamp}</div>
-      </div>`;
-    ul.prepend(li);
+    // Append new comment with thumbs buttons
+    renderComment(newComment, r.comments.length); // use the renderComment function
 
     // Clear input
     input.value = '';
@@ -211,10 +202,11 @@ form.addEventListener('submit', async e => {
     const currentCount = parseInt(countEl.textContent.match(/\d+/)) || 0;
     countEl.textContent = `💬 ${currentCount + 1} Maoni`;
 
-    // ✅ Immediately check mentions on this new comment
+    // ✅ Check mentions on this new comment
     if (newComment.comment.includes('@' + loggedInUser)) {
       const key = `${r.id}_${r.comments.length - 1}_@${loggedInUser}`;
       if (!localStorage.getItem(key)) {
+        const mentionCountEl = card.querySelector('.mention-count');
         mentionCountEl.textContent = parseInt(mentionCountEl.textContent) + 1;
         updateGlobalBell();
       }
