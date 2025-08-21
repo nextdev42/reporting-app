@@ -257,29 +257,31 @@ app.get("/logout", (req,res)=>{
 });
 
 // User info
-app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req.session.kituo}));
+app.get("/api/user", auth, (req,res)=>res.json({
+  username: req.session.username,
+  jina: req.session.jina,
+  kituo: req.session.kituo
+}));
 
 
 // List of all users for mention dropdown
 app.get("/api/users", auth, async (req, res) => {
   try {
+    const search = (req.query.search || "").trim().toLowerCase();
+
     const r = await pool.query(`
       SELECT username
-      FROM (
-        SELECT DISTINCT username
-        FROM users
-      ) AS sub
+      FROM users
+      WHERE username IS NOT NULL AND username <> ''
+      AND username ILIKE $1
       ORDER BY LOWER(username) ASC
-    `);
+    `, [`%${search}%`]);
 
-    // Prepare data with system vs display versions
-    const users = r.rows
-      .map(u => u.username.trim())
-      .filter(u => u.length > 0)
-      .map(u => ({
-        username: u, // system username
-        display: u.charAt(0).toUpperCase() + u.slice(1) // display-friendly
-      }));
+    const users = r.rows.map(u => u.username.trim())
+                       .map(u => ({
+                         username: u,
+                         display: u.charAt(0).toUpperCase() + u.slice(1)
+                       }));
 
     res.json(users);
   } catch (err) {
