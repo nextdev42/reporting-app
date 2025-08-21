@@ -263,10 +263,24 @@ app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req
 // List of all users for mention dropdown
 app.get("/api/users", auth, async (req, res) => {
   try {
-    const r = await pool.query("SELECT DISTINCT username FROM users ORDER BY LOWER(username) ASC");
-    
-    // Optional: capitalize first letter
-    const users = r.rows.map(u => u.username);
+    const r = await pool.query(`
+      SELECT username
+      FROM (
+        SELECT DISTINCT username
+        FROM users
+      ) AS sub
+      ORDER BY LOWER(username) ASC
+    `);
+
+    // Prepare data with system vs display versions
+    const users = r.rows
+      .map(u => u.username.trim())
+      .filter(u => u.length > 0)
+      .map(u => ({
+        username: u, // system username
+        display: u.charAt(0).toUpperCase() + u.slice(1) // display-friendly
+      }));
+
     res.json(users);
   } catch (err) {
     console.error("Error fetching users", err);
