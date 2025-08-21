@@ -296,11 +296,82 @@ app.get("/api/users", auth, async (req, res) => {
 
 
 // Route to render user page
-app.get("/user/:username", auth, (req, res) => {
-  res.render("user-reports", { 
-    username: req.params.username,    // profile being viewed
-    loggedInUser: req.session.username // currently logged-in user's username
-  });
+app.get("/user/:username", auth, async (req, res) => {
+  const { username } = req.params;
+
+  try {
+    // Find the user ID for the given username
+    const userRes = await pool.query("SELECT id, kituo FROM users WHERE username=$1", [username]);
+    if (!userRes.rows.length) return res.status(404).send("User haipo.");
+
+    const userId = userRes.rows[0].id;
+    const clinic = userRes.rows[0].kituo;
+
+    // Fetch all reports by this user
+    const reportRes = await pool.query(
+      `SELECT r.*, u.username AS username, u.kituo AS clinic
+       FROM reports r
+       JOIN users u ON r.user_id = u.id
+       WHERE r.user_id = $1
+       ORDER BY r.id DESC`,
+      [userId]
+    );
+
+    const reportIds = reportRes.rows.map(r => r.id);
+
+    // Fetch comments for these reports
+    let comments = [];
+    if (reportIds.length) {
+      const commentRes = await pool.query(
+        `SELECT c.*, u.username AS username, u.kituo AS clinic
+         FROM comments c
+         JOIN users u ON c.user_id = u.id
+         WHERE report_id = ANY($1::int[])
+         ORDER BY c.id DESC`,
+        [reportIds]
+      );
+      comments = commentRes.rows;
+    }
+
+    // Fetch reactions for these reports
+    let reactions = [];
+    if (reportIds.length) {
+      const reactRes = await pool.query(
+        `SELECT report_id,
+                COUNT(*) FILTER (WHERE type='up') AS thumbs_up,
+                COUNT(*) FILTER (WHERE type='down') AS thumbs_down
+         FROM reactions
+         WHERE report_id = ANY($1::int[])
+         GROUP BY report_id`,
+        [reportIds]
+      );
+      reactions = reactRes.rows;
+    }
+
+    // Attach comments, reactions, and format timestamps
+    const formattedReports = reportRes.rows.map(r => {
+      r.comments = comments
+        .filter(c => c.report_id === r.id)
+        .map(c => ({ ...c, timestamp: formatTanzaniaTime(c.timestamp) }));
+
+      const react = reactions.find(re => re.report_id === r.id);
+      r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
+      r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
+
+      r.timestamp = formatTanzaniaTime(r.timestamp);
+      return r;
+    });
+
+    res.render("user-reports", { 
+      username,               // profile being viewed
+      loggedInUser: req.session.username, // logged-in user
+      reports: formattedReports,
+      clinic
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Tatizo kuonyesha ripoti za mtumiaji");
+  }
 });
     
     
