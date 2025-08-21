@@ -150,8 +150,7 @@ function auth(req,res,next){ if(!req.session.userId) return res.redirect("/"); n
 // Middleware to redirect logged-in users to their profile
 const redirectToProfile = (req, res, next) => {
   if (req.session?.userId) {
-    // If the user is already logged in, redirect them to their profile page
-    return res.redirect(`/user/${encodeURIComponent(req.session.jina)}`);
+    return res.redirect(`/user/${encodeURIComponent(req.session.username)}`);
   }
   next();
 };
@@ -322,7 +321,7 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
     report.thumbs_up = 0;
     report.thumbs_down = 0;
     report.comments = [];
-    report.timestamp = formatTanzaniaTime(report.timestamp);(report.timestamp);
+    report.timestamp = formatTanzaniaTime(report.timestamp);
     res.json(report); // <-- return JSON instead of redirect
   } catch (err) {
     console.error(err);
