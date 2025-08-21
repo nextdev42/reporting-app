@@ -173,42 +173,58 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // --- Comment Submission ---
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
-      const text = input.value.trim();
-      if (!text) return;
+    // --- Comment Submission ---
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text) return;
 
-      try {
-        const res = await fetch(`/api/comments/${r.id}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ comment: text })
-        });
-        if (!res.ok) { alert(await res.text() || "Tatizo ku-tuma comment"); return; }
-        const newComment = await res.json();
-
-        // Append new comment
-        const li = document.createElement('li');
-        li.className = 'comment-item';
-        li.innerHTML = `
-          <div class="comment-avatar"><a href="/user/${newComment.username}">${newComment.username.charAt(0).toUpperCase()}</a></div>
-          <div>
-            <div class="comment-user"><a href="/user/${newComment.username}">${newComment.username}</a></div>
-            <div class="comment-text">${linkUsernames(newComment.comment)}</div>
-            <div class="comment-time">${newComment.timestamp}</div>
-          </div>`;
-        ul.prepend(li);
-
-        input.value = '';
-        r.comments.push(newComment);
-        const countEl = card.querySelector('.comment-toggle');
-        const currentCount = parseInt(countEl.textContent.match(/\d+/)) || 0;
-        countEl.textContent = `💬 ${currentCount + 1} Maoni`;
-
-        checkMentions();
-
-      } catch (err) { console.error(err); alert("Tatizo ku-tuma comment"); }
+  try {
+    const res = await fetch(`/api/comments/${r.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment: text })
     });
+    if (!res.ok) { alert(await res.text() || "Tatizo ku-tuma comment"); return; }
+    const newComment = await res.json();
+
+    // Append new comment (with linked mentions)
+    const li = document.createElement('li');
+    li.className = 'comment-item';
+    li.innerHTML = `
+      <div class="comment-avatar"><a href="/user/${newComment.username}">${newComment.username.charAt(0).toUpperCase()}</a></div>
+      <div>
+        <div class="comment-user"><a href="/user/${newComment.username}">${newComment.username}</a></div>
+        <div class="comment-text">${linkUsernames(newComment.comment)}</div>
+        <div class="comment-time">${newComment.timestamp}</div>
+      </div>`;
+    ul.prepend(li);
+
+    // Clear input
+    input.value = '';
+
+    // Push into report object
+    r.comments.push(newComment);
+
+    // Update comment count
+    const countEl = card.querySelector('.comment-toggle');
+    const currentCount = parseInt(countEl.textContent.match(/\d+/)) || 0;
+    countEl.textContent = `💬 ${currentCount + 1} Maoni`;
+
+    // ✅ Immediately check mentions on this new comment
+    if (newComment.comment.includes('@' + loggedInUser)) {
+      const key = `${r.id}_${r.comments.length - 1}_@${loggedInUser}`;
+      if (!localStorage.getItem(key)) {
+        mentionCountEl.textContent = parseInt(mentionCountEl.textContent) + 1;
+        updateGlobalBell();
+      }
+    }
+
+  } catch (err) { 
+    console.error(err); 
+    alert("Tatizo ku-tuma comment"); 
+  }
+});
 
     // --- Mention Suggestions ---
     input.addEventListener('input', async () => {
