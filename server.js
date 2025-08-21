@@ -123,8 +123,8 @@ function auth(req,res,next){ if(!req.session.userId) return res.redirect("/"); n
 // Middleware to redirect logged-in users to their profile
 const redirectToProfile = (req, res, next) => {
   if (req.session?.userId) {
-    // If the user is already logged in, redirect them to their profile page
-    return res.redirect(`/user/${encodeURIComponent(req.session.jina)}`);
+    // Redirect logged-in users to their profile page using username
+    return res.redirect(`/user/${encodeURIComponent(req.session.username)}`);
   }
   next();
 };
