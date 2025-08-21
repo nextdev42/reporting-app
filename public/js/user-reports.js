@@ -151,7 +151,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Hide comment form if own report
     const form = card.querySelector('.comment-form');
-    form.style.display = r.username === loggedInUser ? 'none' : 'flex';
+    //form.style.display = r.username === loggedInUser ? 'none' : 'flex';
+    form.style.display = 'flex';
 
     // --- Mention checking ---
     const toggleBtn = card.querySelector('.comment-toggle');
