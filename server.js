@@ -92,7 +92,17 @@ async function initTables() {
       image TEXT
     );
   `);
-
+// Comment reactions table
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS comment_reactions (
+    id SERIAL PRIMARY KEY,
+    comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id),
+    type TEXT CHECK(type IN ('up','down')),
+    UNIQUE(comment_id, user_id)
+  );
+`);
+  
   // Comments table
   await pool.query(`
     CREATE TABLE IF NOT EXISTS comments (
