@@ -114,9 +114,10 @@ nav button:hover {
 }
 
 /* ========== GLOBAL BELL ========== */
+
 #nav-bell {
-  position: relative; display:inline-block;
-  font-size: 1.2em;
+  position: relative; /* anchor dropdown to bell */
+  overflow: visible !important; /* allow dropdown to show */
 }
 #nav-bell .bell-count {
   position: absolute;
@@ -169,6 +170,20 @@ nav button:hover {
   color: #666;
   margin-top: 4px;
   font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  #mentions-dropdown {
+    right: auto;
+    left: 0;              /* align to left for space */
+    width: 90vw;          /* full width on small screens */
+    max-height: 60vh;     /* keep it scrollable */
+    border-radius: 0 0 12px 12px;
+  }
+}
+
+#mentions-dropdown {
+  z-index: 9999; /* ensure it stays on top */
 }
 /* ========== AVATAR UPLOAD ========== */
 .avatar-upload {
