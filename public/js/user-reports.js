@@ -240,6 +240,57 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
+    // --- Comment submit handler ---
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = form.querySelector('input[name="comment"]');
+  const text = input.value.trim();
+  if (!text) return;
+
+  try {
+    const res = await fetch(`/api/comments/${r.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment: text })
+    });
+
+    if (!res.ok) {
+      console.error("Failed to post comment:", await res.text());
+      alert("Tatizo kutuma maoni");
+      return;
+    }
+
+    const newComment = await res.json();
+
+    // Append comment to UI
+    const li = document.createElement("li");
+    li.className = "comment-item";
+    li.innerHTML = `
+      <div class="comment-avatar"><a href="/user/${newComment.username}">${newComment.username.charAt(0).toUpperCase()}</a></div>
+      <div>
+        <div class="comment-user"><a href="/user/${newComment.username}">${newComment.username}</a></div>
+        <div class="comment-text">${linkUsernames(newComment.comment)}</div>
+        <div class="comment-time">${newComment.timestamp}</div>
+      </div>`;
+    ul.appendChild(li);
+
+    // Update comment count
+    const toggleBtn = card.querySelector('.comment-toggle');
+    const current = parseInt(toggleBtn.textContent.match(/\d+/), 10) || 0;
+    toggleBtn.textContent = `💬 ${current + 1} Maoni`;
+
+    // Reset input
+    input.value = "";
+
+    // Re-check mentions so bell count updates
+    checkMentions();
+
+  } catch (err) {
+    console.error(err);
+    alert("Hitilafu kutuma maoni");
+  }
+});
+
     // --- Fix redirect links for avatar/profile ---
     const avatarLinks = card.querySelectorAll('a[href^="/user/"]');
     avatarLinks.forEach(link => {
