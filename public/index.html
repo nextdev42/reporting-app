@@ -24,24 +24,28 @@
 
       <!-- Register Form -->
       <form id="registerForm" action="/register" method="POST" style="display:none;">
-        <input type="text" name="jina" placeholder="Jina" required>
-        <input type="text" name="ukoo" placeholder="Ukoo" required>
-        <input type="text" name="namba" placeholder="Namba" required>
-        
-        <!-- Kituo dropdown -->
-        <label for="kituo">Chagua Kituo:</label>
-        <select name="kituo" id="kituo" required>
-          <option value="">--Chagua Kituo--</option>
-          <option value="Mikwambe">Mikwambe</option>
-          <option value="Jirambe">Jirambe</option>
-          <option value="Kibada">Kibada</option>
-          <option value="Kisiwani">Kisiwani</option>
-        </select>
+      <input type="text" name="jina" placeholder="Jina" required>
+     <input type="text" name="ukoo" placeholder="Ukoo" required>
+     <input type="text" name="namba" placeholder="Namba" required>
 
-        <input type="password" name="password" placeholder="Password" required>
-        <input type="password" name="confirmPassword" placeholder="Confirm Password" required>
-        <button type="submit">Sajili</button>
-      </form>
+  <!-- Kituo dropdown -->
+  <label for="kituo">Chagua Kituo:</label>
+  <select name="kituo" id="kituo" required>
+    <option value="">--Chagua Kituo--</option>
+    <option value="Mikwambe">Mikwambe</option>
+    <option value="Jirambe">Jirambe</option>
+    <option value="Kibada">Kibada</option>
+    <option value="Kisiwani">Kisiwani</option>
+  </select>
+
+  <!-- New: username input -->
+  <input type="text" name="username" placeholder="Username" required>
+
+  <input type="password" name="password" placeholder="Password" required>
+  <input type="password" name="confirmPassword" placeholder="Confirm Password" required>
+
+  <button type="submit">Sajili</button>
+</form>
     </div>
   </div>
 
