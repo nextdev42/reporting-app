@@ -503,13 +503,22 @@ app.get("/api/reports", auth, async (req,res)=>{
     }
 
     reportRes.rows.forEach(r=>{
-      r.comments = comments
-        .filter(c=>c.report_id===r.id)
-        .map(c=>({...c, timestamp: formatTanzaniaTime(c.timestamp)}));
+  // Format report timestamp
+  r.timestamp = formatTanzaniaTime(r.timestamp || getTanzaniaTimestamp());
 
-      const react = reactions.find(re=>re.report_id===r.id);
-      r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
-      r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
+  // Format comments timestamps
+  r.comments = comments
+    .filter(c => c.report_id === r.id)
+    .map(c => ({
+      ...c,
+      timestamp: formatTanzaniaTime(c.timestamp || getTanzaniaTimestamp())
+    }));
+
+  // Reactions
+  const react = reactions.find(re=>re.report_id===r.id);
+  r.thumbs_up = react ? parseInt(react.thumbs_up) : 0;
+  r.thumbs_down = react ? parseInt(react.thumbs_down) : 0;
+}); 
 
       r.timestamp = formatTanzaniaTime(r.timestamp);
     });
@@ -536,7 +545,9 @@ app.post("/api/comments/:id", auth, async (req,res)=>{
     const newComment = result.rows[0];
     newComment.username = req.session.username;
     newComment.clinic = req.session.kituo;
-    newComment.timestamp = formatTanzaniaTime(newComment.timestamp);
+
+    // Format timestamp safely
+    newComment.timestamp = formatTanzaniaTime(newComment.timestamp || getTanzaniaTimestamp());
 
     // Add thumbs
     const thumbsRes = await pool.query(
