@@ -266,8 +266,7 @@ app.get("/api/users", auth, async (req, res) => {
     const r = await pool.query("SELECT DISTINCT username FROM users ORDER BY LOWER(username) ASC");
     
     // Optional: capitalize first letter
-    const users = r.rows.map(u => u.username.charAt(0).toUpperCase() + u.username.slice(1));
-    
+    const users = r.rows.map(u => u.username);
     res.json(users);
   } catch (err) {
     console.error("Error fetching users", err);
