@@ -121,10 +121,22 @@ function auth(req,res,next){ if(!req.session.userId) return res.redirect("/"); n
 // Redirect logged-in users to their profile page
 // Redirect logged-in users to their profile
 // Middleware to redirect logged-in users to their profile
-const redirectToProfile = (req, res, next) => {
+const redirectToProfile = async (req, res, next) => {
   if (req.session?.userId) {
-    // Redirect logged-in users to their profile page using username
-    return res.redirect(`/user/${encodeURIComponent(req.session.username)}`);
+    try {
+      const result = await pool.query("SELECT username FROM users WHERE id=$1", [req.session.userId]);
+      if (result.rows.length && result.rows[0].username) {
+        return res.redirect(`/user/${encodeURIComponent(result.rows[0].username)}`);
+      } else {
+        // Invalid session? Destroy it
+        req.session.destroy(() => res.redirect("/index.html"));
+        return;
+      }
+    } catch (err) {
+      console.error("Error fetching username for redirect:", err);
+      req.session.destroy(() => res.redirect("/index.html"));
+      return;
+    }
   }
   next();
 };
