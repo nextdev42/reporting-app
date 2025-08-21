@@ -128,6 +128,48 @@ nav button:hover {
   text-align:center;
 }
 
+
+/* ========== MENTIONS DROPDOWN ========== */
+#mentions-dropdown {
+  display: none; /* hidden by default */
+  position: absolute;
+  top: 28px;  /* just below the bell */
+  right: 0;
+  width: 280px;
+  max-height: 350px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 2000;
+}
+
+#mentions-list > div {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+#mentions-list > div:last-child {
+  border-bottom: none;
+}
+
+#mentions-list strong {
+  color: #405DE6;
+}
+
+#mentions-list em {
+  color: #833AB4;
+}
+
+#mentions-list small {
+  display: block;
+  color: #666;
+  margin-top: 4px;
+  font-size: 12px;
+}
 /* ========== AVATAR UPLOAD ========== */
 .avatar-upload {
   display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px;
