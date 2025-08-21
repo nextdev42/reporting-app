@@ -152,7 +152,17 @@ document.addEventListener("DOMContentLoaded", () => {
     // Hide comment form if own report
     const form = card.querySelector('.comment-form');
     //form.style.display = r.username === loggedInUser ? 'none' : 'flex';
-    form.style.display = 'flex';
+    //form.style.display = 'flex';
+    // Hide comment form if on own profile + it's your report
+    const isOwnPage = username === loggedInUser;
+
+    if (isOwnPage && r.username === loggedInUser) {
+  // Viewing your own page & your own report → hide comment box
+  form.style.display = 'none';
+} else {
+  // Otherwise (someone else’s page or their report) → show comment box
+  form.style.display = 'flex';
+}
 
     // --- Mention checking ---
     const toggleBtn = card.querySelector('.comment-toggle');
