@@ -206,7 +206,7 @@
         <div class="mention-text">
           <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
           <span> alikutaja katika ripoti ya </span>
-          <a href="/user/<%= m.report_user %>#comment-<%= m.comment_id %>"
+          <a href="/reports/<%= m.report_id %>#comment-<%= m.comment_id %>"
              class="mention-comment-link">"<%= m.comment %>"</a>
           <div class="mention-date"><%= formatTanzaniaTime(m.created_at) %></div>
         </div>
