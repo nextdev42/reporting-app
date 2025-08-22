@@ -266,21 +266,22 @@ app.get("/api/users", auth, async (req, res) => {
 
 
 // Route to render user page
+// Route to render user page with reports, comments, and mentions
 app.get("/user/:username", auth, async (req, res) => {
   try {
     const username = req.params.username.toLowerCase();
 
-    // Find the user ID
+    // Get user info
     const userRes = await pool.query("SELECT id, kituo FROM users WHERE username=$1", [username]);
     if (!userRes.rows.length) return res.status(404).send("User not found");
     const userId = userRes.rows[0].id;
     const clinic = userRes.rows[0].kituo;
 
-    // Fetch reports for this user
+    // Fetch user reports with thumbs
     const reportsRes = await pool.query(
       `SELECT r.*, 
-              COALESCE(ru.thumbs_up, 0) AS thumbs_up,
-              COALESCE(ru.thumbs_down, 0) AS thumbs_down
+              COALESCE(ru.thumbs_up,0) AS thumbs_up,
+              COALESCE(ru.thumbs_down,0) AS thumbs_down
        FROM reports r
        LEFT JOIN (
          SELECT report_id,
@@ -289,23 +290,53 @@ app.get("/user/:username", auth, async (req, res) => {
          FROM reactions
          GROUP BY report_id
        ) ru ON ru.report_id = r.id
-       WHERE r.user_id = $1
+       WHERE r.user_id=$1
        ORDER BY r.id DESC`,
       [userId]
     );
 
-    const reports = reportsRes.rows.map(r => ({
-      ...r,
-      timestamp: formatTanzaniaTime(r.timestamp),
-      comments: [] // optional: fetch comments if needed
-    }));
+    const reports = [];
+    for (let r of reportsRes.rows) {
+      // Fetch comments for each report
+      const commentsRes = await pool.query(
+        `SELECT c.comment, c.timestamp, u.username
+         FROM comments c
+         JOIN users u ON c.user_id=u.id
+         WHERE c.report_id=$1
+         ORDER BY c.id ASC`,
+        [r.id]
+      );
+
+      reports.push({
+        ...r,
+        timestamp: formatTanzaniaTime(r.timestamp),
+        comments: commentsRes.rows.map(c => ({
+          ...c,
+          timestamp: formatTanzaniaTime(c.timestamp)
+        }))
+      });
+    }
+
+    // Fetch unread mentions for this user
+    const mentionsRes = await pool.query(
+      `SELECT m.id, m.report_id, c.comment, u.username AS from_user
+       FROM mentions m
+       JOIN comments c ON m.comment_id = c.id
+       JOIN users u ON c.user_id = u.id
+       WHERE m.mentioned_user_id = $1 AND m.is_read = false
+       ORDER BY m.created_at DESC`,
+      [userId]
+    );
+    const mentions = mentionsRes.rows;
 
     res.render("user-reports", {
       username,
       loggedInUser: req.session.username,
       clinic,
-      reports
+      reports,
+      mentions
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Tatizo kuonyesha ripoti za mtumiaji");
