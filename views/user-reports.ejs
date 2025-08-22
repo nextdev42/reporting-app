@@ -141,6 +141,35 @@
     transition: transform 0.3s ease, opacity 0.3s ease;
   }
 
+
+.mention-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #444;
+}
+
+.mention-text span {
+  color: #555;
+  margin: 2px 0;
+}
+
+.mention-comment-link {
+  color: #111;
+  font-style: italic;
+  margin-top: 2px;
+  text-decoration: none;
+}
+
+.mention-comment-link:hover {
+  text-decoration: underline;
+}
+
+.mention-date {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
   #mentions-dropdown.open {
     transform: translateY(0);
     opacity: 1;
@@ -165,16 +194,23 @@
     </span>
 
     <div id="mentions-dropdown">
-      <ul id="mentionList">
-        <% mentions.forEach(m => { %>
-          <li>
-            <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
-            mentioned you in
-            <a href="/user/<%= username %>#comment-<%= m.comment_id %>" class="mention-comment-link"><%= m.comment %></a>
-          </li>
-        <% }) %>
-      </ul>
-    </div>
+  <ul id="mentionList">
+    <% mentions.forEach(m => { %>
+      <li>
+        <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>&background=405DE6&color=fff" 
+             class="mention-avatar" alt="avatar">
+
+        <div class="mention-text">
+          <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
+          <span> mentioned you in</span>
+          <a href="/user/<%= m.post_owner %>#comment-<%= m.comment_id %>" 
+             class="mention-comment-link">"<%= m.comment %>"</a>
+          <div class="mention-date"><%= m.created_at || "⚠️ No date" %></div>
+        </div>
+      </li>
+    <% }) %>
+  </ul>
+</div>
   </div>
 </nav>
 
