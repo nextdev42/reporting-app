@@ -296,7 +296,6 @@ app.get("/user/:username", auth, async (req, res) => {
     );
 
     const reports = [];
-    const reports = [];
 for (let r of reportsRes.rows) {
   const commentsRes = await pool.query(
     `SELECT c.comment, c.timestamp, u.username
