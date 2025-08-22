@@ -24,19 +24,15 @@
     <span id="mention-bell" style="cursor:pointer; margin-left:15px;">
       🔔 <span id="mention-count"><%= mentions.length %></span>
     </span>
-
     <div id="mentions-dropdown" style="display:none; position:absolute; background:#fff; border:1px solid #ccc; width:300px; max-height:400px; overflow-y:auto; z-index:1000;">
       <ul id="mentionList">
         <% mentions.forEach(m => { %>
           <li>
-            <a href="/user/<%= m.report_user %>#report-<%= m.report_id %>">
-              <strong>@<%= m.from_user %></strong> mentioned you in report #<%= m.report_id %>
+            <a href="/user/<%= username %>#report-<%= m.report_id %>">
+              <strong>@<%= m.from_user %></strong> mentioned you
             </a>
           </li>
         <% }) %>
-        <% if(mentions.length === 0){ %>
-          <li><em>Hakuna mentions mpya</em></li>
-        <% } %>
       </ul>
     </div>
   </div>
@@ -48,10 +44,11 @@
     <div class="info">
       <h2>Ripoti za <strong><%= username %></strong></h2>
       <div class="stats">
-        <span id="totalPosts">Ripoti </span>
-        <span id="totalThumbsUp">👍 </span>
-        <span id="totalThumbsDown">👎 </span>
+        <span id="totalPosts">Ripoti: <%= reports.length %></span>
+        <span id="totalThumbsUp">👍 <%= reports.reduce((acc,r)=>acc+r.thumbs_up,0) %></span>
+        <span id="totalThumbsDown">👎 <%= reports.reduce((acc,r)=>acc+r.thumbs_down,0) %></span>
       </div>
+
       <% if(username === loggedInUser){ %>
       <form id="avatarForm" class="avatar-upload">
         <label for="avatarInput" class="custom-file-btn">Chagua Faili</label>
@@ -68,17 +65,19 @@
         <h3><%= r.title %></h3>
         <p><%= r.description %></p>
         <% if(r.image){ %>
-          <img src="<%= r.image %>" alt="Report Image">
+          <img src="<%= r.image %>" alt="report image">
         <% } %>
-        <div class="report-meta">
-          <span><%= r.timestamp %></span>
-          <span>👍 <%= r.thumbs_up %></span>
-          <span>👎 <%= r.thumbs_down %></span>
+        <p class="timestamp"><%= r.timestamp %></p>
+        <div class="reactions">
+          👍 <span class="thumbs-up"><%= r.thumbs_up %></span>
+          👎 <span class="thumbs-down"><%= r.thumbs_down %></span>
         </div>
+
         <div class="comments">
+          <h4>Maoni:</h4>
           <% r.comments.forEach(c => { %>
             <div class="comment">
-              <strong>@<%= c.username %></strong>: <%= c.comment %> 
+              <strong>@<%= c.username %></strong>: <%= c.comment %>
               <span class="comment-time"><%= c.timestamp %></span>
             </div>
           <% }) %>
@@ -87,6 +86,14 @@
     <% }) %>
   </div>
 </div>
+
+<script>
+  const bell = document.getElementById("mention-bell");
+  const dropdown = document.getElementById("mentions-dropdown");
+  bell.addEventListener("click", () => {
+    dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+  });
+</script>
 
 <script src="/js/main.js"></script>
 </body>
