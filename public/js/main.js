@@ -11,6 +11,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Mark mention as read on server
+  async function markMentionRead(id) {
+    try {
+      await fetch(`/api/mentions/${id}/read`, { method: "POST" });
+    } catch (err) {
+      console.error("Error marking mention as read:", err);
+    }
+  }
+
   // Update bell count
   async function updateMentionBell() {
     const mentions = await fetchMentions();
@@ -35,13 +44,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     mentions.forEach(m => {
       const div = document.createElement("div");
-      div.style.padding = "8px";
+      div.style.padding = "10px";
       div.style.borderBottom = "1px solid #eee";
+      div.style.cursor = "pointer";
+      div.classList.add("mention-item");
+
+      // fix Invalid Date issue
+      const dateStr = m.timestamp ? new Date(m.timestamp).toLocaleString() : "";
+
       div.innerHTML = `
         <strong>@${m.comment_user}</strong> kwenye ripoti: <em>${m.title}</em><br>
         "${m.comment}"<br>
-        <small>${new Date(m.timestamp).toLocaleString()}</small>
+        <small>${dateStr}</small>
       `;
+
+      // On click → go to report + mark read + remove from list
+      div.addEventListener("click", async () => {
+        await markMentionRead(m.id); // mark on backend
+        div.remove(); // remove from dropdown
+        updateMentionBell(); // refresh count
+        window.location.href = `/reports/${m.report_id}`; // go to report page
+      });
+
       container.appendChild(div);
     });
   }
@@ -52,7 +76,8 @@ document.addEventListener("DOMContentLoaded", () => {
     bell.addEventListener("click", () => {
       const dropdown = document.querySelector("#mentions-dropdown");
       if (dropdown) {
-        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+        dropdown.style.display =
+          dropdown.style.display === "block" ? "none" : "block";
         if (dropdown.style.display === "block") showMentionsDropdown();
       }
     });
