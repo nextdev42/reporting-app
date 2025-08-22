@@ -339,7 +339,8 @@ const mentions = mentionsRes.rows;
       loggedInUser: req.session.username,
       clinic,
       reports,
-      mentions
+      mentions,
+      formatTanzaniaTime
     });
 
   } catch (err) {
