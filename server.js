@@ -318,17 +318,22 @@ app.get("/user/:username", auth, async (req, res) => {
     }
 
     // Fetch unread mentions for this user
-    const mentionsRes = await pool.query(
-      `SELECT m.id, m.report_id, c.comment, u.username AS from_user
-       FROM mentions m
-       JOIN comments c ON m.comment_id = c.id
-       JOIN users u ON c.user_id = u.id
-       WHERE m.mentioned_user_id = $1 AND m.is_read = false
-       ORDER BY m.created_at DESC`,
-      [userId]
-    );
-    const mentions = mentionsRes.rows;
-
+    // Fetch unread mentions for this user
+const mentionsRes = await pool.query(
+  `SELECT m.id, m.report_id, m.comment_id, m.created_at,
+          c.comment,
+          u.username AS from_user,      -- who wrote the comment
+          ru.username AS report_user    -- owner of the report
+   FROM mentions m
+   JOIN comments c ON m.comment_id = c.id
+   JOIN users u ON c.user_id = u.id
+   JOIN reports r ON m.report_id = r.id
+   JOIN users ru ON r.user_id = ru.id
+   WHERE m.mentioned_user_id = $1 AND m.is_read = false
+   ORDER BY m.created_at DESC`,
+  [userId]
+);
+const mentions = mentionsRes.rows;
     res.render("user-reports", {
       username,
       loggedInUser: req.session.username,
