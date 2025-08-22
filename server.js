@@ -79,6 +79,18 @@ const pool = new Pool({
     );
   `);
 
+
+    await pool.query(`
+  CREATE TABLE IF NOT EXISTS mentions (
+    id SERIAL PRIMARY KEY,
+    report_id INTEGER REFERENCES reports(id) ON DELETE CASCADE,
+    comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+    mentioned_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    is_read BOOLEAN DEFAULT false
+  );
+`);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS reactions (
       id SERIAL PRIMARY KEY,
@@ -408,29 +420,44 @@ app.get("/api/reports", auth, async (req, res) => {
     
     
   app.get("/api/mentions", auth, async (req, res) => {
-  const username = req.session.username.toLowerCase();
   try {
     const { rows } = await pool.query(`
-      SELECT c.id AS comment_id, c.comment, c.report_id, r.title, r.user_id AS report_owner, u.username AS comment_user
-      FROM comments c
-      JOIN reports r ON c.report_id = r.id
+      SELECT m.id, m.report_id, m.comment_id, m.created_at,
+             c.comment, r.title, u.username AS comment_user
+      FROM mentions m
+      JOIN comments c ON m.comment_id = c.id
+      JOIN reports r ON m.report_id = r.id
       JOIN users u ON c.user_id = u.id
-      WHERE LOWER(c.comment) LIKE '%' || $1 || '%'
-      ORDER BY c.timestamp DESC
-    `, [username]);
+      WHERE m.mentioned_user_id = $1 AND m.is_read = false
+      ORDER BY m.created_at DESC
+    `, [req.session.userId]);
 
     res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).send("Tatizo ku-fetch mentions");
   }
-});    
+});
+
+
+app.post("/api/mentions/:id/read", auth, async (req, res) => {
+  try {
+    await pool.query(
+      "UPDATE mentions SET is_read = true WHERE id=$1 AND mentioned_user_id=$2",
+      [req.params.id, req.session.userId]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Tatizo ku-update mention");
+  }
+});
 
 // ====== Add comment ======
 // ====== Add comment ======
 app.post("/api/comments/:id", auth, async (req,res)=>{
   const { comment } = req.body;
-  if(!comment) return res.status(400).json({ error: "Andika maoni." });
+  if (!comment) return res.status(400).json({ error: "Andika maoni." });
 
   try {
     // Insert comment
@@ -446,7 +473,24 @@ app.post("/api/comments/:id", auth, async (req,res)=>{
     newComment.clinic = req.session.kituo;
     newComment.timestamp = formatTanzaniaTime(newComment.timestamp);
 
-    res.json(newComment); // <-- frontend can now render immediately
+    // 🔹 Handle mentions here
+    const mentionMatches = comment.match(/@(\w+)/g) || [];
+    for (let mention of mentionMatches) {
+      const username = mention.slice(1).toLowerCase();
+      const { rows } = await pool.query(
+        "SELECT id FROM users WHERE LOWER(username)=$1",
+        [username]
+      );
+      if (rows.length) {
+        await pool.query(
+          "INSERT INTO mentions(report_id, comment_id, mentioned_user_id) VALUES($1,$2,$3)",
+          [req.params.id, newComment.id, rows[0].id]
+        );
+      }
+    }
+
+    res.json(newComment); // send to frontend
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Tatizo ku-hifadhi comment" });
