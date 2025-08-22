@@ -11,62 +11,143 @@
 </script>
 <script src="/js/user-reports.js"></script>
 <style>
-  html { scroll-behavior: smooth; }
+  /* Ensure nav-actions is positioned */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  position: relative; /* needed for dropdown absolute positioning */
+  z-index: 1000;
+}
 
-  /* Mention dropdown styles */
+/* Mention bell */
+#mention-bell {
+  position: relative;
+  cursor: pointer;
+  font-size: 24px;
+  padding: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transition: background 0.3s ease;
+}
+
+#mention-bell:hover { background: rgba(255,255,255,0.3); }
+
+#mention-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff2c2c;
+  color: white;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity:1; }
+  50% { transform: scale(1.3); opacity:0.7; }
+  100% { transform: scale(1); opacity:1; }
+}
+
+/* Mentions dropdown */
+#mentions-dropdown {
+  display: none;          /* hide by default */
+  position: absolute;
+  top: 130%;              /* below the bell */
+  right: 0;
+  width: 90vw;
+  max-width: 360px;
+  max-height: 400px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  overflow-y: auto;
+  z-index: 10000;         /* float above nav */
+  transition: opacity 0.3s ease, transform 0.2s ease;
+  transform: translateY(-5px);
+  opacity: 0;
+}
+
+/* Open state */
+#mentions-dropdown.open {
+  display: block;
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* List items */
+#mentions-dropdown ul {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+}
+
+#mentions-dropdown li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+#mentions-dropdown li:last-child { border-bottom: none; }
+
+#mentions-dropdown li:hover { background: #f0f2f5; }
+
+.mention-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+
+.mention-user-link { font-weight: bold; color: #405DE6; text-decoration: none; }
+.mention-user-link:hover { text-decoration: underline; }
+
+.mention-comment-link { color: #333; text-decoration: underline; cursor: pointer; display: block; margin-top: 4px; font-size: 0.9rem; }
+
+.mention-text { line-height: 1.3; font-size: 14px; }
+
+/* Highlight comment */
+.highlight { background-color: #fff3b0; transition: background-color 1.5s ease; }
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  #mentions-dropdown { right: 5px; left: 5px; width: auto; }
+}
+
+
+/* Overlay dropdown for small screens */
+@media (max-width: 768px) {
   #mentions-dropdown {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 40px;
-    width: 350px;
-    max-height: 400px;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    overflow-y: auto;
-    z-index: 1000;
-    padding: 10px 0;
+    position: fixed;      /* float above everything */
+    top: 60px;            /* distance from top nav */
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+    max-height: 70vh;     /* use viewport height */
+    border-radius: 10px;
+    z-index: 20000;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    transform: translateY(-10px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
   }
 
-  #mentions-dropdown ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  #mentions-dropdown.open {
+    transform: translateY(0);
+    opacity: 1;
+    display: block;
   }
+}
 
-  #mentions-dropdown li {
-    padding: 8px 16px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px;
-    font-size: 14px;
-  }
-
-  #mentions-dropdown li:hover {
-    background: #f0f2f5;
-  }
-
-  .mention-user-link {
-    font-weight: bold;
-    color: #405DE6;
-    text-decoration: none;
-  }
-  .mention-user-link:hover { text-decoration: underline; }
-
-  .mention-comment-link {
-    color: #333;
-    text-decoration: underline;
-    cursor: pointer;
-  }
-
-  /* Highlighted comment */
-  .highlight {
-    background-color: #fff3b0;
-    transition: background-color 1.5s ease;
-  }
 </style>
 </head>
 <body>
