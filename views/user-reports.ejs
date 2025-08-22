@@ -336,19 +336,88 @@ document.querySelectorAll(".mention-comment-link").forEach(link => {
 
       // Build modal HTML
       modalContent.innerHTML = `
-        <h3>${report.title}</h3>
-        <p>${report.description}</p>
-        ${report.image ? `<img src="${report.image}" alt="report image" style="max-width:100%;">` : ""}
-        <p><small>${report.timestamp}</small></p>
-        <h4>Maoni:</h4>
-        ${report.comments.map(c => `
-          <div>
-            <a href="/user/${c.username}" class="mention-user-link">@${c.username}</a>: ${c.comment}
-            <span class="comment-time">${c.timestamp}</span>
-          </div>
-        `).join("")}
-      `;
+  <div class="report-header" style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+    <img src="${report.author_avatar || `https://ui-avatars.com/api/?name=${report.author_name}&background=405DE6&color=fff`}"
+         style="width:40px;height:40px;border-radius:50%;">
+    <strong>${report.author_name}</strong>
+  </div>
 
+  <h3>${report.title}</h3>
+  <p>${report.description}</p>
+  ${report.image ? `<img src="${report.image}" alt="report image" style="max-width:100%;">` : ""}
+  <p><small>${report.timestamp}</small></p>
+
+  <div class="modal-reactions" style="margin:10px 0;">
+    👍 <span class="modal-thumbs-up">${report.thumbs_up}</span>
+    👎 <span class="modal-thumbs-down">${report.thumbs_down}</span>
+    <button class="thumb-up-btn">👍</button>
+    <button class="thumb-down-btn">👎</button>
+  </div>
+
+  <h4>Maoni:</h4>
+  <div class="modal-comments">
+    ${report.comments.map(c => `
+      <div id="comment-${c.id}" style="margin-bottom:8px;">
+        <img src="${c.avatar || `https://ui-avatars.com/api/?name=${c.username}&background=405DE6&color=fff`}"
+             style="width:30px;height:30px;border-radius:50%;vertical-align:middle; margin-right:5px;">
+        <a href="/user/${c.username}" class="mention-user-link">@${c.username}</a>: ${c.comment}
+        <span class="comment-time">${c.timestamp}</span>
+        <button class="reply-btn" data-comment-id="${c.id}" style="margin-left:5px;">Reply</button>
+        <div class="reply-form-container" data-comment-id="${c.id}" style="display:none; margin-top:5px;">
+          <input type="text" class="reply-input" placeholder="Andika jibu...">
+          <button class="send-reply-btn" data-comment-id="${c.id}">Tuma</button>
+        </div>
+      </div>
+    `).join("")}
+  </div>
+`;
+
+const modalThumbsUp = modalContent.querySelector(".modal-thumbs-up");
+const modalThumbsDown = modalContent.querySelector(".modal-thumbs-down");
+
+modalContent.querySelector(".thumb-up-btn").addEventListener("click", async () => {
+  const res = await fetch(`/api/reports/${reportId}/thumbs-up`, { method: "POST" });
+  const data = await res.json();
+  modalThumbsUp.textContent = data.thumbs_up;
+});
+
+modalContent.querySelector(".thumb-down-btn").addEventListener("click", async () => {
+  const res = await fetch(`/api/reports/${reportId}/thumbs-down`, { method: "POST" });
+  const data = await res.json();
+  modalThumbsDown.textContent = data.thumbs_down;
+});
+
+modalContent.querySelectorAll(".reply-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+    const cid = e.target.dataset.commentId;
+    const container = modalContent.querySelector(`.reply-form-container[data-comment-id="${cid}"]`);
+    container.style.display = container.style.display === "none" ? "block" : "none";
+  });
+});
+
+modalContent.querySelectorAll(".send-reply-btn").forEach(btn => {
+  btn.addEventListener("click", async e => {
+    const cid = e.target.dataset.commentId;
+    const input = modalContent.querySelector(`.reply-input`);
+    const replyText = input.value.trim();
+    if(!replyText) return;
+
+    const res = await fetch(`/api/comments/${cid}/reply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment: replyText })
+    });
+    const newComment = await res.json();
+
+    // append new reply
+    const commentDiv = modalContent.querySelector(`#comment-${cid}`);
+    const replyDiv = document.createElement("div");
+    replyDiv.style.marginLeft = "35px";
+    replyDiv.innerHTML = `<strong>@${newComment.username}</strong>: ${newComment.comment} <span class="comment-time">${newComment.timestamp}</span>`;
+    commentDiv.appendChild(replyDiv);
+    input.value = "";
+  });
+});
       modal.style.display = "block";
 
       // Scroll to specific comment if hash exists
