@@ -508,12 +508,15 @@ app.get("/reports/:id", auth, async (req, res) => {
     );
 
     const report = {
-      ...r,
-      comments: commentsRes.rows.map(c => ({
-        ...c,
-        timestamp: formatTanzaniaTime(c.timestamp)
-      }))
-    };
+  ...r,
+  thumbs_up: r.thumbs_up || 0,
+  thumbs_down: r.thumbs_down || 0,
+  timestamp: formatTanzaniaTime(r.timestamp),
+  comments: commentsRes.rows.map(c => ({
+    ...c,
+    timestamp: formatTanzaniaTime(c.timestamp)
+  }))
+};
 
     res.render("user-reports", {
       username: r.report_user,
@@ -559,7 +562,16 @@ app.get("/reports/:id", auth, async (req, res) => {
       return res.status(404).send("Report not found");
     }
 
-    const report = rows[0];
+    const report = {
+  ...r,
+  thumbs_up: r.thumbs_up || 0,
+  thumbs_down: r.thumbs_down || 0,
+  timestamp: formatTanzaniaTime(r.timestamp),
+  comments: commentsRes.rows.map(c => ({
+    ...c,
+    timestamp: formatTanzaniaTime(c.timestamp)
+  }))
+};
 
     // Also fetch comments for this report
     const comments = await pool.query(
