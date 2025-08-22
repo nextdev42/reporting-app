@@ -296,26 +296,28 @@ app.get("/user/:username", auth, async (req, res) => {
     );
 
     const reports = [];
-    for (let r of reportsRes.rows) {
-      // Fetch comments for each report
-      const commentsRes = await pool.query(
-        `SELECT c.comment, c.timestamp, u.username
-         FROM comments c
-         JOIN users u ON c.user_id=u.id
-         WHERE c.report_id=$1
-         ORDER BY c.id ASC`,
-        [r.id]
-      );
+    const reports = [];
+for (let r of reportsRes.rows) {
+  const commentsRes = await pool.query(
+    `SELECT c.comment, c.timestamp, u.username
+     FROM comments c
+     JOIN users u ON c.user_id=u.id
+     WHERE c.report_id=$1
+     ORDER BY c.id ASC`,
+    [r.id]
+  );
 
-      reports.push({
-        ...r,
-        timestamp: formatTanzaniaTime(r.timestamp),
-        comments: commentsRes.rows.map(c => ({
-          ...c,
-          timestamp: formatTanzaniaTime(c.timestamp)
-        }))
-      });
-    }
+  reports.push({
+    ...r,
+    thumbs_up: r.thumbs_up || 0,      // 👈 fallback
+    thumbs_down: r.thumbs_down || 0,  // 👈 fallback
+    timestamp: formatTanzaniaTime(r.timestamp),
+    comments: (commentsRes.rows || []).map(c => ({
+      ...c,
+      timestamp: formatTanzaniaTime(c.timestamp)
+    }))
+  });
+}
 
     // Fetch unread mentions for this user
     // Fetch unread mentions for this user
