@@ -480,6 +480,31 @@ app.get("/api/reports", auth, async (req, res) => {
   }
 });
 
+app.get("/reports/:id", auth, async (req, res) => {
+  const reportId = req.params.id;
+  const reportRes = await pool.query(
+    `SELECT r.*, u.username AS report_user 
+     FROM reports r 
+     JOIN users u ON r.user_id = u.id
+     WHERE r.id=$1`, [reportId]
+  );
+
+  if (!reportRes.rows.length) return res.status(404).send("Ripoti haipo");
+
+  const commentsRes = await pool.query(
+    `SELECT c.*, u.username 
+     FROM comments c 
+     JOIN users u ON c.user_id=u.id
+     WHERE c.report_id=$1
+     ORDER BY c.id ASC`, [reportId]
+  );
+
+  res.render("report-view", {
+    report: reportRes.rows[0],
+    comments: commentsRes.rows,
+    loggedInUser: req.session.username
+  });
+});
 
 app.post("/api/mentions/:id/read", auth, async (req, res) => {
   try {
