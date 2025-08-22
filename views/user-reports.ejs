@@ -280,169 +280,72 @@
 .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; }
 </style>
 
- <script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
   const bell = document.getElementById("mention-bell");
   const dropdown = document.getElementById("mentions-dropdown");
+  const modal = document.getElementById("report-modal");
+  const modalContent = document.getElementById("modal-report-content");
+  const closeBtn = modal.querySelector(".close-modal");
 
-  // Toggle dropdown with class
-  bell.addEventListener("click", e => {
+  // Toggle dropdown
+  bell.addEventListener("click", (e) => {
     e.stopPropagation();
     dropdown.classList.toggle("open");
   });
 
-  // Close dropdown if clicked outside
-  document.addEventListener("click", e => {
-    if (!dropdown.contains(e.target) && e.target !== bell) {
+  // Close dropdown if clicking outside
+  document.addEventListener("click", (e) => {
+    if (!dropdown.contains(e.target) && !bell.contains(e.target)) {
       dropdown.classList.remove("open");
     }
   });
 
-  // Highlight comment when navigating via mention link
-  function highlightComment() {
-  const hash = window.location.hash;
-  if (hash.startsWith("#comment-")) {
-    const el = document.querySelector(hash);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.add("highlight");
-      setTimeout(() => el.classList.remove("highlight"), 1500);
-    }
-  }
-}
-window.addEventListener("load", highlightComment);
-window.addEventListener("hashchange", highlightComment);
-  // Close dropdown when clicking a mention link
-  document.addEventListener("click", e => {
-    if (e.target.closest(".mention-comment-link, .mention-user-link")) {
-      dropdown.classList.remove("open");
-    }
-  });
+  // Handle clicks on mention comment links (open modal via AJAX)
+  document.querySelectorAll(".mention-comment-link").forEach(link => {
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
 
-// Modal elements
-const modal = document.getElementById("report-modal");
-const modalContent = document.getElementById("modal-report-content");
-const closeModal = document.querySelector(".close-modal");
+      const url = this.getAttribute("href"); // e.g. /report/123
+      console.log("Fetching report from:", url);
 
-// Open modal when mention clicked
-document.querySelectorAll(".mention-comment-link").forEach(link => {
-  link.addEventListener("click", async e => {
-    e.preventDefault();
-    const url = e.target.getAttribute("href");
-    const reportId = url.split("#")[0].split("/").pop(); // get ID from /user/:username#comment-XX
-
-    try {
-      const res = await fetch(`/api/reports/${reportId}`);
-      const report = await res.json();
-
-      // Build modal HTML
-      modalContent.innerHTML = `
-  <div class="report-header" style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-    <img src="${report.author_avatar || `https://ui-avatars.com/api/?name=${report.author_name}&background=405DE6&color=fff`}"
-         style="width:40px;height:40px;border-radius:50%;">
-    <strong>${report.author_name}</strong>
-  </div>
-
-  <h3>${report.title}</h3>
-  <p>${report.description}</p>
-  ${report.image ? `<img src="${report.image}" alt="report image" style="max-width:100%;">` : ""}
-  <p><small>${report.timestamp}</small></p>
-
-  <div class="modal-reactions" style="margin:10px 0;">
-    👍 <span class="modal-thumbs-up">${report.thumbs_up}</span>
-    👎 <span class="modal-thumbs-down">${report.thumbs_down}</span>
-    <button class="thumb-up-btn">👍</button>
-    <button class="thumb-down-btn">👎</button>
-  </div>
-
-  <h4>Maoni:</h4>
-  <div class="modal-comments">
-    ${report.comments.map(c => `
-      <div id="comment-${c.id}" style="margin-bottom:8px;">
-        <img src="${c.avatar || `https://ui-avatars.com/api/?name=${c.username}&background=405DE6&color=fff`}"
-             style="width:30px;height:30px;border-radius:50%;vertical-align:middle; margin-right:5px;">
-        <a href="/user/${c.username}" class="mention-user-link">@${c.username}</a>: ${c.comment}
-        <span class="comment-time">${c.timestamp}</span>
-        <button class="reply-btn" data-comment-id="${c.id}" style="margin-left:5px;">Reply</button>
-        <div class="reply-form-container" data-comment-id="${c.id}" style="display:none; margin-top:5px;">
-          <input type="text" class="reply-input" placeholder="Andika jibu...">
-          <button class="send-reply-btn" data-comment-id="${c.id}">Tuma</button>
-        </div>
-      </div>
-    `).join("")}
-  </div>
-`;
-
-const modalThumbsUp = modalContent.querySelector(".modal-thumbs-up");
-const modalThumbsDown = modalContent.querySelector(".modal-thumbs-down");
-
-modalContent.querySelector(".thumb-up-btn").addEventListener("click", async () => {
-  const res = await fetch(`/api/reports/${reportId}/thumbs-up`, { method: "POST" });
-  const data = await res.json();
-  modalThumbsUp.textContent = data.thumbs_up;
-});
-
-modalContent.querySelector(".thumb-down-btn").addEventListener("click", async () => {
-  const res = await fetch(`/api/reports/${reportId}/thumbs-down`, { method: "POST" });
-  const data = await res.json();
-  modalThumbsDown.textContent = data.thumbs_down;
-});
-
-modalContent.querySelectorAll(".reply-btn").forEach(btn => {
-  btn.addEventListener("click", e => {
-    const cid = e.target.dataset.commentId;
-    const container = modalContent.querySelector(`.reply-form-container[data-comment-id="${cid}"]`);
-    container.style.display = container.style.display === "none" ? "block" : "none";
-  });
-});
-
-modalContent.querySelectorAll(".send-reply-btn").forEach(btn => {
-  btn.addEventListener("click", async e => {
-    const cid = e.target.dataset.commentId;
-    const input = modalContent.querySelector(`.reply-input`);
-    const replyText = input.value.trim();
-    if(!replyText) return;
-
-    const res = await fetch(`/api/comments/${cid}/reply`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comment: replyText })
+      fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch report");
+          return res.text();
+        })
+        .then(html => {
+          modalContent.innerHTML = html;
+          modal.style.display = "block"; // Show modal
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Tatizo kutafuta ripoti hii, tafadhali jaribu tena.");
+        });
     });
-    const newComment = await res.json();
-
-    // append new reply
-    const commentDiv = modalContent.querySelector(`#comment-${cid}`);
-    const replyDiv = document.createElement("div");
-    replyDiv.style.marginLeft = "35px";
-    replyDiv.innerHTML = `<strong>@${newComment.username}</strong>: ${newComment.comment} <span class="comment-time">${newComment.timestamp}</span>`;
-    commentDiv.appendChild(replyDiv);
-    input.value = "";
   });
-});
-      modal.style.display = "block";
 
-      // Scroll to specific comment if hash exists
-      const hash = url.split("#")[1];
-      if(hash){
-        const el = modalContent.querySelector(`#${hash}`);
-        if(el){
-          el.scrollIntoView({behavior:"smooth", block:"center"});
-          el.classList.add("highlight");
-          setTimeout(()=>el.classList.remove("highlight"),1500);
-        }
-      }
+  // Close modal on [x]
+  closeBtn.addEventListener("click", () => {
+    modal.style.display = "none";
+    modalContent.innerHTML = "";
+  });
 
-    } catch (err) {
-      console.error(err);
-      alert("Tatizo kuonyesha ripoti");
+  // Close modal if clicking outside content
+  window.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.style.display = "none";
+      modalContent.innerHTML = "";
     }
   });
 });
-
-// Close modal
-closeModal.addEventListener("click", () => modal.style.display = "none");
-window.addEventListener("click", e => { if(e.target === modal) modal.style.display = "none"; });
-
 </script>
+
+  
+
+
+
 
 <script src="/js/main.js"></script>
 </body>
