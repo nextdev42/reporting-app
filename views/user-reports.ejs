@@ -197,15 +197,15 @@
   <ul id="mentionList">
     <% mentions.forEach(m => { %>
       <li>
-        <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>&background=405DE6&color=fff" 
+        <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>&background=405DE6&color=fff"
              class="mention-avatar" alt="avatar">
 
         <div class="mention-text">
           <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
-          <span> mentioned you in</span>
-          <a href="/user/<%= m.post_owner %>#comment-<%= m.comment_id %>" 
+          <span> alikutaja katika ripoti ya </span>
+          <a href="/user/<%= m.report_user %>#comment-<%= m.comment_id %>"
              class="mention-comment-link">"<%= m.comment %>"</a>
-          <div class="mention-date"><%= m.created_at || "⚠️ No date" %></div>
+          <div class="mention-date"><%= formatTanzaniaTime(m.created_at) %></div>
         </div>
       </li>
     <% }) %>
