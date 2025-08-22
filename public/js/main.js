@@ -43,32 +43,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     mentions.forEach(m => {
-      const div = document.createElement("div");
-      div.style.padding = "10px";
-      div.style.borderBottom = "1px solid #eee";
-      div.style.cursor = "pointer";
-      div.classList.add("mention-item");
+  const div = document.createElement("div");
+  div.style.padding = "8px";
+  div.style.borderBottom = "1px solid #eee";
+  div.innerHTML = `
+    <a href="/user/${m.report_user}?report=${m.report_id}" class="mention-link" data-id="${m.id}">
+      <strong>@${m.comment_user}</strong> kwenye ripoti: <em>${m.title}</em><br>
+      "${m.comment}"<br>
+      <small>${new Date(m.created_at).toLocaleString()}</small>
+    </a>
+  `;
+  container.appendChild(div);
+});
 
-      // fix Invalid Date issue
-      const dateStr = m.timestamp ? new Date(m.timestamp).toLocaleString() : "";
-
-      div.innerHTML = `
-        <strong>@${m.comment_user}</strong> kwenye ripoti: <em>${m.title}</em><br>
-        "${m.comment}"<br>
-        <small>${dateStr}</small>
-      `;
-
-      // On click → go to report + mark read + remove from list
-      div.addEventListener("click", async () => {
-        await markMentionRead(m.id); // mark on backend
-        div.remove(); // remove from dropdown
-        updateMentionBell(); // refresh count
-        window.location.href = `/reports/${m.report_id}`; // go to report page
-      });
-
-      container.appendChild(div);
-    });
-  }
+      
 
   // Toggle dropdown on bell click
   const bell = document.querySelector("#mention-bell");
