@@ -19,12 +19,25 @@
     <span>Umeingia kama: <strong><%= loggedInUser %></strong></span>
     <button onclick="location.href='/dashboard.html'">Nyumbani</button>
     <button onclick="location.href='/logout'">Toka</button>
+
     <!-- Mention bell -->
     <span id="mention-bell" style="cursor:pointer; margin-left:15px;">
-      🔔 <span id="mention-count"></span>
+      🔔 <span id="mention-count"><%= mentions.length %></span>
     </span>
+
     <div id="mentions-dropdown" style="display:none; position:absolute; background:#fff; border:1px solid #ccc; width:300px; max-height:400px; overflow-y:auto; z-index:1000;">
-      <div id="mentions-list"></div>
+      <ul id="mentionList">
+        <% mentions.forEach(m => { %>
+          <li>
+            <a href="/user/<%= m.report_user %>#report-<%= m.report_id %>">
+              <strong>@<%= m.from_user %></strong> mentioned you in report #<%= m.report_id %>
+            </a>
+          </li>
+        <% }) %>
+        <% if(mentions.length === 0){ %>
+          <li><em>Hakuna mentions mpya</em></li>
+        <% } %>
+      </ul>
     </div>
   </div>
 </nav>
@@ -49,10 +62,32 @@
     </div>
   </div>
 
-  <div id="reports-container" class="reports-grid"></div>
+  <div id="reports-container" class="reports-grid">
+    <% reports.forEach(r => { %>
+      <div class="report-card" id="report-<%= r.id %>">
+        <h3><%= r.title %></h3>
+        <p><%= r.description %></p>
+        <% if(r.image){ %>
+          <img src="<%= r.image %>" alt="Report Image">
+        <% } %>
+        <div class="report-meta">
+          <span><%= r.timestamp %></span>
+          <span>👍 <%= r.thumbs_up %></span>
+          <span>👎 <%= r.thumbs_down %></span>
+        </div>
+        <div class="comments">
+          <% r.comments.forEach(c => { %>
+            <div class="comment">
+              <strong>@<%= c.username %></strong>: <%= c.comment %> 
+              <span class="comment-time"><%= c.timestamp %></span>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    <% }) %>
+  </div>
 </div>
 
-<!-- Main JS -->
 <script src="/js/main.js"></script>
 </body>
 </html>
