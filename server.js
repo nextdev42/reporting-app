@@ -404,6 +404,8 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
 app.get("/api/reports", auth, async (req, res) => {
   try {
     const username = (req.query.username || "").toLowerCase();
+
+    // SQL query na reactions join
     let query = `
       SELECT 
         r.id, r.timestamp, r.title, r.description, r.image, r.user_id, 
@@ -423,7 +425,8 @@ app.get("/api/reports", auth, async (req, res) => {
       ) ru ON ru.report_id = r.id
     `;
 
-    const params = [req.session.userId]; // correct session variable
+    const params = [req.session.userId];
+
     if (username) {
       query += ` WHERE u.username = $2`;
       params.push(username);
@@ -433,17 +436,18 @@ app.get("/api/reports", auth, async (req, res) => {
 
     const { rows: reports } = await pool.query(query, params);
 
-    // Attach comments
-    for (let r of reports) {
+    // Attach comments safely
+    for (const report of reports) {
       const { rows: comments } = await pool.query(
         `SELECT c.comment, c.timestamp, u.username 
          FROM comments c 
          JOIN users u ON c.user_id = u.id 
          WHERE c.report_id = $1
          ORDER BY c.id ASC`,
-        [r.id]
+        [report.id]
       );
-      r.comments = comments.map(c => ({
+
+      report.comments = comments.map(c => ({
         ...c,
         timestamp: formatTanzaniaTime(c.timestamp)
       }));
