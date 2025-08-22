@@ -12,9 +12,60 @@
 <script src="/js/user-reports.js"></script>
 <style>
   html { scroll-behavior: smooth; }
+
+  /* Mention dropdown styles */
+  #mentions-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 40px;
+    width: 350px;
+    max-height: 400px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    overflow-y: auto;
+    z-index: 1000;
+    padding: 10px 0;
+  }
+
+  #mentions-dropdown ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  #mentions-dropdown li {
+    padding: 8px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+  }
+
+  #mentions-dropdown li:hover {
+    background: #f0f2f5;
+  }
+
+  .mention-user-link {
+    font-weight: bold;
+    color: #405DE6;
+    text-decoration: none;
+  }
+  .mention-user-link:hover { text-decoration: underline; }
+
+  .mention-comment-link {
+    color: #333;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  /* Highlighted comment */
   .highlight {
-    background-color: yellow;
-    transition: background-color 1s ease;
+    background-color: #fff3b0;
+    transition: background-color 1.5s ease;
   }
 </style>
 </head>
@@ -31,15 +82,14 @@
     <span id="mention-bell" style="cursor:pointer; margin-left:15px;">
       🔔 <span id="mention-count"><%= mentions.length %></span>
     </span>
-    <div id="mentions-dropdown" style="display:none; position:absolute; background:#fff; border:1px solid #ccc; width:350px; max-height:400px; overflow-y:auto; z-index:1000;">
+
+    <div id="mentions-dropdown">
       <ul id="mentionList">
         <% mentions.forEach(m => { %>
-          <li style="margin-bottom:8px;">
-            <!-- Username link -->
-            <a href="/user/<%= m.from_user %>" style="font-weight:bold; text-decoration:none;">@<%= m.from_user %></a>
-            mentioned you in 
-            <!-- Comment link -->
-            <a href="/user/<%= username %>#comment-<%= m.comment_id %>" class="mention-comment-link" style="text-decoration:underline; color:blue;"><%= m.comment %></a>
+          <li>
+            <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
+            mentioned you in
+            <a href="/user/<%= username %>#comment-<%= m.comment_id %>" class="mention-comment-link"><%= m.comment %></a>
           </li>
         <% }) %>
       </ul>
@@ -86,7 +136,7 @@
           <h4>Maoni:</h4>
           <% r.comments.forEach(c => { %>
             <div class="comment" id="comment-<%= c.id %>">
-              <a href="/user/<%= c.username %>" style="font-weight:bold;">@<%= c.username %></a>: <%= c.comment %>
+              <a href="/user/<%= c.username %>" class="mention-user-link">@<%= c.username %></a>: <%= c.comment %>
               <span class="comment-time"><%= c.timestamp %></span>
             </div>
           <% }) %>
@@ -99,8 +149,17 @@
 <script>
   const bell = document.getElementById("mention-bell");
   const dropdown = document.getElementById("mentions-dropdown");
+
+  // Toggle dropdown
   bell.addEventListener("click", () => {
     dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+  });
+
+  // Close dropdown if clicked outside
+  document.addEventListener("click", e => {
+    if(!dropdown.contains(e.target) && e.target !== bell) {
+      dropdown.style.display = "none";
+    }
   });
 
   // Highlight comment when navigating via mention link
@@ -109,13 +168,21 @@
     if(hash.startsWith("#comment-")) {
       const el = document.querySelector(hash);
       if(el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         el.classList.add("highlight");
-        setTimeout(()=>el.classList.remove("highlight"), 1500); // remove highlight after 1.5s
+        setTimeout(()=>el.classList.remove("highlight"), 1500);
       }
     }
   }
   window.addEventListener("load", highlightComment);
   window.addEventListener("hashchange", highlightComment);
+
+  // Close dropdown when clicking any link
+  document.querySelectorAll(".mention-comment-link, .mention-user-link").forEach(link => {
+    link.addEventListener("click", () => {
+      dropdown.style.display = "none";
+    });
+  });
 </script>
 
 <script src="/js/main.js"></script>
