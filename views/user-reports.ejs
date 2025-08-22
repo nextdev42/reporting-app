@@ -1,220 +1,209 @@
 <!DOCTYPE html>
 <html lang="sw">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ripoti za <%= username %></title>
-<link rel="stylesheet" href="/css/user-reports.css">
-<script>
-  window.USERNAME = "<%= username %>";
-  window.LOGGED_IN_USER = "<%= loggedInUser %>";
-</script>
-<script src="/js/user-reports.js"></script>
-<style>
- 
-/* Ensure nav-actions is positioned */
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  position: relative; /* needed for dropdown absolute positioning */
-  z-index: 1000;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ripoti za <%= username %></title>
+  <link rel="stylesheet" href="/css/user-reports.css">
+  <script>
+    window.USERNAME = "<%= username %>";
+    window.LOGGED_IN_USER = "<%= loggedInUser %>";
+  </script>
+  <script src="/js/user-reports.js"></script>
+  <style>
+    /* Navigation */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background: #405DE6;
+      color: white;
+      flex-wrap: wrap;
+    }
+    nav h1 {
+      font-size: 1.2rem;
+      margin: 0;
+    }
+    nav button {
+      background: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    nav button:hover {
+      background: #f0f0f0;
+    }
 
-/* Mention bell */
-#mention-bell {
-  position: relative;
-  cursor: pointer;
-  font-size: 24px;
-  padding: 6px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.2);
-  transition: background 0.3s ease;
-}
+    /* Action buttons */
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1000;
+    }
 
-#mention-bell:hover { background: rgba(255,255,255,0.3); }
+    /* Mention bell */
+    #mention-bell {
+      position: relative;
+      cursor: pointer;
+      font-size: 24px;
+      padding: 6px;
+      border-radius: 50%;
+      transition: background 0.3s ease;
+    }
+    #mention-bell:hover { background: rgba(255,255,255,0.2); }
 
-#mention-count {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #ff2c2c;
-  color: white;
-  width: 20px;
-  height: 20px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  border-radius: 50%;
-  animation: pulse 1.5s infinite;
-}
+    #mention-count {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ff2c2c;
+      color: white;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
 
-@keyframes pulse {
-  0% { transform: scale(1); opacity:1; }
-  50% { transform: scale(1.3); opacity:0.7; }
-  100% { transform: scale(1); opacity:1; }
-}
+    @keyframes pulse {
+      0% { transform: scale(1); opacity:1; }
+      50% { transform: scale(1.2); opacity:0.7; }
+      100% { transform: scale(1); opacity:1; }
+    }
 
-/* Mentions dropdown */
-#mentions-dropdown {
-  display: none;          /* hide by default */
-  position: absolute;
-  top: 130%;              /* below the bell */
-  right: 0;
-  width: 90vw;
-  max-width: 360px;
-  max-height: 400px;
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-  overflow-y: auto;
-  z-index: 10000;         /* float above nav */
-  transition: opacity 0.3s ease, transform 0.2s ease;
-  transform: translateY(-5px);
-  opacity: 0;
-}
+    /* Mentions dropdown */
+    #mentions-dropdown {
+      display: none;
+      position: absolute;
+      top: 130%;
+      right: 0;
+      width: 90vw;
+      max-width: 360px;
+      max-height: 400px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      overflow-y: auto;
+      z-index: 2000;
+      transform: translateY(-5px);
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.2s ease;
+    }
+    #mentions-dropdown.open {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
 
-/* Open state */
-#mentions-dropdown.open {
-  display: block;
-  transform: translateY(0);
-  opacity: 1;
-}
+    #mentions-dropdown ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    #mentions-dropdown li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    #mentions-dropdown li:last-child { border-bottom: none; }
+    #mentions-dropdown li:hover { background: #f9f9f9; }
 
-/* List items */
-#mentions-dropdown ul {
-  list-style: none;
-  margin: 0;
-  padding: 8px 0;
-}
+    .mention-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .mention-user-link { font-weight: bold; color: #405DE6; text-decoration: none; }
+    .mention-user-link:hover { text-decoration: underline; }
+    .mention-comment-link { color: #333; text-decoration: underline; display: block; margin-top: 4px; font-size: 0.9rem; }
+    .mention-text { line-height: 1.3; font-size: 14px; }
+    .mention-date { color: #888; font-size: 12px; margin-top: 4px; display: block; }
 
-#mentions-dropdown li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 16px;
-  cursor: pointer;
-  transition: background 0.2s;
-  border-bottom: 1px solid #f0f2f5;
-}
+    /* Highlight */
+    .highlight { background-color: #fff3b0; transition: background-color 1.5s ease; }
 
-#mentions-dropdown li:last-child { border-bottom: none; }
-
-#mentions-dropdown li:hover { background: #f0f2f5; }
-
-.mention-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
-
-.mention-user-link { font-weight: bold; color: #405DE6; text-decoration: none; }
-.mention-user-link:hover { text-decoration: underline; }
-
-.mention-comment-link { color: #333; text-decoration: underline; cursor: pointer; display: block; margin-top: 4px; font-size: 0.9rem; }
-
-.mention-text { line-height: 1.3; font-size: 14px; }
-
-/* Highlight comment */
-.highlight { background-color: #fff3b0; transition: background-color 1.5s ease; }
-
-/* Mobile responsive */
-@media (max-width: 480px) {
-  #mentions-dropdown { right: 5px; left: 5px; width: auto; }
-}
-
-
-/* Overlay dropdown for small screens */
-@media (max-width: 768px) {
-  #mentions-dropdown {
-    position: fixed;      /* float above everything */
-    top: 60px;            /* distance from top nav */
-    right: 10px;
-    left: 10px;
-    width: auto;
-    max-width: none;
-    max-height: 70vh;     /* use viewport height */
-    border-radius: 10px;
-    z-index: 20000;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    transform: translateY(-10px);
-    opacity: 0;
-    transition: transform 0.3s ease, opacity 0.3s ease;
-  }
-
-  #mentions-dropdown.open {
-    transform: translateY(0);
-    opacity: 1;
-    display: block;
-  }
-}
-</style>
+    /* Responsive dropdown on mobile */
+    @media (max-width: 768px) {
+      #mentions-dropdown {
+        position: fixed;
+        top: 60px;
+        left: 10px;
+        right: 10px;
+        max-height: 70vh;
+        border-radius: 10px;
+        transform: translateY(-10px);
+      }
+      #mentions-dropdown.open { transform: translateY(0); }
+    }
+  </style>
 </head>
 <body>
 
 <nav>
   <h1>Ripoti za <%= username %></h1>
-  <div class="nav-actions" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+  <div class="nav-actions">
     <span>Umeingia kama: <strong><%= loggedInUser %></strong></span>
     <button onclick="location.href='/dashboard.html'">Nyumbani</button>
     <button onclick="location.href='/logout'">Toka</button>
 
     <!-- Mention bell -->
     <span id="mention-bell">
-      🔔 
-      <% if(mentions.length>0){ %>
-      <span id="mention-count"><%= mentions.length %></span>
+      🔔
+      <% if(mentions.length > 0){ %>
+        <span id="mention-count"><%= mentions.length %></span>
       <% } %>
     </span>
 
     <!-- Mentions dropdown -->
-    <!-- Mentions dropdown -->
-<div id="mentions-dropdown">
-  <ul>
-  <% if (mentions.length > 0) { %>
-    <% mentions.forEach(m => { %>
-      <li>
-        <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>&background=405DE6&color=fff&size=32"
-             class="mention-avatar">
-
-        <div style="flex:1; line-height:1.3; font-size:14px;">
-          <a href="/user/<%= m.from_user %>" class="mention-user-link">
-            @<%= m.from_user %>
-          </a>
-          mentioned you in
-
-          <% if (m.comment_id && m.comment) { %>
-            <a href="/user/<%= username %>#comment-<%= m.comment_id %>"
-               class="mention-comment-link">
-              <%= m.comment %>
-            </a>
-          <% } else { %>
-            <span class="mention-text"><%= m.comment || "⚠️ No comment text" %></span>
-          <% } %>
-
-          <div style="color:#888; font-size:12px; margin-top:2px;">
-            <% if (m.created_at) { %>
-              <%= new Date(m.created_at).toLocaleString('sw-TZ', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                 }) %>
-            <% } else { %>
-              <span>⚠️ No date</span>
-            <% } %>
-          </div>
-        </div>
-      </li>
-    <% }) %>
-  <% } else { %>
-    <li style="padding:10px; color:#888; text-align:center;">
-      Hakuna mention mpya
-    </li>
-  <% } %>
-</ul>
-</div>
+    <div id="mentions-dropdown">
+      <ul>
+        <% if (mentions.length > 0) { %>
+          <% mentions.forEach(m => { %>
+            <li>
+              <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>&background=405DE6&color=fff&size=32" class="mention-avatar">
+              <div style="flex:1;">
+                <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
+                mentioned you in
+                <% if (m.comment_id && m.comment) { %>
+                  <a href="/user/<%= username %>#comment-<%= m.comment_id %>" class="mention-comment-link">
+                    <%= m.comment %>
+                  </a>
+                <% } else { %>
+                  <span class="mention-text"><%= m.comment || "⚠️ No comment text" %></span>
+                <% } %>
+                <span class="mention-date">
+                  <% if (m.created_at) { %>
+                    <%= new Date(m.created_at).toLocaleString('sw-TZ', { dateStyle: 'medium', timeStyle: 'short' }) %>
+                  <% } else { %>
+                    ⚠️ No date
+                  <% } %>
+                </span>
+              </div>
+            </li>
+          <% }) %>
+        <% } else { %>
+          <li style="padding:12px; text-align:center; color:#888;">Hakuna mention mpya</li>
+        <% } %>
+      </ul>
+    </div>
+  </div>
 </nav>
 
 <div class="container">
@@ -223,9 +212,9 @@
     <div class="info">
       <h2>Ripoti za <strong><%= username %></strong></h2>
       <div class="stats">
-        <span id="totalPosts">Ripoti: <%= reports.length %></span>
-        <span id="totalThumbsUp">👍 <%= reports.reduce((acc,r)=>acc+r.thumbs_up,0) %></span>
-        <span id="totalThumbsDown">👎 <%= reports.reduce((acc,r)=>acc+r.thumbs_down,0) %></span>
+        <span>Ripoti: <%= reports.length %></span>
+        <span>👍 <%= reports.reduce((acc,r)=>acc+r.thumbs_up,0) %></span>
+        <span>👎 <%= reports.reduce((acc,r)=>acc+r.thumbs_down,0) %></span>
       </div>
 
       <% if(username === loggedInUser){ %>
@@ -248,19 +237,19 @@
         <% } %>
         <p class="timestamp"><%= r.timestamp %></p>
         <div class="reactions">
-          👍 <span class="thumbs-up"><%= r.thumbs_up %></span>
-          👎 <span class="thumbs-down"><%= r.thumbs_down %></span>
+          👍 <span><%= r.thumbs_up %></span>
+          👎 <span><%= r.thumbs_down %></span>
         </div>
 
         <div class="comments">
           <h4>Maoni:</h4>
           <% r.comments.forEach(c => { %>
             <% if(c.id){ %>
-            <div class="comment" id="comment-<%= c.id %>">
-              <a href="/user/<%= c.username %>" class="mention-user-link">@<%= c.username %></a>: 
-              <span class="comment-text"><%= c.comment %></span>
-              <span class="comment-time"><%= c.timestamp %></span>
-            </div>
+              <div class="comment" id="comment-<%= c.id %>">
+                <a href="/user/<%= c.username %>" class="mention-user-link">@<%= c.username %></a>: 
+                <span class="comment-text"><%= c.comment %></span>
+                <span class="comment-time"><%= c.timestamp %></span>
+              </div>
             <% } %>
           <% }) %>
         </div>
@@ -270,46 +259,41 @@
 </div>
 
 <script>
+  const bell = document.getElementById("mention-bell");
+  const dropdown = document.getElementById("mentions-dropdown");
 
-const bell = document.getElementById("mention-bell");
-const dropdown = document.getElementById("mentions-dropdown");
+  bell.addEventListener("click", e => {
+    e.stopPropagation();
+    dropdown.classList.toggle("open");
+  });
 
-// Toggle dropdown using class
-bell.addEventListener("click", e => {
-  e.stopPropagation();
-  dropdown.classList.toggle("open");
-});
+  document.addEventListener("click", e => {
+    if (!dropdown.contains(e.target) && e.target !== bell) {
+      dropdown.classList.remove("open");
+    }
+  });
 
-// Close dropdown if clicked outside
-document.addEventListener("click", e => {
-  if (!dropdown.contains(e.target) && e.target !== bell) {
-    dropdown.classList.remove("open");
-  }
-});
+  // Close dropdown when clicking a link inside
+  document.addEventListener("click", e => {
+    if (e.target.classList.contains("mention-comment-link") || e.target.classList.contains("mention-user-link")) {
+      dropdown.classList.remove("open");
+    }
+  });
 
-// Close dropdown when clicking a mention link
-document.querySelectorAll(".mention-comment-link, .mention-user-link").forEach(link => {
-  link.addEventListener("click", () => dropdown.classList.remove("open"));
-});
-
-// Highlight comment when navigating via mention link
-function highlightComment() {
-  const hash = window.location.hash;
-  if (hash.startsWith("#comment-")) {
-    const el = document.querySelector(hash);
-    if (el) {
-      el.scrollIntoView({ behavior:'smooth', block:'center' });
-      el.classList.add("highlight");
-      setTimeout(()=>el.classList.remove("highlight"),1500);
+  // Highlight comment when jumping via hash
+  function highlightComment() {
+    const hash = window.location.hash;
+    if (hash.startsWith("#comment-")) {
+      const el = document.querySelector(hash);
+      if (el) {
+        el.scrollIntoView({ behavior:'smooth', block:'center' });
+        el.classList.add("highlight");
+        setTimeout(()=>el.classList.remove("highlight"),1500);
+      }
     }
   }
-}
-
-window.addEventListener("load", highlightComment);
-window.addEventListener("hashchange", highlightComment);
-
-
-
+  window.addEventListener("load", highlightComment);
+  window.addEventListener("hashchange", highlightComment);
 </script>
 
 <script src="/js/main.js"></script>
