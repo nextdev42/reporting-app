@@ -457,6 +457,42 @@ app.post("/api/mentions/:id/read", auth, async (req, res) => {
   }
 });
 
+app.get("/reports/:id", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get the report
+    const { rows } = await pool.query(
+      `SELECT reports.*, users.username, users.kituo 
+       FROM reports 
+       JOIN users ON reports.user_id = users.id 
+       WHERE reports.id = $1`,
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).send("Report not found");
+    }
+
+    const report = rows[0];
+
+    // Also fetch comments for this report
+    const comments = await pool.query(
+      `SELECT comments.*, users.username, users.kituo 
+       FROM comments 
+       JOIN users ON comments.user_id = users.id 
+       WHERE comments.report_id = $1
+       ORDER BY comments.timestamp ASC`,
+      [id]
+    );
+
+    res.render("report-view", { report, comments: comments.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error loading report");
+  }
+});
+
 // ====== Add comment ======
 // ====== Add comment ======
 app.post("/api/comments/:id", auth, async (req,res)=>{
