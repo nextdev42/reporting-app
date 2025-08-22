@@ -423,11 +423,15 @@ app.get("/api/reports", auth, async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT m.id, m.report_id, m.comment_id, m.created_at,
-             c.comment, r.title, u.username AS comment_user
+             c.comment,
+             r.title,
+             u.username AS comment_user,   -- who wrote the comment
+             ru.username AS report_user    -- who owns the report
       FROM mentions m
       JOIN comments c ON m.comment_id = c.id
       JOIN reports r ON m.report_id = r.id
       JOIN users u ON c.user_id = u.id
+      JOIN users ru ON r.user_id = ru.id   -- 🔹 join to get report owner
       WHERE m.mentioned_user_id = $1 AND m.is_read = false
       ORDER BY m.created_at DESC
     `, [req.session.userId]);
