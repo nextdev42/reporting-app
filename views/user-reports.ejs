@@ -5,107 +5,119 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ripoti za <%= username %></title>
 <link rel="stylesheet" href="/css/user-reports.css">
-<script>
-  window.USERNAME = "<%= username %>";
-  window.LOGGED_IN_USER = "<%= loggedInUser %>";
-</script>
-<script src="/js/user-reports.js"></script>
 <style>
-  html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; }
 
-  nav { position: relative; z-index: 1; }
+/* Navbar */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  position: relative; /* important for dropdown positioning */
+  z-index: 10;
+}
 
-  /* Mention bell */
-  #mention-bell {
-    position: relative;
-    cursor: pointer;
-    margin-left: 15px;
-    display: inline-flex;
-    align-items: center;
-    font-size: 20px;
-    z-index: 101;
-  }
+/* Mention bell */
+#mention-bell {
+  position: relative;
+  cursor: pointer;
+  font-size: 20px;
+  display: inline-flex;
+  align-items: center;
+}
 
-  #mention-count {
-    position: absolute;
-    top: -5px;
-    right: -10px;
-    background: red;
-    color: white;
-    font-size: 12px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: pulse 1.5s infinite;
-  }
+#mention-count {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: red;
+  color: white;
+  font-size: 12px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 1.5s infinite;
+}
 
-  @keyframes pulse {
-    0% { transform: scale(1); opacity:1; }
-    50% { transform: scale(1.3); opacity:0.7; }
-    100% { transform: scale(1); opacity:1; }
-  }
+@keyframes pulse {
+  0% { transform: scale(1); opacity:1; }
+  50% { transform: scale(1.3); opacity:0.7; }
+  100% { transform: scale(1); opacity:1; }
+}
 
-  /* Mention dropdown */
+/* Mentions dropdown */
+#mentions-dropdown {
+  display: none;
+  position: absolute;
+  top: 40px;
+  right: 0;
+  width: 90vw;
+  max-width: 360px;
+  max-height: 400px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  overflow-y: auto;
+  z-index: 9999; /* above everything */
+}
+
+#mentions-dropdown ul {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+}
+
+#mentions-dropdown li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#mentions-dropdown li:hover {
+  background: #f0f2f5;
+}
+
+.mention-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mention-user-link { font-weight: bold; color: #405DE6; text-decoration: none; }
+.mention-user-link:hover { text-decoration: underline; }
+
+.mention-comment-link { color: #333; text-decoration: underline; cursor: pointer; }
+
+/* Highlight comment */
+.highlight { background-color: #fff3b0; transition: background-color 1.5s ease; }
+
+/* Responsive */
+@media (max-width: 480px) {
   #mentions-dropdown {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    width: 90vw;
-    max-width: 360px;
-    max-height: 400px;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    overflow-y: auto;
-    z-index: 1050;
+    right: 5px;
+    left: 5px;
+    width: auto;
   }
-
-  #mentions-dropdown ul {
-    list-style: none;
-    margin: 0;
-    padding: 8px 0;
-  }
-
-  #mentions-dropdown li {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 8px 16px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-
-  #mentions-dropdown li:hover { background: #f0f2f5; }
-
-  .mention-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .mention-user-link { font-weight: bold; color: #405DE6; text-decoration: none; }
-  .mention-user-link:hover { text-decoration: underline; }
-
-  .mention-comment-link { color: #333; text-decoration: underline; cursor: pointer; }
-
-  .highlight { background-color: #fff3b0; transition: background-color 1.5s ease; }
-
-  @media (max-width: 480px) {
-    #mentions-dropdown { right: 5px; left: 5px; width: auto; }
-  }
+}
 </style>
 </head>
 <body>
 
 <nav>
   <h1>Ripoti za <%= username %></h1>
-  <div class="nav-actions" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
     <span>Umeingia kama: <strong><%= loggedInUser %></strong></span>
     <button onclick="location.href='/dashboard.html'">Nyumbani</button>
     <button onclick="location.href='/logout'">Toka</button>
@@ -116,33 +128,32 @@
       <% if(mentions.length>0){ %>
       <span id="mention-count"><%= mentions.length %></span>
       <% } %>
+      <!-- Dropdown inside nav -->
+      <div id="mentions-dropdown">
+        <ul>
+          <% mentions.forEach(m => { %>
+            <% if(m.comment_id){ %>
+            <li>
+              <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>&background=405DE6&color=fff&size=32" class="mention-avatar">
+              <div style="flex:1; line-height:1.3; font-size:14px;">
+                <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
+                mentioned you in
+                <a href="#comment-<%= m.comment_id %>" class="mention-comment-link"><%= m.comment %></a>
+                <div style="color:#888; font-size:12px; margin-top:2px;">
+                  <%= new Date(m.created_at).toLocaleTimeString('sw-TZ',{hour:'2-digit',minute:'2-digit'}) %>
+                </div>
+              </div>
+            </li>
+            <% } %>
+          <% }) %>
+          <% if(mentions.length===0){ %>
+            <li style="padding:10px; color:#888; text-align:center;">Hakuna mention mpya</li>
+          <% } %>
+        </ul>
+      </div>
     </span>
   </div>
 </nav>
-
-<!-- Move dropdown outside nav to prevent clipping -->
-<div id="mentions-dropdown">
-  <ul>
-    <% mentions.forEach(m => { %>
-      <% if(m.comment_id){ %>
-      <li>
-        <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>&background=405DE6&color=fff&size=32" class="mention-avatar">
-        <div style="flex:1; line-height:1.3; font-size:14px;">
-          <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
-          mentioned you in
-          <a href="#comment-<%= m.comment_id %>" class="mention-comment-link"><%= m.comment %></a>
-          <div style="color:#888; font-size:12px; margin-top:2px;">
-            <%= new Date(m.created_at).toLocaleTimeString('sw-TZ',{hour:'2-digit',minute:'2-digit'}) %>
-          </div>
-        </div>
-      </li>
-      <% } %>
-    <% }) %>
-    <% if(mentions.length===0){ %>
-      <li style="padding:10px; color:#888; text-align:center;">Hakuna mention mpya</li>
-    <% } %>
-  </ul>
-</div>
 
 <div class="container">
   <div class="user-header">
@@ -201,20 +212,14 @@ const bell = document.getElementById("mention-bell");
 const dropdown = document.getElementById("mentions-dropdown");
 
 // Toggle dropdown
-bell.addEventListener("click", e => {
+bell.addEventListener("click", e=>{
   e.stopPropagation();
-  dropdown.style.display = dropdown.style.display==='none' ? 'block' : 'none';
-  // position below bell
-  const rect = bell.getBoundingClientRect();
-  dropdown.style.top = rect.bottom + window.scrollY + "px";
-  dropdown.style.left = rect.right - dropdown.offsetWidth + window.scrollX + "px";
+  dropdown.style.display = dropdown.style.display==='none' ? 'block':'none';
 });
 
-// Close dropdown if clicked outside
-document.addEventListener("click", e => {
-  if(!dropdown.contains(e.target) && e.target !== bell){
-    dropdown.style.display = 'none';
-  }
+// Close if clicked outside
+document.addEventListener("click", e=>{
+  if(!dropdown.contains(e.target) && e.target!==bell) dropdown.style.display='none';
 });
 
 // Highlight comment
@@ -224,17 +229,17 @@ function highlightComment(){
     const el = document.querySelector(hash);
     if(el){
       el.scrollIntoView({behavior:'smooth', block:'center'});
-      el.classList.add("highlight");
-      setTimeout(()=>el.classList.remove("highlight"),1500);
+      el.classList.add('highlight');
+      setTimeout(()=>el.classList.remove('highlight'),1500);
     }
   }
 }
-window.addEventListener("load", highlightComment);
-window.addEventListener("hashchange", highlightComment);
+window.addEventListener('load', highlightComment);
+window.addEventListener('hashchange', highlightComment);
 
-// Close dropdown when clicking links
-document.querySelectorAll(".mention-comment-link, .mention-user-link").forEach(link=>{
-  link.addEventListener("click", ()=>{ dropdown.style.display='none'; });
+// Close dropdown on link click
+document.querySelectorAll('.mention-comment-link, .mention-user-link').forEach(link=>{
+  link.addEventListener('click', ()=>{ dropdown.style.display='none'; });
 });
 </script>
 
