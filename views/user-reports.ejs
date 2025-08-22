@@ -227,43 +227,46 @@
   </div>
 </div>
 
-<script>
+
+ <script>
   const bell = document.getElementById("mention-bell");
   const dropdown = document.getElementById("mentions-dropdown");
 
-  // Toggle dropdown
-  bell.addEventListener("click", () => {
-    dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+  // Toggle dropdown with class
+  bell.addEventListener("click", e => {
+    e.stopPropagation();
+    dropdown.classList.toggle("open");
   });
 
   // Close dropdown if clicked outside
   document.addEventListener("click", e => {
-    if(!dropdown.contains(e.target) && e.target !== bell) {
-      dropdown.style.display = "none";
+    if (!dropdown.contains(e.target) && e.target !== bell) {
+      dropdown.classList.remove("open");
     }
   });
 
   // Highlight comment when navigating via mention link
   function highlightComment() {
     const hash = window.location.hash;
-    if(hash.startsWith("#comment-")) {
+    if (hash.startsWith("#comment-")) {
       const el = document.querySelector(hash);
-      if(el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
         el.classList.add("highlight");
-        setTimeout(()=>el.classList.remove("highlight"), 1500);
+        setTimeout(() => el.classList.remove("highlight"), 1500);
       }
     }
   }
   window.addEventListener("load", highlightComment);
   window.addEventListener("hashchange", highlightComment);
 
-  // Close dropdown when clicking any link
-  document.querySelectorAll(".mention-comment-link, .mention-user-link").forEach(link => {
-    link.addEventListener("click", () => {
-      dropdown.style.display = "none";
-    });
+  // Close dropdown when clicking a mention link
+  document.addEventListener("click", e => {
+    if (e.target.closest(".mention-comment-link, .mention-user-link")) {
+      dropdown.classList.remove("open");
+    }
   });
+
 </script>
 
 <script src="/js/main.js"></script>
