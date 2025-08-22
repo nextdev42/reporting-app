@@ -482,55 +482,6 @@ app.get("/api/reports", auth, async (req, res) => {
   }
 });
 
-app.get("/reports/:id", auth, async (req, res) => {
-  try {
-    const reportId = req.params.id;
-
-    // Fetch the report
-    const reportRes = await pool.query(
-      `SELECT r.*, u.username AS report_user
-       FROM reports r
-       JOIN users u ON r.user_id=u.id
-       WHERE r.id=$1`, [reportId]
-    );
-
-    if (!reportRes.rows.length) return res.status(404).send("Ripoti haipo");
-
-    const r = reportRes.rows[0];
-
-    // Fetch comments for this report
-    const commentsRes = await pool.query(
-      `SELECT c.*, u.username
-       FROM comments c
-       JOIN users u ON c.user_id=u.id
-       WHERE c.report_id=$1
-       ORDER BY c.id ASC`, [reportId]
-    );
-
-    const report = {
-  ...r,
-  thumbs_up: r.thumbs_up || 0,
-  thumbs_down: r.thumbs_down || 0,
-  timestamp: formatTanzaniaTime(r.timestamp),
-  comments: commentsRes.rows.map(c => ({
-    ...c,
-    timestamp: formatTanzaniaTime(c.timestamp)
-  }))
-};
-
-    res.render("user-reports", {
-      username: r.report_user,
-      loggedInUser: req.session.username,
-      clinic: null,   // optional
-      reports: [report], // only this report
-      mentions: []     // optional
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Tatizo kuonyesha ripoti");
-  }
-});
 
 app.post("/api/mentions/:id/read", auth, async (req, res) => {
   try {
