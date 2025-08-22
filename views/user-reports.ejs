@@ -171,39 +171,49 @@
     <!-- Mentions dropdown -->
 <div id="mentions-dropdown">
   <ul>
-    <% if (mentions.length > 0) { %>
-      <% mentions.forEach(m => { %>
-        <li>
-          <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>&background=405DE6&color=fff&size=32"
-               class="mention-avatar">
+  <% if (mentions.length > 0) { %>
+    <% mentions.forEach(m => { %>
+      <li>
+        <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>&background=405DE6&color=fff&size=32"
+             class="mention-avatar">
 
-          <div style="flex:1; line-height:1.3; font-size:14px;">
-            <a href="/user/<%= m.from_user %>" class="mention-user-link">
-              @<%= m.from_user %>
+        <div style="flex:1; line-height:1.3; font-size:14px;">
+          <a href="/user/<%= m.from_user %>" class="mention-user-link">
+            @<%= m.from_user %>
+          </a>
+          mentioned you in
+
+          <% if (m.comment_id && m.comment) { %>
+            <a href="/user/<%= username %>#comment-<%= m.comment_id %>"
+               class="mention-comment-link">
+              <%= m.comment %>
             </a>
-            mentioned you in
+          <% } else { %>
+            <span class="mention-text"><%= m.comment || "⚠️ No comment text" %></span>
+          <% } %>
 
-            <% if (m.comment_id) { %>
-              <a href="/user/<%= username %>#comment-<%= m.comment_id %>"
-                 class="mention-comment-link">
-                <%= m.comment %>
-              </a>
+          <div style="color:#888; font-size:12px; margin-top:2px;">
+            <% if (m.created_at) { %>
+              <%= new Date(m.created_at).toLocaleString('sw-TZ', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                 }) %>
             <% } else { %>
-              <span class="mention-text"><%= m.comment %></span>
+              <span>⚠️ No date</span>
             <% } %>
-
-            <div style="color:#888; font-size:12px; margin-top:2px;">
-              <%= new Date(m.created_at).toLocaleTimeString('sw-TZ',{hour:'2-digit',minute:'2-digit'}) %>
-            </div>
           </div>
-        </li>
-      <% }) %>
-    <% } else { %>
-      <li style="padding:10px; color:#888; text-align:center;">
-        Hakuna mention mpya
+        </div>
       </li>
-    <% } %>
-  </ul>
+    <% }) %>
+  <% } else { %>
+    <li style="padding:10px; color:#888; text-align:center;">
+      Hakuna mention mpya
+    </li>
+  <% } %>
+</ul>
 </div>
 </nav>
 
