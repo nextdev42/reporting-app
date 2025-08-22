@@ -401,62 +401,50 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
 
 // GET /api/reports?username=...
 
-app.get("/api/reports", auth, async (req, res) => {
+app.get("/reports/:id", auth, async (req, res) => {
   try {
-    const username = (req.query.username || "").toLowerCase();
+    const { id } = req.params;
 
-    // SQL query na reactions join
-    let query = `
-      SELECT 
-        r.id, r.timestamp, r.title, r.description, r.image, r.user_id, 
-        u.username, u.kituo AS clinic,
-        COALESCE(ru.thumbs_up, 0) AS thumbs_up,
-        COALESCE(ru.thumbs_down, 0) AS thumbs_down,
-        ru.user_thumb
-      FROM reports r
-      JOIN users u ON r.user_id = u.id
-      LEFT JOIN (
-        SELECT report_id,
-               SUM(CASE WHEN type='up' THEN 1 ELSE 0 END) AS thumbs_up,
-               SUM(CASE WHEN type='down' THEN 1 ELSE 0 END) AS thumbs_down,
-               MAX(CASE WHEN user_id=$1 THEN type END) AS user_thumb
-        FROM reactions
-        GROUP BY report_id
-      ) ru ON ru.report_id = r.id
-    `;
+    // Get the report with user info
+    const { rows: reportRows } = await pool.query(
+      `SELECT reports.*, users.username, users.kituo 
+       FROM reports 
+       JOIN users ON reports.user_id = users.id 
+       WHERE reports.id = $1`,
+      [id]
+    );
 
-    const params = [req.session.userId];
+    if (!reportRows.length) return res.status(404).send("Report not found");
 
-    if (username) {
-      query += ` WHERE u.username = $2`;
-      params.push(username);
-    }
+    const reportRow = reportRows[0];
 
-    query += ` ORDER BY r.id DESC`;
+    // Fetch comments for this report
+    const { rows: commentsRows } = await pool.query(
+      `SELECT comments.*, users.username, users.kituo 
+       FROM comments 
+       JOIN users ON comments.user_id = users.id 
+       WHERE comments.report_id = $1
+       ORDER BY comments.timestamp ASC`,
+      [id]
+    );
 
-    const { rows: reports } = await pool.query(query, params);
-
-    // Attach comments safely
-    for (const report of reports) {
-      const { rows: comments } = await pool.query(
-        `SELECT c.comment, c.timestamp, u.username 
-         FROM comments c 
-         JOIN users u ON c.user_id = u.id 
-         WHERE c.report_id = $1
-         ORDER BY c.id ASC`,
-        [report.id]
-      );
-
-      report.comments = comments.map(c => ({
+    // Build report object
+    const report = {
+      ...reportRow,
+      thumbs_up: reportRow.thumbs_up || 0,
+      thumbs_down: reportRow.thumbs_down || 0,
+      timestamp: formatTanzaniaTime(reportRow.timestamp),
+      comments: commentsRows.map(c => ({
         ...c,
         timestamp: formatTanzaniaTime(c.timestamp)
-      }));
-    }
+      }))
+    };
 
-    res.json({ reports });
+    res.render("report-view", { report, comments: commentsRows });
+
   } catch (err) {
     console.error(err);
-    res.status(500).send("Hitilafu katika kupakia ripoti");
+    res.status(500).send("Server error loading report");
   }
 });
     
