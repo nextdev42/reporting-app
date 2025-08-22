@@ -10,6 +10,13 @@
   window.LOGGED_IN_USER = "<%= loggedInUser %>";
 </script>
 <script src="/js/user-reports.js"></script>
+<style>
+  html { scroll-behavior: smooth; }
+  .highlight {
+    background-color: yellow;
+    transition: background-color 1s ease;
+  }
+</style>
 </head>
 <body>
 
@@ -24,13 +31,15 @@
     <span id="mention-bell" style="cursor:pointer; margin-left:15px;">
       🔔 <span id="mention-count"><%= mentions.length %></span>
     </span>
-    <div id="mentions-dropdown" style="display:none; position:absolute; background:#fff; border:1px solid #ccc; width:300px; max-height:400px; overflow-y:auto; z-index:1000;">
+    <div id="mentions-dropdown" style="display:none; position:absolute; background:#fff; border:1px solid #ccc; width:350px; max-height:400px; overflow-y:auto; z-index:1000;">
       <ul id="mentionList">
         <% mentions.forEach(m => { %>
-          <li>
-            <a href="/user/<%= username %>#report-<%= m.report_id %>">
-              <strong>@<%= m.from_user %></strong> mentioned you
-            </a>
+          <li style="margin-bottom:8px;">
+            <!-- Username link -->
+            <a href="/user/<%= m.from_user %>" style="font-weight:bold; text-decoration:none;">@<%= m.from_user %></a>
+            mentioned you in 
+            <!-- Comment link -->
+            <a href="/user/<%= username %>#comment-<%= m.comment_id %>" class="mention-comment-link" style="text-decoration:underline; color:blue;"><%= m.comment %></a>
           </li>
         <% }) %>
       </ul>
@@ -76,8 +85,8 @@
         <div class="comments">
           <h4>Maoni:</h4>
           <% r.comments.forEach(c => { %>
-            <div class="comment">
-              <strong>@<%= c.username %></strong>: <%= c.comment %>
+            <div class="comment" id="comment-<%= c.id %>">
+              <a href="/user/<%= c.username %>" style="font-weight:bold;">@<%= c.username %></a>: <%= c.comment %>
               <span class="comment-time"><%= c.timestamp %></span>
             </div>
           <% }) %>
@@ -93,6 +102,20 @@
   bell.addEventListener("click", () => {
     dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
   });
+
+  // Highlight comment when navigating via mention link
+  function highlightComment() {
+    const hash = window.location.hash;
+    if(hash.startsWith("#comment-")) {
+      const el = document.querySelector(hash);
+      if(el) {
+        el.classList.add("highlight");
+        setTimeout(()=>el.classList.remove("highlight"), 1500); // remove highlight after 1.5s
+      }
+    }
+  }
+  window.addEventListener("load", highlightComment);
+  window.addEventListener("hashchange", highlightComment);
 </script>
 
 <script src="/js/main.js"></script>
