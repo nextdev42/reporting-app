@@ -545,36 +545,43 @@ app.get("/reports/:id", auth, async (req, res) => {
 });
 
 // Fetch a single report by ID (for modal)
-app.get("/api/reports/:id", auth, async (req, res) => {
+
+    app.get("/api/reports/:id", auth, async (req, res) => {
   try {
     const reportId = req.params.id;
 
     const reportRes = await pool.query(
       `SELECT r.*, u.username AS report_user
        FROM reports r
-       JOIN users u ON r.user_id = u.id
-       WHERE r.id = $1`, [reportId]
+       JOIN users u ON r.user_id = u.id 
+       WHERE r.id = $1`,
+      [reportId]
     );
 
-    if (!reportRes.rows.length) return res.status(404).json({ error: "Ripoti haipo" });
+    if (!reportRes.rows.length) 
+      return res.status(404).json({ error: "Ripoti haipo" });
 
-    const r = reportRes.rows[0];
+    const reportRow = reportRes.rows[0];
 
+    // Fetch comments for this report
     const commentsRes = await pool.query(
-      `SELECT c.*, u.username
-       FROM comments c
-       JOIN users u ON c.user_id = u.id
-       WHERE c.report_id=$1
-       ORDER BY c.id ASC`, [reportId]
+      `SELECT comments.*, users.username, users.kituo 
+       FROM comments 
+       JOIN users ON comments.user_id = users.id 
+       WHERE comments.report_id = $1
+       ORDER BY comments.timestamp ASC`,
+      [reportId]
     );
 
     const report = {
-      ...r,
+      ...reportRow,
+      thumbs_up: reportRow.thumbs_up || 0,
+      thumbs_down: reportRow.thumbs_down || 0,
+      timestamp: formatTanzaniaTime(reportRow.timestamp),
       comments: commentsRes.rows.map(c => ({
         ...c,
         timestamp: formatTanzaniaTime(c.timestamp)
-      })),
-      timestamp: formatTanzaniaTime(r.timestamp)
+      }))
     };
 
     res.json(report);
