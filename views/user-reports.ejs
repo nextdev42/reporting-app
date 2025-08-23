@@ -279,56 +279,74 @@
 
 <script>
 
-     document.addEventListener("click", async e => {
-  if (e.target.matches(".mention-comment-link")) {
-    e.preventDefault();
-    const reportId = e.target.getAttribute("data-report-id");
-    const commentId = e.target.getAttribute("data-comment-id");
+  document.addEventListener("DOMContentLoaded", () => {
+  const modal = document.getElementById("report-modal");
+  const modalContent = document.getElementById("modal-report-content");
+  
+  document.addEventListener("click", async e => {
+    if (e.target.matches(".mention-comment-link")) {
+      e.preventDefault();
+      const reportId = e.target.getAttribute("data-report-id");
+      const commentId = e.target.getAttribute("data-comment-id");
 
-    try {
-      const res = await fetch(`/api/reports/${reportId}`, {
-        headers: { "X-Requested-With": "XMLHttpRequest" }
-      });
-      if (!res.ok) throw new Error("Failed to fetch report");
-      const data = await res.json();
+      try {
+        const res = await fetch(`/api/reports/${reportId}`, {
+          headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+        if (!res.ok) throw new Error("Failed to fetch report");
+        const data = await res.json();
 
-      let html = `<h3>${data.title}</h3>
-                  <p>${data.description}</p>`;
-      if (data.image) html += `<img src="${data.image}" style="max-width:100%">`;
+        let html = `<h3>${data.title}</h3>
+                    <p>${data.description}</p>`;
+        if (data.image) html += `<img src="${data.image}" style="max-width:100%">`;
 
-      html += `<div class="reactions">
-                 <button class="thumbs-up-btn" data-report-id="${data.id}">👍 <span>${data.thumbs_up}</span></button>
-                 <button class="thumbs-down-btn" data-report-id="${data.id}">👎 <span>${data.thumbs_down}</span></button>
-               </div>`;
-
-      html += `<div class="comments"><h4>Maoni:</h4>`;
-      data.comments.forEach(c => {
-        html += `<div class="comment" id="comment-${c.id}">
-                   <a class="mention-user-link">@${c.username}</a>: ${c.comment}
-                   <span class="comment-time">${c.timestamp}</span>
+        html += `<div class="reactions">
+                   <button class="thumbs-up-btn" data-report-id="${data.id}">👍 <span>${data.thumbs_up}</span></button>
+                   <button class="thumbs-down-btn" data-report-id="${data.id}">👎 <span>${data.thumbs_down}</span></button>
                  </div>`;
-      });
-      html += `</div>`;
 
-      modalContent.innerHTML = html;
-      modal.style.display = "block";
+        html += `<div class="comments"><h4>Maoni:</h4>`;
+        data.comments.forEach(c => {
+          html += `<div class="comment" id="comment-${c.id}">
+                     <a class="mention-user-link">@${c.username}</a>: ${c.comment}
+                     <span class="comment-time">${c.timestamp}</span>
+                   </div>`;
+        });
+        html += `</div>`;
 
-      // Scroll to mentioned comment & highlight
-      if (commentId) {
-        const commentEl = modalContent.querySelector(`#comment-${commentId}`);
-        if (commentEl) {
-          commentEl.scrollIntoView({ behavior: "smooth", block: "center" });
-          commentEl.classList.add("highlight");
-          setTimeout(() => commentEl.classList.remove("highlight"), 2000);
+        modalContent.innerHTML = html;
+        modal.style.display = "block";
+
+        if (commentId) {
+          const commentEl = modalContent.querySelector(`#comment-${commentId}`);
+          if (commentEl) {
+            commentEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            commentEl.classList.add("highlight");
+            setTimeout(() => commentEl.classList.remove("highlight"), 2000);
+          }
         }
+
+      } catch (err) {
+        console.error(err);
+        alert("Tatizo kufungua ripoti hii. Jaribu tena.");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Tatizo kufungua ripoti hii. Jaribu tena.");
     }
-  }
-}); 
-          
+  });
+
+  // Close modal
+  const closeBtn = modal.querySelector(".close-modal");
+  closeBtn.addEventListener("click", () => {
+    modal.style.display = "none";
+    modalContent.innerHTML = "";
+  });
+  window.addEventListener("click", e => {
+    if (e.target === modal) {
+      modal.style.display = "none";
+      modalContent.innerHTML = "";
+    }
+  });
+});   
+      
 </script>
 
 <script src="/js/main.js"></script>
