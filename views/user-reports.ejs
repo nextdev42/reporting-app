@@ -306,59 +306,82 @@
   </div>
 </div>
 
-<script>
 
-  document.addEventListener("DOMContentLoaded", () => {
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const bell = document.getElementById("mention-bell");
+  const dropdown = document.getElementById("mentions-dropdown");
   const modal = document.getElementById("report-modal");
   const modalContent = document.getElementById("modal-report-content");
-  
-  document.addEventListener("click", async e => {
-    if (e.target.matches(".mention-comment-link")) {
-      e.preventDefault();
-      const reportId = e.target.getAttribute("data-report-id");
-      const commentId = e.target.getAttribute("data-comment-id");
 
-      try {
-        const res = await fetch(`/api/reports/${reportId}`, {
-          headers: { "X-Requested-With": "XMLHttpRequest" }
-        });
-        if (!res.ok) throw new Error("Failed to fetch report");
-        const data = await res.json();
+  // Toggle dropdown on bell click
+  bell.addEventListener("click", e => {
+    e.stopPropagation(); // prevent closing immediately
+    dropdown.classList.toggle("open");
+  });
 
-        let html = `<h3>${data.title}</h3>
-                    <p>${data.description}</p>`;
-        if (data.image) html += `<img src="${data.image}" style="max-width:100%">`;
+  // Close dropdown if click outside
+  document.addEventListener("click", e => {
+    if (!dropdown.contains(e.target) && !bell.contains(e.target)) {
+      dropdown.classList.remove("open");
+    }
+  });
 
-        html += `<div class="reactions">
-                   <button class="thumbs-up-btn" data-report-id="${data.id}">👍 <span>${data.thumbs_up}</span></button>
-                   <button class="thumbs-down-btn" data-report-id="${data.id}">👎 <span>${data.thumbs_down}</span></button>
+  // Delegate clicks inside dropdown for comment links
+  dropdown.addEventListener("click", async e => {
+    const link = e.target.closest(".mention-comment-link");
+    if (!link) return;
+
+    e.preventDefault();
+    dropdown.classList.remove("open"); // close dropdown
+
+    const reportId = link.dataset.reportId;
+    const commentId = link.dataset.commentId;
+
+    try {
+      const res = await fetch(`/api/reports/${reportId}`, {
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      });
+      if (!res.ok) throw new Error("Failed to fetch report");
+      const data = await res.json();
+
+      // Build modal HTML
+      let html = `<h3>${data.title}</h3>
+                  <p>${data.description}</p>`;
+      if (data.image) html += `<img src="${data.image}" style="max-width:100%">`;
+
+      html += `<div class="reactions">
+                 👍 <span>${data.thumbs_up}</span> 
+                 👎 <span>${data.thumbs_down}</span>
+               </div>`;
+
+      html += `<div class="comments"><h4>Maoni:</h4>`;
+      data.comments.forEach(c => {
+        html += `<div class="comment" id="comment-${c.id}">
+                   <a class="mention-user-link">@${c.username}</a>: ${c.comment}
+                   <span class="comment-time">${c.timestamp}</span>
                  </div>`;
+      });
+      html += `</div>`;
 
-        html += `<div class="comments"><h4>Maoni:</h4>`;
-        data.comments.forEach(c => {
-          html += `<div class="comment" id="comment-${c.id}">
-                     <a class="mention-user-link">@${c.username}</a>: ${c.comment}
-                     <span class="comment-time">${c.timestamp}</span>
-                   </div>`;
-        });
-        html += `</div>`;
+      modalContent.innerHTML = html;
+      modal.style.display = "block";
 
-        modalContent.innerHTML = html;
-        modal.style.display = "block";
-
-        if (commentId) {
-          const commentEl = modalContent.querySelector(`#comment-${commentId}`);
-          if (commentEl) {
-            commentEl.scrollIntoView({ behavior: "smooth", block: "center" });
-            commentEl.classList.add("highlight");
-            setTimeout(() => commentEl.classList.remove("highlight"), 2000);
-          }
+      // Scroll to mentioned comment & highlight
+      if (commentId) {
+        const commentEl = modalContent.querySelector(`#comment-${commentId}`);
+        if (commentEl) {
+          commentEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          commentEl.classList.add("highlight");
+          setTimeout(() => commentEl.classList.remove("highlight"), 2000);
         }
-
-      } catch (err) {
-        console.error(err);
-        alert("Tatizo kufungua ripoti hii. Jaribu tena.");
       }
+
+    } catch (err) {
+      console.error(err);
+      alert("Tatizo kufungua ripoti hii. Jaribu tena.");
     }
   });
 
@@ -374,9 +397,9 @@
       modalContent.innerHTML = "";
     }
   });
-});   
-      
+});
 </script>
+        
 
 
 </body>
