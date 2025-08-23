@@ -278,8 +278,6 @@
 .modal-content { background: #fff; margin: 5% auto; padding: 20px; width: 90%; max-width: 600px; border-radius: 10px; position: relative; }
 .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; }
 </style>
-
-
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const bell = document.getElementById("mention-bell");
@@ -306,15 +304,35 @@ document.addEventListener("DOMContentLoaded", function () {
     link.addEventListener("click", function (e) {
       e.preventDefault();
 
-      const url = this.getAttribute("href"); // e.g. /report/123
+      // Extract report ID from href (e.g. /reports/123#comment-1)
+      const href = this.getAttribute("href");
+      const match = href.match(/\/reports\/(\d+)/);
+      if (!match) return alert("Ripoti haipo au link si sahihi.");
+      const reportId = match[1];
+
+      const url = `/api/reports/${reportId}`; // Correct API endpoint
       console.log("Fetching report from:", url);
 
       fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
         .then(res => {
           if (!res.ok) throw new Error("Failed to fetch report");
-          return res.text();
+          return res.json();
         })
-        .then(html => {
+        .then(report => {
+          // Build modal HTML from JSON
+          let html = `<h3>${report.title}</h3>
+                      <p>${report.description}</p>`;
+          if(report.image) html += `<img src="${report.image}" alt="report image">`;
+          html += `<p class="timestamp">${report.timestamp}</p>
+                   <div class="comments">
+                     <h4>Maoni:</h4>
+                     ${report.comments.map(c => 
+                        `<div id="comment-${c.id}">
+                           <strong>@${c.username}</strong>: ${c.comment} 
+                           <span class="comment-time">${c.timestamp}</span>
+                         </div>`).join("")}
+                   </div>`;
+
           modalContent.innerHTML = html;
           modal.style.display = "block"; // Show modal
         })
@@ -340,6 +358,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 </script>
+
 
   
 
