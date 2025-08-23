@@ -484,62 +484,9 @@ app.get("/api/reports/:id", auth, async (req, res) => {
     res.status(500).json({ error: "Tatizo ku-fetch ripoti" });
   }
 });
-
-
-    
+   
 
 // Fetch a single report by ID (for modal)
-
-    
-
-    app.get("/api/reports/:id", auth, async (req, res) => {
-  try {
-    const reportId = req.params.id;
-
-    // Fetch the report with its user
-    const reportRes = await pool.query(
-      `SELECT r.*, u.username AS report_user, u.kituo AS clinic
-       FROM reports r
-       JOIN users u ON r.user_id = u.id
-       WHERE r.id = $1`,
-      [reportId]
-    );
-
-    if (!reportRes.rows.length) {
-      return res.status(404).json({ error: "Ripoti haipo" });
-    }
-
-    const reportRow = reportRes.rows[0];
-
-    // Fetch comments for this report
-    const commentsRes = await pool.query(
-      `SELECT c.*, u.username, u.kituo AS clinic
-       FROM comments c
-       JOIN users u ON c.user_id = u.id
-       WHERE c.report_id = $1
-       ORDER BY c.timestamp ASC`,
-      [reportId]
-    );
-
-    // Build the report object with formatted data
-    const report = {
-      ...reportRow,
-      thumbs_up: reportRow.thumbs_up || 0,
-      thumbs_down: reportRow.thumbs_down || 0,
-      timestamp: formatTanzaniaTime(reportRow.timestamp),
-      comments: commentsRes.rows.map(c => ({
-        ...c,
-        timestamp: formatTanzaniaTime(c.timestamp)
-      }))
-    };
-
-    res.json(report);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Tatizo ku-fetch ripoti" });
-  }
-});
 // ====== Add comment ======
 // ====== Add comment ======
 app.post("/api/comments/:id", auth, async (req,res)=>{
