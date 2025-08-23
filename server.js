@@ -399,56 +399,7 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
 
 // ====== Get reports ======
 
-// GET /api/reports?username=...
-
-app.get("/reports/:id", auth, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Get the report with user info
-    const { rows: reportRows } = await pool.query(
-      `SELECT reports.*, users.username, users.kituo 
-       FROM reports 
-       JOIN users ON reports.user_id = users.id 
-       WHERE reports.id = $1`,
-      [id]
-    );
-
-    if (!reportRows.length) return res.status(404).send("Report not found");
-
-    const reportRow = reportRows[0];
-
-    // Fetch comments for this report
-    const { rows: commentsRows } = await pool.query(
-      `SELECT comments.*, users.username, users.kituo 
-       FROM comments 
-       JOIN users ON comments.user_id = users.id 
-       WHERE comments.report_id = $1
-       ORDER BY comments.timestamp ASC`,
-      [id]
-    );
-
-    // Build report object
-    const report = {
-      ...reportRow,
-      thumbs_up: reportRow.thumbs_up || 0,
-      thumbs_down: reportRow.thumbs_down || 0,
-      timestamp: formatTanzaniaTime(reportRow.timestamp),
-      comments: commentsRows.map(c => ({
-        ...c,
-        timestamp: formatTanzaniaTime(c.timestamp)
-      }))
-    };
-
-    res.render("report-view", { report, comments: commentsRows });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error loading report");
-  }
-});
-    
-    
+// GET /api/reports?username=... 
   app.get("/api/mentions", auth, async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -487,50 +438,55 @@ app.post("/api/mentions/:id/read", auth, async (req, res) => {
   }
 });
 
-app.get("/reports/:id", auth, async (req, res) => {
-  try {
-    const { id } = req.params;
 
-    // Get the report
-    const { rows } = await pool.query(
-      `SELECT reports.*, users.username, users.kituo 
-       FROM reports 
-       JOIN users ON reports.user_id = users.id 
-       WHERE reports.id = $1`,
-      [id]
+// Fetch a single report by ID (for modal)
+app.get("/api/reports/:id", auth, async (req, res) => {
+  try {
+    const reportId = req.params.id;
+
+    const reportRes = await pool.query(
+      `SELECT r.*, u.username AS report_user, u.kituo AS clinic
+       FROM reports r
+       JOIN users u ON r.user_id = u.id
+       WHERE r.id = $1`,
+      [reportId]
     );
 
-    if (!rows.length) {
-      return res.status(404).send("Report not found");
+    if (!reportRes.rows.length) {
+      return res.status(404).json({ error: "Ripoti haipo" });
     }
 
-    const report = {
-  ...r,
-  thumbs_up: r.thumbs_up || 0,
-  thumbs_down: r.thumbs_down || 0,
-  timestamp: formatTanzaniaTime(r.timestamp),
-  comments: commentsRes.rows.map(c => ({
-    ...c,
-    timestamp: formatTanzaniaTime(c.timestamp)
-  }))
-};
+    const reportRow = reportRes.rows[0];
 
-    // Also fetch comments for this report
-    const comments = await pool.query(
-      `SELECT comments.*, users.username, users.kituo 
-       FROM comments 
-       JOIN users ON comments.user_id = users.id 
-       WHERE comments.report_id = $1
-       ORDER BY comments.timestamp ASC`,
-      [id]
+    const commentsRes = await pool.query(
+      `SELECT c.*, u.username, u.kituo AS clinic
+       FROM comments c
+       JOIN users u ON c.user_id = u.id
+       WHERE c.report_id = $1
+       ORDER BY c.timestamp ASC`,
+      [reportId]
     );
 
-    res.render("report-view", { report, comments: comments.rows });
+    const report = {
+      ...reportRow,
+      thumbs_up: reportRow.thumbs_up || 0,
+      thumbs_down: reportRow.thumbs_down || 0,
+      timestamp: formatTanzaniaTime(reportRow.timestamp),
+      comments: commentsRes.rows.map(c => ({
+        ...c,
+        timestamp: formatTanzaniaTime(c.timestamp)
+      }))
+    };
+
+    res.json(report);
   } catch (err) {
     console.error(err);
-    res.status(500).send("Server error loading report");
+    res.status(500).json({ error: "Tatizo ku-fetch ripoti" });
   }
 });
+
+
+    
 
 // Fetch a single report by ID (for modal)
 
