@@ -287,60 +287,67 @@ document.addEventListener("DOMContentLoaded", function () {
   const closeBtn = modal.querySelector(".close-modal");
 
   // Toggle dropdown
-  bell.addEventListener("click", (e) => {
+  bell.addEventListener("click", e => {
     e.stopPropagation();
     dropdown.classList.toggle("open");
   });
 
   // Close dropdown if clicking outside
-  document.addEventListener("click", (e) => {
+  document.addEventListener("click", e => {
     if (!dropdown.contains(e.target) && !bell.contains(e.target)) {
       dropdown.classList.remove("open");
     }
   });
 
-  // Handle clicks on mention comment links (open modal via AJAX)
-  document.querySelectorAll(".mention-comment-link").forEach(link => {
-    link.addEventListener("click", function (e) {
+  // Event delegation for dynamic mention links
+  document.addEventListener("click", async e => {
+    if (e.target.matches(".mention-comment-link")) {
       e.preventDefault();
+      const url = e.target.getAttribute("href"); // e.g. /reports/123#comment-5
+      const [reportUrl, hash] = url.split("#");
 
-      // Extract report ID from href (e.g. /reports/123#comment-1)
-      const href = this.getAttribute("href");
-      const match = href.match(/\/reports\/(\d+)/);
-      if (!match) return alert("Ripoti haipo au link si sahihi.");
-      const reportId = match[1];
-
-      const url = `/api/reports/${reportId}`; // Correct API endpoint
-      console.log("Fetching report from:", url);
-
-      fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
-        .then(res => {
-          if (!res.ok) throw new Error("Failed to fetch report");
-          return res.json();
-        })
-        .then(report => {
-          // Build modal HTML from JSON
-          let html = `<h3>${report.title}</h3>
-                      <p>${report.description}</p>`;
-          if(report.image) html += `<img src="${report.image}" alt="report image">`;
-          html += `<p class="timestamp">${report.timestamp}</p>
-                   <div class="comments">
-                     <h4>Maoni:</h4>
-                     ${report.comments.map(c => 
-                        `<div id="comment-${c.id}">
-                           <strong>@${c.username}</strong>: ${c.comment} 
-                           <span class="comment-time">${c.timestamp}</span>
-                         </div>`).join("")}
-                   </div>`;
-
-          modalContent.innerHTML = html;
-          modal.style.display = "block"; // Show modal
-        })
-        .catch(err => {
-          console.error(err);
-          alert("Tatizo kutafuta ripoti hii, tafadhali jaribu tena.");
+      try {
+        const res = await fetch(`/api${reportUrl.replace("/reports","/reports")}`, {
+          headers: { "X-Requested-With": "XMLHttpRequest" }
         });
-    });
+        if (!res.ok) throw new Error("Failed to fetch report");
+
+        const data = await res.json();
+
+        // Build HTML inside modal
+        let html = `<h3>${data.title}</h3>
+                    <p>${data.description}</p>`;
+        if (data.image) {
+          html += `<img src="${data.image}" alt="report image" style="max-width:100%;">`;
+        }
+        html += `<p class="timestamp">${data.timestamp}</p>`;
+        html += `<div class="comments"><h4>Maoni:</h4>`;
+        data.comments.forEach(c => {
+          html += `<div class="comment" id="comment-${c.id}">
+                     <a href="/user/${c.username}" class="mention-user-link">@${c.username}</a>: ${c.comment}
+                     <span class="comment-time">${c.timestamp}</span>
+                   </div>`;
+        });
+        html += `</div>`;
+
+        modalContent.innerHTML = html;
+        modal.style.display = "block";
+
+        // Scroll to comment if hash exists
+        if (hash) {
+          const commentEl = modalContent.querySelector(`#${hash}`);
+          if (commentEl) {
+            commentEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            commentEl.classList.add("highlight");
+            setTimeout(() => commentEl.classList.remove("highlight"), 2000);
+          }
+        }
+
+      } catch (err) {
+        console.error(err);
+        alert("Tatizo kutafuta ripoti hii, tafadhali jaribu tena.");
+      }
+    }
   });
 
   // Close modal on [x]
@@ -350,7 +357,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Close modal if clicking outside content
-  window.addEventListener("click", (e) => {
+  window.addEventListener("click", e => {
     if (e.target === modal) {
       modal.style.display = "none";
       modalContent.innerHTML = "";
