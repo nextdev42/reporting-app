@@ -203,8 +203,12 @@
         <div class="mention-text">
           <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
           <span> alikutaja katika ripoti ya </span>
-          <a href="/user/<%= m.report_user %>#comment-<%= m.comment_id %>"
-             class="mention-comment-link">"<%= m.comment %>"</a>
+          <a href="#" 
+   class="mention-comment-link" 
+   data-report-id="<%= m.report_id %>" 
+   data-comment-id="<%= m.comment_id %>">
+  "<%= m.comment %>"
+</a>
           <div class="mention-date"><%= formatTanzaniaTime(m.created_at) %></div>
         </div>
       </li>
@@ -263,7 +267,9 @@
   </div>
 </div>
 
-<!-- Report Modal -->
+
+
+ <!-- Report Modal -->
 <div id="report-modal" class="modal">
   <div class="modal-content">
     <span class="close-modal">&times;</span>
@@ -271,7 +277,7 @@
   </div>
 </div>
 
- <script>
+<script>
 document.addEventListener("DOMContentLoaded", () => {
   const bell = document.getElementById("mention-bell");
   const dropdown = document.getElementById("mentions-dropdown");
@@ -301,25 +307,21 @@ document.addEventListener("DOMContentLoaded", () => {
       const reportId = reportUrl.split("/").pop();
 
       try {
-        // Fetch report data
         const res = await fetch(`/api/reports/${reportId}`, {
           headers: { "X-Requested-With": "XMLHttpRequest" }
         });
         if (!res.ok) throw new Error("Failed to fetch report");
         const data = await res.json();
 
-        // Build modal HTML
         let html = `<h3>${data.title}</h3>
                     <p>${data.description}</p>`;
         if (data.image) html += `<img src="${data.image}" style="max-width:100%">`;
 
-        // Reactions
         html += `<div class="reactions">
                    <button class="thumbs-up-btn" data-report-id="${data.id}">👍 <span>${data.thumbs_up}</span></button>
                    <button class="thumbs-down-btn" data-report-id="${data.id}">👎 <span>${data.thumbs_down}</span></button>
                  </div>`;
 
-        // Comments
         html += `<div class="comments"><h4>Maoni:</h4>`;
         data.comments.forEach(c => {
           html += `<div class="comment" id="comment-${c.id}">
@@ -329,11 +331,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         html += `</div>`;
 
-        // Show modal
         modalContent.innerHTML = html;
         modal.style.display = "block";
 
-        // Scroll to mentioned comment & highlight
         if (hash) {
           const commentEl = modalContent.querySelector(`#${hash}`);
           if (commentEl) {
@@ -350,7 +350,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Handle reactions
   modalContent.addEventListener("click", async e => {
     if (e.target.matches(".thumbs-up-btn, .thumbs-down-btn")) {
       const btn = e.target;
@@ -369,7 +368,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!res.ok) throw new Error("Reaction failed");
         const data = await res.json();
 
-        // Update counts in modal
         btn.querySelector("span").textContent = type === "up" ? data.thumbs_up : data.thumbs_down;
       } catch (err) {
         console.error(err);
@@ -378,27 +376,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Close modal
   closeBtn.addEventListener("click", () => {
     modal.style.display = "none";
     modalContent.innerHTML = "";
   });
+
   window.addEventListener("click", e => {
     if (e.target === modal) {
       modal.style.display = "none";
       modalContent.innerHTML = "";
     }
   });
-});
-
-
-
-        
-
-  
-
-
-
 </script>
 
 <script src="/js/main.js"></script>
