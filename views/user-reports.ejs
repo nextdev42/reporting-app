@@ -299,15 +299,19 @@
 
 
  <!-- Report Modal -->
+
+<!-- Report Modal -->
 <div id="report-modal" class="modal">
   <div class="modal-content">
     <span class="close-modal">&times;</span>
     <div id="modal-report-content"></div>
+    <!-- Reply Box -->
+    <div id="reply-container" style="margin-top: 15px; display: none;">
+      <textarea id="reply-text" rows="2" placeholder="Andika jibu..."></textarea>
+      <button id="send-reply">Tuma</button>
+    </div>
   </div>
 </div>
-
-
-
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
@@ -315,27 +319,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const dropdown = document.getElementById("mentions-dropdown");
   const modal = document.getElementById("report-modal");
   const modalContent = document.getElementById("modal-report-content");
+  const replyContainer = document.getElementById("reply-container");
+  const replyText = document.getElementById("reply-text");
+  const sendReplyBtn = document.getElementById("send-reply");
 
   // Toggle dropdown on bell click
   bell.addEventListener("click", e => {
-    e.stopPropagation(); // prevent closing immediately
+    e.stopPropagation();
     dropdown.classList.toggle("open");
   });
 
-  // Close dropdown if click outside
   document.addEventListener("click", e => {
     if (!dropdown.contains(e.target) && !bell.contains(e.target)) {
       dropdown.classList.remove("open");
     }
   });
 
-  // Delegate clicks inside dropdown for comment links
+  // Click comment link in mentions dropdown
   dropdown.addEventListener("click", async e => {
     const link = e.target.closest(".mention-comment-link");
     if (!link) return;
 
     e.preventDefault();
-    dropdown.classList.remove("open"); // close dropdown
+    dropdown.classList.remove("open");
 
     const reportId = link.dataset.reportId;
     const commentId = link.dataset.commentId;
@@ -347,21 +353,32 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) throw new Error("Failed to fetch report");
       const data = await res.json();
 
-      // Build modal HTML
-      let html = `<h3>${data.title}</h3>
-                  <p>${data.description}</p>`;
-      if (data.image) html += `<img src="${data.image}" style="max-width:100%">`;
+      // Build report HTML
+      let html = `<h3>${data.report.title}</h3>
+                  <p>${data.report.description}</p>`;
+      if (data.report.image) html += `<img src="${data.report.image}" style="max-width:100%;">`;
 
       html += `<div class="reactions">
-                 👍 <span>${data.thumbs_up}</span> 
-                 👎 <span>${data.thumbs_down}</span>
+                 👍 <span>${data.report.thumbs_up}</span> 
+                 👎 <span>${data.report.thumbs_down}</span>
                </div>`;
 
+      // Comments
       html += `<div class="comments"><h4>Maoni:</h4>`;
       data.comments.forEach(c => {
-        html += `<div class="comment" id="comment-${c.id}">
-                   <a class="mention-user-link">@${c.username}</a>: ${c.comment}
-                   <span class="comment-time">${c.timestamp}</span>
+        html += `<div class="comment" id="comment-${c.id}" style="display:flex; gap:10px; margin-bottom:10px;">
+                   <img src="${c.avatar}" width="36" height="36" style="border-radius:50%; object-fit:cover;">
+                   <div style="flex:1;">
+                     <a href="/user/${c.username}" class="mention-user-link">@${c.username}</a>
+                     <span>${c.comment}</span>
+                     <div style="font-size:12px; color:#555;">${c.formatted_date}</div>
+                     <div>
+                       <button class="thumb-up-btn" data-comment-id="${c.id}">👍</button>
+                       <button class="thumb-down-btn" data-comment-id="${c.id}">👎</button>
+                       <span>(${c.reactions.length})</span>
+                       <button class="reply-btn" data-comment-id="${c.id}">Jibu</button>
+                     </div>
+                   </div>
                  </div>`;
       });
       html += `</div>`;
@@ -369,7 +386,10 @@ document.addEventListener("DOMContentLoaded", () => {
       modalContent.innerHTML = html;
       modal.style.display = "block";
 
-      // Scroll to mentioned comment & highlight
+      // Show reply textbox
+      if (data.reply_box) replyContainer.style.display = "block";
+
+      // Scroll to mentioned comment
       if (commentId) {
         const commentEl = modalContent.querySelector(`#comment-${commentId}`);
         if (commentEl) {
@@ -378,7 +398,6 @@ document.addEventListener("DOMContentLoaded", () => {
           setTimeout(() => commentEl.classList.remove("highlight"), 2000);
         }
       }
-
     } catch (err) {
       console.error(err);
       alert("Tatizo kufungua ripoti hii. Jaribu tena.");
@@ -390,17 +409,82 @@ document.addEventListener("DOMContentLoaded", () => {
   closeBtn.addEventListener("click", () => {
     modal.style.display = "none";
     modalContent.innerHTML = "";
+    replyText.value = "";
   });
   window.addEventListener("click", e => {
     if (e.target === modal) {
       modal.style.display = "none";
       modalContent.innerHTML = "";
+      replyText.value = "";
+    }
+  });
+
+  // Delegate thumbs up/down clicks
+  modalContent.addEventListener("click", async e => {
+    if (e.target.matches(".thumb-up-btn") || e.target.matches(".thumb-down-btn")) {
+      const type = e.target.classList.contains("thumb-up-btn") ? "up" : "down";
+      const commentId = e.target.dataset.commentId;
+
+      try {
+        const res = await fetch(`/api/comments/${commentId}/react`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          body: JSON.stringify({ type })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          e.target.nextElementSibling.textContent = `(${data.total})`;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Reply button clicked
+    if (e.target.matches(".reply-btn")) {
+      const commentId = e.target.dataset.commentId;
+      replyText.focus();
+      sendReplyBtn.dataset.replyTo = commentId;
+    }
+  });
+
+  // Send reply
+  sendReplyBtn.addEventListener("click", async () => {
+    const commentId = sendReplyBtn.dataset.replyTo;
+    const text = replyText.value.trim();
+    if (!text) return alert("Andika jibu kwanza.");
+
+    try {
+      const res = await fetch(`/api/comments/${commentId}/reply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: JSON.stringify({ comment: text })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Append new reply under the comment
+        const parentComment = modalContent.querySelector(`#comment-${commentId}`);
+        const div = document.createElement("div");
+        div.style.marginLeft = "40px";
+        div.style.fontSize = "13px";
+        div.innerHTML = `<a href="/user/${data.username}">@${data.username}</a>: ${data.comment} <div style="font-size:11px; color:#888;">${data.formatted_date}</div>`;
+        parentComment.appendChild(div);
+        replyText.value = "";
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Tatizo kutuma jibu.");
     }
   });
 });
 </script>
-        
 
-
+    
 </body>
 </html>
