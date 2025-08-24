@@ -456,12 +456,19 @@ app.get("/api/reports", auth, async (req, res) => {
 });
 
 // API endpoint for AJAX mentions
-app.get("/api/reports/:id", auth, async (req, res) => {
+
+
+    app.get("/api/reports/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Get report with user info
     const { rows } = await pool.query(
-      `SELECT reports.*, users.username, users.kituo 
+      `SELECT reports.*, 
+              users.username, 
+              users.kituo, 
+              users.avatar,  -- assume avatar column in users
+              to_char(reports.created_at, 'YYYY-MM-DD HH24:MI:SS') as formatted_date
        FROM reports 
        JOIN users ON reports.user_id = users.id 
        WHERE reports.id = $1`,
@@ -474,16 +481,34 @@ app.get("/api/reports/:id", auth, async (req, res) => {
 
     const report = rows[0];
 
+    // Get comments with user info + reactions
     const comments = await pool.query(
-      `SELECT comments.*, users.username, users.kituo 
-       FROM comments 
-       JOIN users ON comments.user_id = users.id 
+      `SELECT comments.*, 
+              users.username, 
+              users.kituo, 
+              users.avatar, 
+              to_char(comments.timestamp, 'YYYY-MM-DD HH24:MI:SS') as formatted_date,
+              COALESCE(json_agg(
+                json_build_object(
+                  'id', reactions.id,
+                  'type', reactions.type,
+                  'user_id', reactions.user_id
+                )
+              ) FILTER (WHERE reactions.id IS NOT NULL), '[]') as reactions
+       FROM comments
+       JOIN users ON comments.user_id = users.id
+       LEFT JOIN reactions ON comments.id = reactions.comment_id
        WHERE comments.report_id = $1
+       GROUP BY comments.id, users.username, users.kituo, users.avatar
        ORDER BY comments.timestamp ASC`,
       [id]
     );
 
-    res.json({ report, comments: comments.rows });
+    res.json({ 
+      report, 
+      comments: comments.rows,
+      reply_box: true  // tell frontend to show textbox for reply
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error loading report" });
