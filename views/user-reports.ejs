@@ -1,490 +1,891 @@
 <!DOCTYPE html>
-<html lang="sw">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ripoti za <%= username %></title>
-<link rel="stylesheet" href="/css/user-reports.css">
-<script>
-  window.USERNAME = "<%= username %>";
-  window.LOGGED_IN_USER = "<%= loggedInUser %>";
-</script>
-<script src="/js/user-reports.js"></script>
-<style>
-  /* Ensure nav-actions is positioned */
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  position: relative; /* needed for dropdown absolute positioning */
-  z-index: 1000;
-}
-
-/* Mention bell */
-#mention-bell {
-  position: relative;
-  cursor: pointer;
-  font-size: 24px;
-  padding: 6px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.2);
-  transition: background 0.3s ease;
-}
-
-#mention-bell:hover { background: rgba(255,255,255,0.3); }
-
-#mention-count {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #ff2c2c;
-  color: white;
-  width: 20px;
-  height: 20px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  border-radius: 50%;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); opacity:1; }
-  50% { transform: scale(1.3); opacity:0.7; }
-  100% { transform: scale(1); opacity:1; }
-}
-
-/* Mentions dropdown */
-#mentions-dropdown {
-  display: none;          /* hide by default */
-  position: absolute;
-  top: 130%;              /* below the bell */
-  right: 0;
-  width: 90vw;
-  max-width: 360px;
-  max-height: 400px;
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-  overflow-y: auto;
-  z-index: 10000;         /* float above nav */
-  transition: opacity 0.3s ease, transform 0.2s ease;
-  transform: translateY(-5px);
-  opacity: 0;
-}
-
-/* Open state */
-#mentions-dropdown.open {
-  display: block;
-  transform: translateY(0);
-  opacity: 1;
-}
-
-/* List items */
-#mentions-dropdown ul {
-  list-style: none;
-  margin: 0;
-  padding: 8px 0;
-}
-
-#mentions-dropdown li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 16px;
-  cursor: pointer;
-  transition: background 0.2s;
-  border-bottom: 1px solid #f0f2f5;
-}
-
-#mentions-dropdown li:last-child { border-bottom: none; }
-
-#mentions-dropdown li:hover { background: #f0f2f5; }
-
-.mention-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
-
-.mention-user-link { font-weight: bold; color: #405DE6; text-decoration: none; }
-.mention-user-link:hover { text-decoration: underline; }
-
-.mention-comment-link { color: #333; text-decoration: underline; cursor: pointer; display: block; margin-top: 4px; font-size: 0.9rem; }
-
-.mention-text { line-height: 1.3; font-size: 14px; }
-
-/* Highlight comment */
-.highlight { background-color: #fff3b0; transition: background-color 1.5s ease; }
-
-/* Mobile responsive */
-@media (max-width: 480px) {
-  #mentions-dropdown { right: 5px; left: 5px; width: auto; }
-}
-
-
-/* Overlay dropdown for small screens */
-@media (max-width: 768px) {
-  #mentions-dropdown {
-    position: fixed;      /* float above everything */
-    top: 60px;            /* distance from top nav */
-    right: 10px;
-    left: 10px;
-    width: auto;
-    max-width: none;
-    max-height: 70vh;     /* use viewport height */
-    border-radius: 10px;
-    z-index: 20000;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    transform: translateY(-10px);
-    opacity: 0;
-    transition: transform 0.3s ease, opacity 0.3s ease;
-  }
-
-
-.mention-text {
-  display: flex;
-  flex-direction: column;
-  font-size: 14px;
-  color: #444;
-}
-
-.mention-text span {
-  color: #555;
-  margin: 2px 0;
-}
-
-.mention-comment-link {
-  color: #111;
-  font-style: italic;
-  margin-top: 2px;
-  text-decoration: none;
-}
-
-.mention-comment-link:hover {
-  text-decoration: underline;
-}
-.modal {
-  display: none; /* hidden by default */
-  position: fixed;
-  z-index: 30000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.5);
-}
-
-.modal-content {
-  background-color: #fff;
-  margin: 10% auto;
-  padding: 20px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 600px;
-  position: relative;
-}
-
-.close-modal {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 28px;
-  font-weight: bold;
-  cursor: pointer;
-}
-.mention-date {
-  font-size: 12px;
-  color: #888;
-  margin-top: 4px;
-}
-  #mentions-dropdown.open {
-    transform: translateY(0);
-    opacity: 1;
-    display: block;
-  }
-}
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Feed</title>
+    <style>
+        :root {
+            --primary-color: #1877f2;
+            --secondary-color: #42b72a;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-color: #050505;
+            --text-secondary: #65676b;
+            --border-color: #dddfe2;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .feed {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .post-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .post-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .post-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .post-content {
+            padding: 15px;
+        }
+        
+        .post-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .post-desc {
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .post-stats {
+            display: flex;
+            gap: 15px;
+            padding: 10px 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            position: relative;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .post-full-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+        
+        .reactions {
+            display: flex;
+            gap: 15px;
+            padding: 15px 0;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .reaction-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            background-color: var(--bg-color);
+            cursor: pointer;
+            border: none;
+        }
+        
+        .reaction-btn.active {
+            background-color: #e7f3ff;
+            color: var(--primary-color);
+        }
+        
+        .comments-section {
+            margin-top: 20px;
+        }
+        
+        .comment-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .comment-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            resize: none;
+            height: 40px;
+        }
+        
+        .comment-submit {
+            padding: 0 20px;
+            border-radius: 20px;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+        }
+        
+        .comment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .comment {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .comment-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .comment-content {
+            flex: 1;
+            background-color: var(--bg-color);
+            padding: 10px 15px;
+            border-radius: 18px;
+        }
+        
+        .comment-author {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .comment-text {
+            color: var(--text-color);
+        }
+        
+        .mention {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .notifications-btn {
+            position: relative;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-
-<nav>
-  <h1>Ripoti za <%= username %></h1>
-  <div class="nav-actions">
-    <span>Umeingia kama: <strong><%= loggedInUser %></strong></span>
-    <button onclick="location.href='/dashboard.html'">Nyumbani</button>
-    <button onclick="location.href='/logout'">Toka</button>
-
-    <!-- Mention bell -->
-    <span id="mention-bell" style="cursor:pointer; margin-left:15px;">
-      🔔 <span id="mention-count"><%= mentions.length %></span>
-    </span>
-
-    <div id="mentions-dropdown">
-  <ul id="mentionList">
-    <% mentions.forEach(m => { %>
-      <li>
-        <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>&background=405DE6&color=fff"
-             class="mention-avatar" alt="avatar">
-
-        <div class="mention-text">
-          <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
-          <span> alikutaja katika ripoti ya </span>
-          <a href="#" 
-   class="mention-comment-link" 
-   data-report-id="<%= m.report_id %>" 
-   data-comment-id="<%= m.comment_id %>">
-  "<%= m.comment %>"
-</a>
-          <div class="mention-date"><%= formatTanzaniaTime(m.created_at) %></div>
-        </div>
-      </li>
-    <% }) %>
-  </ul>
-</div>
-  </div>
-</nav>
-
-<div class="container">
-  <div class="user-header">
-    <img id="userAvatar" src="https://ui-avatars.com/api/?name=<%= username %>&background=405DE6&color=fff" alt="avatar">
-    <div class="info">
-      <h2>Ripoti za <strong><%= username %></strong></h2>
-      <div class="stats">
-        <span id="totalPosts">Ripoti: <%= reports.length %></span>
-        <span id="totalThumbsUp">👍 <%= reports.reduce((acc,r)=>acc+r.thumbs_up,0) %></span>
-        <span id="totalThumbsDown">👎 <%= reports.reduce((acc,r)=>acc+r.thumbs_down,0) %></span>
-      </div>
-
-      <% if(username === loggedInUser){ %>
-      <form id="avatarForm" class="avatar-upload">
-        <label for="avatarInput" class="custom-file-btn">Chagua Faili</label>
-        <input id="avatarInput" type="file" name="avatar" accept="image/*">
-        <button type="submit">Sasisha Avatar</button>
-      </form>
-      <% } %>
-    </div>
-  </div>
-
-  <div id="reports-container" class="reports-grid">
-    <% reports.forEach(r => { %>
-      <div class="report-card" id="report-<%= r.id %>">
-        <h3><%= r.title %></h3>
-        <p><%= r.description %></p>
-        <% if(r.image){ %>
-          <img src="<%= r.image %>" alt="report image">
-        <% } %>
-        <p class="timestamp"><%= r.timestamp %></p>
-        <div class="reactions">
-          👍 <span class="thumbs-up"><%= r.thumbs_up %></span>
-          👎 <span class="thumbs-down"><%= r.thumbs_down %></span>
-        </div>
-
-        <div class="comments">
-          <h4>Maoni:</h4>
-          <% r.comments.forEach(c => { %>
-            <div class="comment" id="comment-<%= c.id %>">
-              <a href="/user/<%= c.username %>" class="mention-user-link">@<%= c.username %></a>: <%= c.comment %>
-              <span class="comment-time"><%= c.timestamp %></span>
+    <div class="container">
+        <div class="header">
+            <div class="logo">SocialApp</div>
+            <div class="user-info">
+                <button class="notifications-btn" id="notificationsBtn">
+                    🔔 <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                </button>
+                <span id="userName">User</span>
+                <button class="logout-btn" id="logoutBtn">Logout</button>
             </div>
-          <% }) %>
         </div>
-      </div>
-    <% }) %>
-  </div>
-</div>
-
-
-
- <!-- Report Modal -->
-
-<!-- Report Modal -->
-<div id="report-modal" class="modal">
-  <div class="modal-content">
-    <span class="close-modal">&times;</span>
-    <div id="modal-report-content"></div>
-    <!-- Reply Box -->
-    <div id="reply-container" style="margin-top: 15px; display: none;">
-      <textarea id="reply-text" rows="2" placeholder="Andika jibu..."></textarea>
-      <button id="send-reply">Tuma</button>
+        
+        <div class="feed" id="postsFeed">
+            <!-- Posts will be loaded here -->
+        </div>
     </div>
-  </div>
-</div>
-
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const bell = document.getElementById("mention-bell");
-  const dropdown = document.getElementById("mentions-dropdown");
-  const modal = document.getElementById("report-modal");
-  const modalContent = document.getElementById("modal-report-content");
-  const replyContainer = document.getElementById("reply-container");
-  const replyText = document.getElementById("reply-text");
-  const sendReplyBtn = document.getElementById("send-reply");
-
-  // Toggle dropdown on bell click
-  bell.addEventListener("click", e => {
-    e.stopPropagation();
-    dropdown.classList.toggle("open");
-  });
-
-  document.addEventListener("click", e => {
-    if (!dropdown.contains(e.target) && !bell.contains(e.target)) {
-      dropdown.classList.remove("open");
-    }
-  });
-
-  // Click comment link in mentions dropdown
-  dropdown.addEventListener("click", async e => {
-    const link = e.target.closest(".mention-comment-link");
-    if (!link) return;
-
-    e.preventDefault();
-    dropdown.classList.remove("open");
-
-    const reportId = link.dataset.reportId;
-    const commentId = link.dataset.commentId;
-
-    try {
-      const res = await fetch(`/api/reports/${reportId}`, {
-        headers: { "X-Requested-With": "XMLHttpRequest" }
-      });
-      if (!res.ok) throw new Error("Failed to fetch report");
-      const data = await res.json();
-
-      // Build report HTML
-      let html = `<h3>${data.report.title}</h3>
-                  <p>${data.report.description}</p>`;
-      if (data.report.image) html += `<img src="${data.report.image}" style="max-width:100%;">`;
-
-      html += `<div class="reactions">
-                 👍 <span>${data.report.thumbs_up}</span> 
-                 👎 <span>${data.report.thumbs_down}</span>
-               </div>`;
-
-      // Comments
-      html += `<div class="comments"><h4>Maoni:</h4>`;
-      data.comments.forEach(c => {
-        html += `<div class="comment" id="comment-${c.id}" style="display:flex; gap:10px; margin-bottom:10px;">
-                   <img src="${c.avatar}" width="36" height="36" style="border-radius:50%; object-fit:cover;">
-                   <div style="flex:1;">
-                     <a href="/user/${c.username}" class="mention-user-link">@${c.username}</a>
-                     <span>${c.comment}</span>
-                     <div style="font-size:12px; color:#555;">${c.formatted_date}</div>
-                     <div>
-                       <button class="thumb-up-btn" data-comment-id="${c.id}">👍</button>
-                       <button class="thumb-down-btn" data-comment-id="${c.id}">👎</button>
-                       <span>(${c.reactions.length})</span>
-                       <button class="reply-btn" data-comment-id="${c.id}">Jibu</button>
-                     </div>
-                   </div>
-                 </div>`;
-      });
-      html += `</div>`;
-
-      modalContent.innerHTML = html;
-      modal.style.display = "block";
-
-      // Show reply textbox
-      if (data.reply_box) replyContainer.style.display = "block";
-
-      // Scroll to mentioned comment
-      if (commentId) {
-        const commentEl = modalContent.querySelector(`#comment-${commentId}`);
-        if (commentEl) {
-          commentEl.scrollIntoView({ behavior: "smooth", block: "center" });
-          commentEl.classList.add("highlight");
-          setTimeout(() => commentEl.classList.remove("highlight"), 2000);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Tatizo kufungua ripoti hii. Jaribu tena.");
-    }
-  });
-
-  // Close modal
-  const closeBtn = modal.querySelector(".close-modal");
-  closeBtn.addEventListener("click", () => {
-    modal.style.display = "none";
-    modalContent.innerHTML = "";
-    replyText.value = "";
-  });
-  window.addEventListener("click", e => {
-    if (e.target === modal) {
-      modal.style.display = "none";
-      modalContent.innerHTML = "";
-      replyText.value = "";
-    }
-  });
-
-  // Delegate thumbs up/down clicks
-  modalContent.addEventListener("click", async e => {
-    if (e.target.matches(".thumb-up-btn") || e.target.matches(".thumb-down-btn")) {
-      const type = e.target.classList.contains("thumb-up-btn") ? "up" : "down";
-      const commentId = e.target.dataset.commentId;
-
-      try {
-        const res = await fetch(`/api/comments/${commentId}/react`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Requested-With": "XMLHttpRequest"
-          },
-          body: JSON.stringify({ type })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          e.target.nextElementSibling.textContent = `(${data.total})`;
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    // Reply button clicked
-    if (e.target.matches(".reply-btn")) {
-      const commentId = e.target.dataset.commentId;
-      replyText.focus();
-      sendReplyBtn.dataset.replyTo = commentId;
-    }
-  });
-
-  // Send reply
-  sendReplyBtn.addEventListener("click", async () => {
-    const commentId = sendReplyBtn.dataset.replyTo;
-    const text = replyText.value.trim();
-    if (!text) return alert("Andika jibu kwanza.");
-
-    try {
-      const res = await fetch(`/api/comments/${commentId}/reply`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest"
-        },
-        body: JSON.stringify({ comment: text })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        // Append new reply under the comment
-        const parentComment = modalContent.querySelector(`#comment-${commentId}`);
-        const div = document.createElement("div");
-        div.style.marginLeft = "40px";
-        div.style.fontSize = "13px";
-        div.innerHTML = `<a href="/user/${data.username}">@${data.username}</a>: ${data.comment} <div style="font-size:11px; color:#888;">${data.formatted_date}</div>`;
-        parentComment.appendChild(div);
-        replyText.value = "";
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Tatizo kutuma jibu.");
-    }
-  });
-});
-</script>
-
     
+    <!-- Post Modal -->
+    <div class="modal" id="postModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <div class="post-header">
+                <div class="user-avatar" id="modalUserAvatar">U</div>
+                <div>
+                    <div id="modalUserName">User Name</div>
+                    <div id="modalPostTime" class="post-time">Time</div>
+                </div>
+            </div>
+            
+            <h2 id="modalPostTitle"></h2>
+            <p id="modalPostDesc"></p>
+            <img id="modalPostImage" class="post-full-image" src="" alt="Post image">
+            
+            <div class="reactions">
+                <button class="reaction-btn" id="likeBtn">
+                    <span>👍</span> <span id="likeCount">0</span>
+                </button>
+                <button class="reaction-btn" id="dislikeBtn">
+                    <span>👎</span> <span id="dislikeCount">0</span>
+                </button>
+            </div>
+            
+            <div class="comments-section">
+                <div class="comment-form">
+                    <textarea class="comment-input" id="commentInput" placeholder="Write a comment..."></textarea>
+                    <button class="comment-submit" id="commentSubmit">Post</button>
+                </div>
+                
+                <div class="comment-list" id="commentList">
+                    <!-- Comments will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notifications Modal -->
+    <div class="modal" id="notificationsModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeNotificationsModal">&times;</span>
+            <h2>Notifications</h2>
+            <div id="notificationsList">
+                <!-- Notifications will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = {};
+        let currentPost = null;
+        let allUsers = [];
+        
+        // DOM elements
+        const postsFeed = document.getElementById('postsFeed');
+        const postModal = document.getElementById('postModal');
+        const closeModal = document.getElementById('closeModal');
+        const likeBtn = document.getElementById('likeBtn');
+        const dislikeBtn = document.getElementById('dislikeBtn');
+        const likeCount = document.getElementById('likeCount');
+        const dislikeCount = document.getElementById('dislikeCount');
+        const commentInput = document.getElementById('commentInput');
+        const commentSubmit = document.getElementById('commentSubmit');
+        const commentList = document.getElementById('commentList');
+        const notificationsBtn = document.getElementById('notificationsBtn');
+        const notificationBadge = document.getElementById('notificationBadge');
+        const notificationsModal = document.getElementById('notificationsModal');
+        const closeNotificationsModal = document.getElementById('closeNotificationsModal');
+        const notificationsList = document.getElementById('notificationsList');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userName = document.getElementById('userName');
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadUserInfo();
+            loadPosts();
+            loadAllUsers();
+            setupEventListeners();
+            checkNotifications();
+            
+            // Check for notifications every 30 seconds
+            setInterval(checkNotifications, 30000);
+        });
+        
+        // Check if user is authenticated
+        function checkAuth() {
+            // In a real app, you would check for a valid session/token
+            // For demo purposes, we'll assume the user is logged in
+        }
+        
+        // Load current user info
+        function loadUserInfo() {
+            fetch('/api/user')
+                .then(response => response.json())
+                .then(user => {
+                    currentUser = user;
+                    userName.textContent = user.jina;
+                    document.getElementById('modalUserAvatar').textContent = user.jina.charAt(0);
+                })
+                .catch(error => {
+                    console.error('Error loading user info:', error);
+                    window.location.href = '/';
+                });
+        }
+        
+        // Load all users for mentions
+        function loadAllUsers() {
+            fetch('/api/users')
+                .then(response => response.json())
+                .then(users => {
+                    allUsers = users;
+                    setupMentionsAutocomplete();
+                })
+                .catch(error => console.error('Error loading users:', error));
+        }
+        
+        // Setup mentions autocomplete in comment input
+        function setupMentionsAutocomplete() {
+            commentInput.addEventListener('input', function(e) {
+                const value = e.target.value;
+                const lastAtPos = value.lastIndexOf('@');
+                
+                if (lastAtPos > -1) {
+                    const currentText = value.substring(lastAtPos + 1);
+                    const dropdown = document.getElementById('mentionsDropdown') || createMentionsDropdown();
+                    
+                    if (currentText.length > 0) {
+                        const filteredUsers = allUsers.filter(user => 
+                            user.toLowerCase().includes(currentText.toLowerCase())
+                        );
+                        
+                        if (filteredUsers.length > 0) {
+                            dropdown.innerHTML = filteredUsers.map(user => 
+                                `<div class="mention-option" data-username="${user}">@${user}</div>`
+                            ).join('');
+                            
+                            dropdown.style.display = 'block';
+                            
+                            // Position dropdown near cursor
+                            const cursorPos = getCursorPosition(commentInput);
+                            dropdown.style.top = `${cursorPos.y + 20}px`;
+                            dropdown.style.left = `${cursorPos.x}px`;
+                            
+                            // Add click event to options
+                            document.querySelectorAll('.mention-option').forEach(option => {
+                                option.addEventListener('click', function() {
+                                    const username = this.getAttribute('data-username');
+                                    const newValue = value.substring(0, lastAtPos + 1) + username + ' ';
+                                    commentInput.value = newValue;
+                                    dropdown.style.display = 'none';
+                                    commentInput.focus();
+                                });
+                            });
+                        } else {
+                            dropdown.style.display = 'none';
+                        }
+                    } else {
+                        dropdown.style.display = 'none';
+                    }
+                } else {
+                    const dropdown = document.getElementById('mentionsDropdown');
+                    if (dropdown) dropdown.style.display = 'none';
+                }
+            });
+            
+            // Hide dropdown when clicking elsewhere
+            document.addEventListener('click', function(e) {
+                if (e.target !== commentInput) {
+                    const dropdown = document.getElementById('mentionsDropdown');
+                    if (dropdown) dropdown.style.display = 'none';
+                }
+            });
+        }
+        
+        function createMentionsDropdown() {
+            const dropdown = document.createElement('div');
+            dropdown.id = 'mentionsDropdown';
+            dropdown.style.cssText = `
+                position: absolute;
+                background: white;
+                border: 1px solid #ccc;
+                max-height: 150px;
+                overflow-y: auto;
+                z-index: 1000;
+                display: none;
+            `;
+            document.body.appendChild(dropdown);
+            return dropdown;
+        }
+        
+        function getCursorPosition(textarea) {
+            const selectionStart = textarea.selectionStart;
+            const div = document.createElement('div');
+            const copyStyle = getComputedStyle(textarea);
+            
+            for (const prop of copyStyle) {
+                div.style[prop] = copyStyle[prop];
+            }
+            
+            div.style.position = 'absolute';
+            div.style.left = '-9999px';
+            div.style.whiteSpace = 'pre-wrap';
+            div.style.wordWrap = 'break-word';
+            div.textContent = textarea.value.substring(0, selectionStart);
+            
+            const span = document.createElement('span');
+            span.textContent = textarea.value.substring(selectionStart) || '.';
+            div.appendChild(span);
+            
+            document.body.appendChild(div);
+            
+            const rect = span.getBoundingClientRect();
+            const textareaRect = textarea.getBoundingClientRect();
+            
+            document.body.removeChild(div);
+            
+            return {
+                x: textareaRect.left + rect.left,
+                y: textareaRect.top + rect.top
+            };
+        }
+        
+        // Load all posts
+        function loadPosts() {
+            fetch('/api/reports')
+                .then(response => response.json())
+                .then(data => {
+                    renderPosts(data.reports);
+                })
+                .catch(error => console.error('Error loading posts:', error));
+        }
+        
+        // Render posts in the feed
+        function renderPosts(posts) {
+            postsFeed.innerHTML = '';
+            
+            posts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.className = 'post-card';
+                postElement.dataset.id = post.id;
+                
+                let imageHtml = '';
+                if (post.image) {
+                    imageHtml = `<img src="${post.image}" alt="Post image" class="post-image">`;
+                }
+                
+                postElement.innerHTML = `
+                    ${imageHtml}
+                    <div class="post-content">
+                        <h3 class="post-title">${post.title}</h3>
+                        <p class="post-desc">${post.description}</p>
+                        <div class="post-meta">
+                            <span class="post-author">@${post.username}</span>
+                            <span class="post-time">${post.timestamp}</span>
+                        </div>
+                    </div>
+                    <div class="post-stats">
+                        <div class="stat">
+                            <span>👍</span> <span>${post.thumbs_up}</span>
+                        </div>
+                        <div class="stat">
+                            <span>👎</span> <span>${post.thumbs_down}</span>
+                        </div>
+                        <div class="stat">
+                            <span>💬</span> <span>${post.comments ? post.comments.length : 0}</span>
+                        </div>
+                    </div>
+                `;
+                
+                postElement.addEventListener('click', () => openPostModal(post));
+                postsFeed.appendChild(postElement);
+            });
+        }
+        
+        // Open post modal
+        function openPostModal(post) {
+            currentPost = post;
+            
+            // Update modal content
+            document.getElementById('modalUserName').textContent = post.username;
+            document.getElementById('modalUserAvatar').textContent = post.username.charAt(0);
+            document.getElementById('modalPostTime').textContent = post.timestamp;
+            document.getElementById('modalPostTitle').textContent = post.title;
+            document.getElementById('modalPostDesc').textContent = post.description;
+            
+            const postImage = document.getElementById('modalPostImage');
+            if (post.image) {
+                postImage.src = post.image;
+                postImage.style.display = 'block';
+            } else {
+                postImage.style.display = 'none';
+            }
+            
+            likeCount.textContent = post.thumbs_up;
+            dislikeCount.textContent = post.thumbs_down;
+            
+            // Update reaction buttons based on user's previous reaction
+            updateReactionButtons(post);
+            
+            // Load comments
+            renderComments(post.comments || []);
+            
+            // Show modal
+            postModal.style.display = 'block';
+        }
+        
+        // Update reaction buttons based on user's previous reaction
+        function updateReactionButtons(post) {
+            // Reset both buttons
+            likeBtn.classList.remove('active');
+            dislikeBtn.classList.remove('active');
+            
+            // Check if user has reacted to this post
+            // This would require your backend to return user's reaction status
+            // For now, we'll assume no reaction
+        }
+        
+        // Render comments in the modal
+        function renderComments(comments) {
+            commentList.innerHTML = '';
+            
+            if (comments.length === 0) {
+                commentList.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
+                return;
+            }
+            
+            comments.forEach(comment => {
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment';
+                
+                // Process mentions in comment text
+                let commentText = comment.comment;
+                commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+                
+                commentElement.innerHTML = `
+                    <div class="comment-avatar">${comment.username.charAt(0)}</div>
+                    <div class="comment-content">
+                        <div class="comment-author">${comment.username}</div>
+                        <div class="comment-text">${commentText}</div>
+                        <div class="comment-time">${comment.timestamp}</div>
+                    </div>
+                `;
+                
+                commentList.appendChild(commentElement);
+            });
+        }
+        
+        // Check for new notifications
+        function checkNotifications() {
+            fetch('/api/mentions')
+                .then(response => response.json())
+                .then(notifications => {
+                    if (notifications.length > 0) {
+                        notificationBadge.textContent = notifications.length;
+                        notificationBadge.style.display = 'flex';
+                        renderNotifications(notifications);
+                    } else {
+                        notificationBadge.style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Error checking notifications:', error));
+        }
+        
+        // Render notifications
+        function renderNotifications(notifications) {
+            notificationsList.innerHTML = '';
+            
+            notifications.forEach(notification => {
+                const notificationElement = document.createElement('div');
+                notificationElement.className = 'notification';
+                notificationElement.innerHTML = `
+                    <p>${notification.from_user} mentioned you in a comment on ${notification.report_user}'s post</p>
+                    <small>${new Date(notification.created_at).toLocaleString()}</small>
+                `;
+                
+                notificationElement.addEventListener('click', () => {
+                    // Mark as read and open the post
+                    fetch(`/api/mentions/${notification.id}/read`, { method: 'POST' })
+                        .then(() => {
+                            loadPostById(notification.report_id);
+                            notificationsModal.style.display = 'none';
+                            checkNotifications(); // Update badge
+                        })
+                        .catch(error => console.error('Error marking notification as read:', error));
+                });
+                
+                notificationsList.appendChild(notificationElement);
+            });
+        }
+        
+        // Load a specific post by ID
+        function loadPostById(postId) {
+            fetch(`/api/reports/${postId}`)
+                .then(response => response.json())
+                .then(data => {
+                    openPostModal(data.report);
+                })
+                .catch(error => console.error('Error loading post:', error));
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Close modal
+            closeModal.addEventListener('click', () => {
+                postModal.style.display = 'none';
+            });
+            
+            // Close notifications modal
+            closeNotificationsModal.addEventListener('click', () => {
+                notificationsModal.style.display = 'none';
+            });
+            
+            // Click outside modal to close
+            window.addEventListener('click', (e) => {
+                if (e.target === postModal) {
+                    postModal.style.display = 'none';
+                }
+                if (e.target === notificationsModal) {
+                    notificationsModal.style.display = 'none';
+                }
+            });
+            
+            // Like button
+            likeBtn.addEventListener('click', () => {
+                reactToPost('up');
+            });
+            
+            // Dislike button
+            dislikeBtn.addEventListener('click', () => {
+                reactToPost('down');
+            });
+            
+            // Comment submit
+            commentSubmit.addEventListener('click', submitComment);
+            
+            // Notifications button
+            notificationsBtn.addEventListener('click', () => {
+                notificationsModal.style.display = 'block';
+            });
+            
+            // Logout button
+            logoutBtn.addEventListener('click', () => {
+                window.location.href = '/logout';
+            });
+        }
+        
+        // React to a post
+        function reactToPost(type) {
+            if (!currentPost) return;
+            
+            fetch(`/api/reactions/${currentPost.id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ type })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Reaction failed');
+            })
+            .then(data => {
+                // Update counts
+                likeCount.textContent = data.thumbs_up;
+                dislikeCount.textContent = data.thumbs_down;
+                
+                // Update buttons
+                if (type === 'up') {
+                    likeBtn.classList.add('active');
+                    dislikeBtn.classList.remove('active');
+                } else {
+                    dislikeBtn.classList.add('active');
+                    likeBtn.classList.remove('active');
+                }
+                
+                // Update the post in the feed
+                updatePostInFeed(currentPost.id, data.thumbs_up, data.thumbs_down);
+            })
+            .catch(error => {
+                console.error('Error reacting to post:', error);
+                alert('Unable to react to post. Please try again.');
+            });
+        }
+        
+        // Update post in the feed
+        function updatePostInFeed(postId, thumbsUp, thumbsDown) {
+            const postElement = document.querySelector(`.post-card[data-id="${postId}"]`);
+            if (postElement) {
+                const likeStat = postElement.querySelector('.stat:nth-child(1) span:last-child');
+                const dislikeStat = postElement.querySelector('.stat:nth-child(2) span:last-child');
+                
+                if (likeStat) likeStat.textContent = thumbsUp;
+                if (dislikeStat) dislikeStat.textContent = thumbsDown;
+            }
+        }
+        
+        // Submit a comment
+        function submitComment() {
+            if (!currentPost || !commentInput.value.trim()) return;
+            
+            const comment = commentInput.value.trim();
+            
+            fetch(`/api/comments/${currentPost.id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ comment })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Comment failed');
+            })
+            .then(newComment => {
+                // Add the new comment to the list
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment';
+                
+                // Process mentions in comment text
+                let commentText = newComment.comment;
+                commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+                
+                commentElement.innerHTML = `
+                    <div class="comment-avatar">${newComment.username.charAt(0)}</div>
+                    <div class="comment-content">
+                        <div class="comment-author">${newComment.username}</div>
+                        <div class="comment-text">${commentText}</div>
+                        <div class="comment-time">${newComment.timestamp}</div>
+                    </div>
+                `;
+                
+                commentList.appendChild(commentElement);
+                
+                // Clear input
+                commentInput.value = '';
+                
+                // Update comment count in the feed
+                updateCommentCountInFeed(currentPost.id);
+            })
+            .catch(error => {
+                console.error('Error submitting comment:', error);
+                alert('Unable to submit comment. Please try again.');
+            });
+        }
+        
+        // Update comment count in the feed
+        function updateCommentCountInFeed(postId) {
+            const postElement = document.querySelector(`.post-card[data-id="${postId}"]`);
+            if (postElement) {
+                const commentStat = postElement.querySelector('.stat:nth-child(3) span:last-child');
+                const currentCount = parseInt(commentStat.textContent) || 0;
+                commentStat.textContent = currentCount + 1;
+            }
+        }
+    </script>
 </body>
 </html>
