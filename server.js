@@ -458,7 +458,7 @@ app.get("/api/reports", auth, async (req, res) => {
 // API endpoint for user
 
 
-
+// GET API: /api/reports/:id
 app.get("/api/reports/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -466,8 +466,7 @@ app.get("/api/reports/:id", auth, async (req, res) => {
     // Fetch report with user info
     const reportResult = await pool.query(
       `SELECT r.id, r.title, r.description, r.image, r.user_id,
-              u.username, u.kituo,
-              to_char(r.timestamp, 'YYYY-MM-DD HH24:MI:SS') AS formatted_date
+              u.username, u.kituo
        FROM reports r
        JOIN users u ON r.user_id = u.id
        WHERE r.id = $1`,
@@ -479,10 +478,10 @@ app.get("/api/reports/:id", auth, async (req, res) => {
     }
 
     const report = reportResult.rows[0];
-    // Generate avatar if missing
+    report.timestamp = formatTanzaniaTime(report.timestamp); // JS formatting
     report.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.username)}&background=405DE6&color=fff`;
 
-    // Fetch report reactions (only report reactions)
+    // Fetch reactions for the report
     const reactionsResult = await pool.query(
       `SELECT type, COUNT(*) AS count
        FROM reactions
@@ -490,43 +489,81 @@ app.get("/api/reports/:id", auth, async (req, res) => {
        GROUP BY type`,
       [id]
     );
-    const thumbsUp = reactionsResult.rows.find(r => r.type === "up")?.count || 0;
-    const thumbsDown = reactionsResult.rows.find(r => r.type === "down")?.count || 0;
-    report.thumbs_up = thumbsUp;
-    report.thumbs_down = thumbsDown;
+    report.thumbs_up = reactionsResult.rows.find(r => r.type === "up")?.count || 0;
+    report.thumbs_down = reactionsResult.rows.find(r => r.type === "down")?.count || 0;
 
-    // Fetch comments with user info
+    // Fetch comments for this report
     const commentsResult = await pool.query(
       `SELECT c.id, c.comment, c.timestamp,
               u.username, u.kituo
        FROM comments c
        JOIN users u ON c.user_id = u.id
        WHERE c.report_id = $1
-       ORDER BY c.timestamp ASC`,
+       ORDER BY c.id ASC`,
       [id]
     );
 
-    // Add avatar to comments
     const comments = commentsResult.rows.map(c => ({
       ...c,
+      timestamp: formatTanzaniaTime(c.timestamp),
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=405DE6&color=fff`
     }));
 
-    res.json({
-      report,
-      comments,
-      reply_box: true
-    });
+    res.json({ report, comments, reply_box: true });
 
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error loading report" });
   }
 });
-    
 
-     
+// GET VIEW: /reports/:id
+app.get("/reports/:id", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch report + user info
+    const reportResult = await pool.query(
+      `SELECT r.*, u.username AS report_user, u.kituo AS clinic
+       FROM reports r
+       JOIN users u ON r.user_id = u.id
+       WHERE r.id = $1`,
+      [id]
+    );
+    if (!reportResult.rows.length) return res.status(404).send("Ripoti haipo");
+
+    const report = reportResult.rows[0];
+    report.timestamp = formatTanzaniaTime(report.timestamp);
+    report.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.report_user)}&background=405DE6&color=fff`;
+
+    // Fetch comments
+    const commentsResult = await pool.query(
+      `SELECT c.*, u.username, u.kituo
+       FROM comments c
+       JOIN users u ON c.user_id = u.id
+       WHERE c.report_id = $1
+       ORDER BY c.id ASC`,
+      [id]
+    );
+
+    const comments = commentsResult.rows.map(c => ({
+      ...c,
+      timestamp: formatTanzaniaTime(c.timestamp),
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=405DE6&color=fff`
+    }));
+
+    res.render("report-view", {
+      report,
+      comments,
+      loggedInUser: req.session.username
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error loading report");
+  }
+});
     
+        
   app.get("/api/mentions", auth, async (req, res) => {
   try {
     const { rows } = await pool.query(`
