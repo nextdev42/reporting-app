@@ -394,116 +394,102 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
   }
 });
 
+  
 
-// API endpoint for user
+// ====== Get reports ======
 
+// GET /api/reports?username=...
 
-// GET API: /api/reports/:id
+app.get("/api/reports", auth, async (req, res) => {
+  try {
+    const username = (req.query.username || "").toLowerCase();
+    let query = `
+      SELECT 
+        r.id, r.timestamp, r.title, r.description, r.image, r.user_id, 
+        u.username, u.kituo AS clinic,
+        COALESCE(ru.thumbs_up, 0) AS thumbs_up,
+        COALESCE(ru.thumbs_down, 0) AS thumbs_down,
+        ru.user_thumb
+      FROM reports r
+      JOIN users u ON r.user_id = u.id
+      LEFT JOIN (
+        SELECT report_id,
+               SUM(CASE WHEN type='up' THEN 1 ELSE 0 END) AS thumbs_up,
+               SUM(CASE WHEN type='down' THEN 1 ELSE 0 END) AS thumbs_down,
+               MAX(CASE WHEN user_id=$1 THEN type END) AS user_thumb
+        FROM reactions
+        GROUP BY report_id
+      ) ru ON ru.report_id = r.id
+    `;
+
+    const params = [req.session.userId]; // correct session variable
+    if (username) {
+      query += ` WHERE u.username = $2`;
+      params.push(username);
+    }
+
+    query += ` ORDER BY r.id DESC`;
+
+    const { rows: reports } = await pool.query(query, params);
+
+    // Attach comments
+    for (let r of reports) {
+      const { rows: comments } = await pool.query(
+        `SELECT c.comment, c.timestamp, u.username 
+         FROM comments c 
+         JOIN users u ON c.user_id = u.id 
+         WHERE c.report_id = $1
+         ORDER BY c.id ASC`,
+        [r.id]
+      );
+      r.comments = comments.map(c => ({
+        ...c,
+        timestamp: formatTanzaniaTime(c.timestamp)
+      }));
+    }
+
+    res.json({ reports });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Hitilafu katika kupakia ripoti");
+  }
+});
+
+// API endpoint for AJAX mentions
 app.get("/api/reports/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Fetch report with user info
-    const reportResult = await pool.query(
-      `SELECT r.id, r.title, r.description, r.image, r.user_id,
-              u.username, u.kituo
-       FROM reports r
-       JOIN users u ON r.user_id = u.id
-       WHERE r.id = $1`,
+    const { rows } = await pool.query(
+      `SELECT reports.*, users.username, users.kituo 
+       FROM reports 
+       JOIN users ON reports.user_id = users.id 
+       WHERE reports.id = $1`,
       [id]
     );
 
-    if (!reportResult.rows.length) {
+    if (!rows.length) {
       return res.status(404).json({ error: "Report not found" });
     }
 
-    const report = reportResult.rows[0];
-    report.timestamp = formatTanzaniaTime(report.timestamp); // JS formatting
-    report.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.username)}&background=405DE6&color=fff`;
+    const report = rows[0];
 
-    // Fetch reactions for the report
-    const reactionsResult = await pool.query(
-      `SELECT type, COUNT(*) AS count
-       FROM reactions
-       WHERE report_id = $1
-       GROUP BY type`,
-      [id]
-    );
-    report.thumbs_up = reactionsResult.rows.find(r => r.type === "up")?.count || 0;
-    report.thumbs_down = reactionsResult.rows.find(r => r.type === "down")?.count || 0;
-
-    // Fetch comments for this report
-    const commentsResult = await pool.query(
-      `SELECT c.id, c.comment, c.timestamp,
-              u.username, u.kituo
-       FROM comments c
-       JOIN users u ON c.user_id = u.id
-       WHERE c.report_id = $1
-       ORDER BY c.id ASC`,
+    const comments = await pool.query(
+      `SELECT comments.*, users.username, users.kituo 
+       FROM comments 
+       JOIN users ON comments.user_id = users.id 
+       WHERE comments.report_id = $1
+       ORDER BY comments.timestamp ASC`,
       [id]
     );
 
-    const comments = commentsResult.rows.map(c => ({
-      ...c,
-      timestamp: formatTanzaniaTime(c.timestamp),
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=405DE6&color=fff`
-    }));
-
-    res.json({ report, comments, reply_box: true });
-
+    res.json({ report, comments: comments.rows });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error loading report" });
   }
 });
-
-// GET VIEW: /reports/:id
-
-    app.get("/reports/:id", auth, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Fetch report + user info
-    const reportResult = await pool.query(
-      `SELECT r.*, u.username AS report_user, u.kituo AS clinic
-       FROM reports r
-       JOIN users u ON r.user_id = u.id
-       WHERE r.id = $1`,
-      [id]
-    );
-    if (!reportResult.rows.length) return res.status(404).send("Ripoti haipo");
-
-    const report = reportResult.rows[0];
-    report.timestamp = formatTanzaniaTime(report.created_at); // fixed
-    report.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.report_user)}&background=405DE6&color=fff`;
-
-    // Fetch comments
-    const commentsResult = await pool.query(
-      `SELECT c.*, u.username, u.kituo
-       FROM comments c
-       JOIN users u ON c.user_id = u.id
-       WHERE c.report_id = $1
-       ORDER BY c.id ASC`,
-      [id]
-    );
-
-    const comments = commentsResult.rows.map(c => ({
-      ...c,
-      timestamp: formatTanzaniaTime(c.created_at), // fixed
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=405DE6&color=fff`
-    }));
-
-    res.render("report-view", {
-      report,
-      comments,
-      loggedInUser: req.session.username
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Tatizo kufungua ripoti hii, jaribu tena");
-  }
-});
-        
+    
   app.get("/api/mentions", auth, async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -528,10 +514,31 @@ app.get("/api/reports/:id", auth, async (req, res) => {
   }
 });
 
+app.get("/reports/:id", auth, async (req, res) => {
+  const reportId = req.params.id;
+  const reportRes = await pool.query(
+    `SELECT r.*, u.username AS report_user 
+     FROM reports r 
+     JOIN users u ON r.user_id = u.id
+     WHERE r.id=$1`, [reportId]
+  );
 
-// GET VIEW: /reports/:id
+  if (!reportRes.rows.length) return res.status(404).send("Ripoti haipo");
 
+  const commentsRes = await pool.query(
+    `SELECT c.*, u.username 
+     FROM comments c 
+     JOIN users u ON c.user_id=u.id
+     WHERE c.report_id=$1
+     ORDER BY c.id ASC`, [reportId]
+  );
 
+  res.render("report-view", {
+    report: reportRes.rows[0],
+    comments: commentsRes.rows,
+    loggedInUser: req.session.username
+  });
+});
 
 app.post("/api/mentions/:id/read", auth, async (req, res) => {
   try {
@@ -546,7 +553,41 @@ app.post("/api/mentions/:id/read", auth, async (req, res) => {
   }
 });
 
+app.get("/reports/:id", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    // Get the report
+    const { rows } = await pool.query(
+      `SELECT reports.*, users.username, users.kituo 
+       FROM reports 
+       JOIN users ON reports.user_id = users.id 
+       WHERE reports.id = $1`,
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).send("Report not found");
+    }
+
+    const report = rows[0];
+
+    // Also fetch comments for this report
+    const comments = await pool.query(
+      `SELECT comments.*, users.username, users.kituo 
+       FROM comments 
+       JOIN users ON comments.user_id = users.id 
+       WHERE comments.report_id = $1
+       ORDER BY comments.timestamp ASC`,
+      [id]
+    );
+
+    res.render("report-view", { report, comments: comments.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error loading report");
+  }
+});
 
 // ====== Add comment ======
 // ====== Add comment ======
