@@ -208,7 +208,7 @@
 
 </style>
 </head>
-<body>
+<body> 
 
 <nav>
   <h1>Ripoti za <%= username %></h1>
@@ -217,97 +217,49 @@
     <button onclick="location.href='/dashboard.html'">Nyumbani</button>
     <button onclick="location.href='/logout'">Toka</button>
 
-    <!-- Mention bell -->
-    <span id="mention-bell" style="cursor:pointer; margin-left:15px;">
-      🔔 <span id="mention-count"><%= mentions.length %></span>
-    </span>
+    <span id="mention-bell">🔔 <span id="mention-count"><%= mentions.length %></span></span>
 
     <div id="mentions-dropdown">
-  <ul id="mentionList">
-    <% mentions.forEach(m => { %>
-      <li>
-        <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>&background=405DE6&color=fff"
-             class="mention-avatar" alt="avatar">
-
-        <div class="mention-text">
-          <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
-          <span> alikutaja katika ripoti ya </span>
-          <a href="#" 
-   class="mention-comment-link" 
-   data-report-id="<%= m.report_id %>" 
-   data-comment-id="<%= m.comment_id %>">
-  "<%= m.comment %>"
-</a>
-          <div class="mention-date"><%= formatTanzaniaTime(m.created_at) %></div>
-        </div>
-      </li>
-    <% }) %>
-  </ul>
-</div>
+      <ul id="mentionList">
+        <% mentions.forEach(m => { %>
+        <li>
+          <img src="https://ui-avatars.com/api/?name=<%= m.from_user %>" class="mention-avatar" alt="avatar">
+          <div class="mention-text">
+            <a href="/user/<%= m.from_user %>" class="mention-user-link">@<%= m.from_user %></a>
+            <span> alikutaja katika ripoti ya </span>
+            <a href="#" class="mention-comment-link" data-report-id="<%= m.report_id %>" data-comment-id="<%= m.comment_id %>">"<%= m.comment %>"</a>
+            <div class="mention-date"><%= formatTanzaniaTime(m.created_at) %></div>
+          </div>
+        </li>
+        <% }) %>
+      </ul>
+    </div>
   </div>
 </nav>
 
 <div class="container">
-  <div class="user-header">
-    <img id="userAvatar" src="https://ui-avatars.com/api/?name=<%= username %>&background=405DE6&color=fff" alt="avatar">
-    <div class="info">
-      <h2>Ripoti za <strong><%= username %></strong></h2>
-      <div class="stats">
-        <span id="totalPosts">Ripoti: <%= reports.length %></span>
-        <span id="totalThumbsUp">👍 <%= reports.reduce((acc,r)=>acc+r.thumbs_up,0) %></span>
-        <span id="totalThumbsDown">👎 <%= reports.reduce((acc,r)=>acc+r.thumbs_down,0) %></span>
-      </div>
-
-      <% if(username === loggedInUser){ %>
-      <form id="avatarForm" class="avatar-upload">
-        <label for="avatarInput" class="custom-file-btn">Chagua Faili</label>
-        <input id="avatarInput" type="file" name="avatar" accept="image/*">
-        <button type="submit">Sasisha Avatar</button>
-      </form>
-      <% } %>
-    </div>
-  </div>
-
-  <div id="reports-container" class="reports-grid">
+  <div class="reports-grid">
     <% reports.forEach(r => { %>
-      <div class="report-card" id="report-<%= r.id %>">
-        <h3><%= r.title %></h3>
-        <p><%= r.description %></p>
-        <% if(r.image){ %>
-          <img src="<%= r.image %>" alt="report image">
-        <% } %>
-        <p class="timestamp"><%= r.timestamp %></p>
-        <div class="reactions">
-          👍 <span class="thumbs-up"><%= r.thumbs_up %></span>
-          👎 <span class="thumbs-down"><%= r.thumbs_down %></span>
-        </div>
-
-        <div class="comments">
-          <h4>Maoni:</h4>
-          <% r.comments.forEach(c => { %>
-            <div class="comment" id="comment-<%= c.id %>">
-              <a href="/user/<%= c.username %>" class="mention-user-link">@<%= c.username %></a>: <%= c.comment %>
-              <span class="comment-time"><%= c.timestamp %></span>
-            </div>
-          <% }) %>
-        </div>
+    <div class="report-card" id="report-<%= r.id %>">
+      <h3><%= r.title %></h3>
+      <p><%= r.description %></p>
+      <% if(r.image){ %><img src="<%= r.image %>" alt="report image"><% } %>
+      <div class="reactions">
+        👍 <span class="thumbs-up"><%= r.thumbs_up || 0 %></span>
+        👎 <span class="thumbs-down"><%= r.thumbs_down || 0 %></span>
       </div>
+    </div>
     <% }) %>
   </div>
 </div>
 
-
-
- <!-- Report Modal -->
+<!-- Report Modal -->
 <div id="report-modal" class="modal">
   <div class="modal-content">
     <span class="close-modal">&times;</span>
     <div id="modal-report-content"></div>
   </div>
 </div>
-
-
-
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
@@ -316,91 +268,111 @@ document.addEventListener("DOMContentLoaded", () => {
   const modal = document.getElementById("report-modal");
   const modalContent = document.getElementById("modal-report-content");
 
-  // Toggle dropdown on bell click
-  bell.addEventListener("click", e => {
-    e.stopPropagation(); // prevent closing immediately
-    dropdown.classList.toggle("open");
-  });
+  const formatTanzaniaTime = (ts) => new Date(ts).toLocaleString("en-KE", { timeZone: "Africa/Nairobi" });
 
-  // Close dropdown if click outside
-  document.addEventListener("click", e => {
-    if (!dropdown.contains(e.target) && !bell.contains(e.target)) {
-      dropdown.classList.remove("open");
-    }
-  });
+  // Toggle mentions dropdown
+  bell.addEventListener("click", e => { e.stopPropagation(); dropdown.classList.toggle("open"); });
+  document.addEventListener("click", e => { if (!dropdown.contains(e.target) && !bell.contains(e.target)) dropdown.classList.remove("open"); });
 
-  // Delegate clicks inside dropdown for comment links
+  // Open report modal from mention
   dropdown.addEventListener("click", async e => {
-    const link = e.target.closest(".mention-comment-link");
-    if (!link) return;
-
-    e.preventDefault();
-    dropdown.classList.remove("open"); // close dropdown
+    const link = e.target.closest(".mention-comment-link"); 
+    if(!link) return;
+    e.preventDefault(); dropdown.classList.remove("open");
 
     const reportId = link.dataset.reportId;
     const commentId = link.dataset.commentId;
 
     try {
-      const res = await fetch(`/api/reports/${reportId}`, {
-        headers: { "X-Requested-With": "XMLHttpRequest" }
-      });
-      if (!res.ok) throw new Error("Failed to fetch report");
+      const res = await fetch(`/api/reports/${reportId}`, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+      if(!res.ok) throw new Error("Failed to fetch report");
       const data = await res.json();
 
-      // Build modal HTML
-      let html = `<h3>${data.title}</h3>
-                  <p>${data.description}</p>`;
-      if (data.image) html += `<img src="${data.image}" style="max-width:100%">`;
-
-      html += `<div class="reactions">
-                 👍 <span>${data.thumbs_up}</span> 
-                 👎 <span>${data.thumbs_down}</span>
-               </div>`;
-
+      let html = `<h3>${data.report.title}</h3><p>${data.report.description}</p>`;
+      if(data.report.image) html += `<img src="${data.report.image}" style="max-width:100%">`;
+      html += `<div class="reactions">👍 <span>${data.report.thumbs_up || 0}</span> 👎 <span>${data.report.thumbs_down || 0}</span></div>`;
       html += `<div class="comments"><h4>Maoni:</h4>`;
+
       data.comments.forEach(c => {
+        const avatar = `https://ui-avatars.com/api/?name=${c.username}`;
         html += `<div class="comment" id="comment-${c.id}">
-                   <a class="mention-user-link">@${c.username}</a>: ${c.comment}
-                   <span class="comment-time">${c.timestamp}</span>
-                 </div>`;
+                  <img src="${avatar}" class="mention-avatar">
+                  <div class="mention-text">
+                    <a class="mention-user-link">@${c.username}</a>: ${c.comment}
+                    <div class="comment-time">${formatTanzaniaTime(c.timestamp)}</div>
+                    <div class="comment-reactions">
+                      <button class="thumbs-up-btn" data-comment-id="${c.id}">👍 <span class="count">${c.thumbs_up || 0}</span></button>
+                      <button class="thumbs-down-btn" data-comment-id="${c.id}">👎 <span class="count">${c.thumbs_down || 0}</span></button>
+                    </div>
+                    <div class="reply-box">
+                      <input type="text" class="reply-input" data-comment-id="${c.id}" placeholder="Andika jibu...">
+                      <button class="reply-btn" data-comment-id="${c.id}">Tuma</button>
+                    </div>
+                  </div>
+                </div>`;
       });
       html += `</div>`;
+      modalContent.innerHTML = html; modal.style.display = "block";
 
-      modalContent.innerHTML = html;
-      modal.style.display = "block";
-
-      // Scroll to mentioned comment & highlight
-      if (commentId) {
+      if(commentId){
         const commentEl = modalContent.querySelector(`#comment-${commentId}`);
-        if (commentEl) {
-          commentEl.scrollIntoView({ behavior: "smooth", block: "center" });
-          commentEl.classList.add("highlight");
-          setTimeout(() => commentEl.classList.remove("highlight"), 2000);
-        }
+        if(commentEl){ commentEl.scrollIntoView({behavior:"smooth",block:"center"}); commentEl.classList.add("highlight"); setTimeout(()=>commentEl.classList.remove("highlight"),2000);}
       }
 
-    } catch (err) {
-      console.error(err);
-      alert("Tatizo kufungua ripoti hii. Jaribu tena.");
-    }
+    } catch(err){ console.error(err); alert("Tatizo kufungua ripoti hii. Jaribu tena."); }
   });
 
   // Close modal
-  const closeBtn = modal.querySelector(".close-modal");
-  closeBtn.addEventListener("click", () => {
-    modal.style.display = "none";
-    modalContent.innerHTML = "";
-  });
-  window.addEventListener("click", e => {
-    if (e.target === modal) {
-      modal.style.display = "none";
-      modalContent.innerHTML = "";
+  modal.querySelector(".close-modal").addEventListener("click",()=>{modal.style.display="none";modalContent.innerHTML="";});
+  window.addEventListener("click", e=>{if(e.target===modal){modal.style.display="none";modalContent.innerHTML="";}});
+
+  // Handle reactions & replies
+  modalContent.addEventListener("click", async e=>{
+    const upBtn = e.target.closest(".thumbs-up-btn");
+    const downBtn = e.target.closest(".thumbs-down-btn");
+    const replyBtn = e.target.closest(".reply-btn");
+
+    if(upBtn || downBtn){
+      const btn = upBtn||downBtn;
+      const type = upBtn?"up":"down";
+      const commentId = btn.dataset.commentId;
+      try{
+        const res = await fetch(`/api/comments/${commentId}/reactions`,{
+          method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({type})
+        });
+        if(!res.ok) throw new Error("Reaction failed");
+        const span = btn.querySelector(".count");
+        span.textContent = parseInt(span.textContent||0)+1;
+      }catch(err){ console.error(err);}
+    }
+
+    if(replyBtn){
+      const commentId = replyBtn.dataset.commentId;
+      const input = modalContent.querySelector(`.reply-input[data-comment-id="${commentId}"]`);
+      const replyText = input.value.trim();
+      if(!replyText) return;
+      try{
+        const res = await fetch(`/api/comments/${commentId}/reply`,{
+          method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({reply: replyText})
+        });
+        if(!res.ok) throw new Error("Reply failed");
+        // Append new reply
+        const commentEl = modalContent.querySelector(`#comment-${commentId}`);
+        const newReply = document.createElement("div");
+        newReply.className = "comment reply";
+        newReply.innerHTML = `<a class="mention-user-link">@${window.LOGGED_IN_USER}</a>: ${replyText} <div class="comment-time">${formatTanzaniaTime(new Date())}</div>`;
+        commentEl.appendChild(newReply);
+        input.value = "";
+      }catch(err){ console.error(err);}
     }
   });
+
 });
 </script>
-        
-
 
 </body>
-</html>
+</html>     
+    
+    
+
+
