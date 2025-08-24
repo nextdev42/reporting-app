@@ -456,6 +456,7 @@
         let currentPost = null;
         let allUsers = [];
         let showOnlyMyPosts = false;
+        let currentUsername = ''; // Store the username from session
         
         // DOM elements
         const postsFeed = document.getElementById('postsFeed');
@@ -513,6 +514,9 @@
                     currentUser = user;
                     userName.textContent = user.jina;
                     document.getElementById('modalUserAvatar').textContent = user.jina.charAt(0);
+                    
+                    // Try to get username from session or use jina as fallback
+                    currentUsername = user.username || user.jina.toLowerCase().replace(/\s+/g, '');
                 })
                 .catch(error => {
                     console.error('Error loading user info:', error);
@@ -583,22 +587,10 @@
             });
         }
         
-        // Format date to a more readable format
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-        
         // Load all posts
         function loadPosts() {
             const url = showOnlyMyPosts ? 
-                `/api/reports?username=${currentUser.username}` : 
+                `/api/reports?username=${currentUsername}` : 
                 '/api/reports';
                 
             fetch(url, {
@@ -663,7 +655,7 @@
                         <p class="post-desc">${post.description}</p>
                         <div class="post-meta">
                             <span class="post-author">@${post.username}</span>
-                            <span class="post-time">${formatDate(post.timestamp)}</span>
+                            <span class="post-time">${post.timestamp}</span>
                         </div>
                     </div>
                     <div class="post-stats">
@@ -715,7 +707,7 @@
             // Update modal content
             document.getElementById('modalUserName').textContent = post.username;
             document.getElementById('modalUserAvatar').textContent = post.username.charAt(0);
-            document.getElementById('modalPostTime').textContent = formatDate(post.timestamp);
+            document.getElementById('modalPostTime').textContent = post.timestamp;
             document.getElementById('modalPostTitle').textContent = post.title;
             document.getElementById('modalPostDesc').textContent = post.description;
             
@@ -779,7 +771,7 @@
                     <div class="comment-content">
                         <div class="comment-author">${comment.username}</div>
                         <div class="comment-text">${commentText}</div>
-                        <div class="comment-time">${formatDate(comment.timestamp)}</div>
+                        <div class="comment-time">${comment.timestamp}</div>
                     </div>
                 `;
                 
@@ -814,7 +806,13 @@
                 notificationElement.className = 'notification';
                 notificationElement.innerHTML = `
                     <p>${notification.comment_user} mentioned you in a comment on ${notification.report_user}'s post</p>
-                    <small>${formatDate(notification.created_at)}</small>
+                    <small>${new Date(notification.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}</small>
                 `;
                 
                 notificationElement.addEventListener('click', () => {
@@ -1013,7 +1011,7 @@
                     <div class="comment-content">
                         <div class="comment-author">${newComment.username}</div>
                         <div class="comment-text">${commentText}</div>
-                        <div class="comment-time">${formatDate(newComment.timestamp)}</div>
+                        <div class="comment-time">${newComment.timestamp}</div>
                     </div>
                 `;
                 
