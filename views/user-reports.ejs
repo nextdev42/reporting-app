@@ -129,6 +129,11 @@
             cursor: pointer;
         }
         
+        .stat.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
         /* Modal Styles */
         .modal {
             display: none;
@@ -210,6 +215,11 @@
             color: var(--primary-color);
         }
         
+        .reaction-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
         .comments-section {
             margin-top: 20px;
         }
@@ -218,6 +228,7 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            position: relative;
         }
         
         .comment-input {
@@ -278,6 +289,12 @@
             color: var(--text-color);
         }
         
+        .comment-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
         .mention {
             color: var(--primary-color);
             font-weight: bold;
@@ -305,6 +322,50 @@
             font-size: 20px;
             cursor: pointer;
         }
+        
+        /* Mentions dropdown */
+        .mentions-dropdown {
+            position: absolute;
+            bottom: 45px;
+            left: 0;
+            width: 200px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .mention-option {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        
+        .mention-option:hover {
+            background-color: #f0f2f5;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
     </style>
 </head>
 <body>
@@ -318,6 +379,11 @@
                 <span id="userName">User</span>
                 <button class="logout-btn" id="logoutBtn">Logout</button>
             </div>
+        </div>
+        
+        <div class="filter-buttons">
+            <button class="filter-btn active" id="allPostsBtn">All Posts</button>
+            <button class="filter-btn" id="myPostsBtn">My Posts</button>
         </div>
         
         <div class="feed" id="postsFeed">
@@ -354,6 +420,7 @@
                 <div class="comment-form">
                     <textarea class="comment-input" id="commentInput" placeholder="Write a comment..."></textarea>
                     <button class="comment-submit" id="commentSubmit">Post</button>
+                    <div class="mentions-dropdown" id="mentionsDropdown"></div>
                 </div>
                 
                 <div class="comment-list" id="commentList">
@@ -379,6 +446,7 @@
         let currentUser = {};
         let currentPost = null;
         let allUsers = [];
+        let showOnlyMyPosts = false;
         
         // DOM elements
         const postsFeed = document.getElementById('postsFeed');
@@ -398,6 +466,9 @@
         const notificationsList = document.getElementById('notificationsList');
         const logoutBtn = document.getElementById('logoutBtn');
         const userName = document.getElementById('userName');
+        const mentionsDropdown = document.getElementById('mentionsDropdown');
+        const allPostsBtn = document.getElementById('allPostsBtn');
+        const myPostsBtn = document.getElementById('myPostsBtn');
         
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
@@ -421,7 +492,7 @@
         // Load current user info
         function loadUserInfo() {
             fetch('/api/user', {
-                credentials: 'include'  // Include cookies for session authentication
+                credentials: 'include'
             })
                 .then(response => {
                     if (!response.ok) {
@@ -443,12 +514,11 @@
         // Load all users for mentions
         function loadAllUsers() {
             fetch('/api/users', {
-                credentials: 'include'  // Include cookies for session authentication
+                credentials: 'include'
             })
                 .then(response => response.json())
                 .then(users => {
                     allUsers = users;
-                    setupMentionsAutocomplete();
                 })
                 .catch(error => console.error('Error loading users:', error));
         }
@@ -461,7 +531,6 @@
                 
                 if (lastAtPos > -1) {
                     const currentText = value.substring(lastAtPos + 1);
-                    const dropdown = document.getElementById('mentionsDropdown') || createMentionsDropdown();
                     
                     if (currentText.length > 0) {
                         const filteredUsers = allUsers.filter(user => 
@@ -469,16 +538,11 @@
                         );
                         
                         if (filteredUsers.length > 0) {
-                            dropdown.innerHTML = filteredUsers.map(user => 
+                            mentionsDropdown.innerHTML = filteredUsers.map(user => 
                                 `<div class="mention-option" data-username="${user}">@${user}</div>`
                             ).join('');
                             
-                            dropdown.style.display = 'block';
-                            
-                            // Position dropdown near cursor
-                            const cursorPos = getCursorPosition(commentInput);
-                            dropdown.style.top = `${cursorPos.y + 20}px`;
-                            dropdown.style.left = `${cursorPos.x}px`;
+                            mentionsDropdown.style.display = 'block';
                             
                             // Add click event to options
                             document.querySelectorAll('.mention-option').forEach(option => {
@@ -486,83 +550,49 @@
                                     const username = this.getAttribute('data-username');
                                     const newValue = value.substring(0, lastAtPos + 1) + username + ' ';
                                     commentInput.value = newValue;
-                                    dropdown.style.display = 'none';
+                                    mentionsDropdown.style.display = 'none';
                                     commentInput.focus();
                                 });
                             });
                         } else {
-                            dropdown.style.display = 'none';
+                            mentionsDropdown.style.display = 'none';
                         }
                     } else {
-                        dropdown.style.display = 'none';
+                        mentionsDropdown.style.display = 'none';
                     }
                 } else {
-                    const dropdown = document.getElementById('mentionsDropdown');
-                    if (dropdown) dropdown.style.display = 'none';
+                    mentionsDropdown.style.display = 'none';
                 }
             });
             
             // Hide dropdown when clicking elsewhere
             document.addEventListener('click', function(e) {
-                if (e.target !== commentInput) {
-                    const dropdown = document.getElementById('mentionsDropdown');
-                    if (dropdown) dropdown.style.display = 'none';
+                if (e.target !== commentInput && !e.target.closest('.mentions-dropdown')) {
+                    mentionsDropdown.style.display = 'none';
                 }
             });
         }
         
-        function createMentionsDropdown() {
-            const dropdown = document.createElement('div');
-            dropdown.id = 'mentionsDropdown';
-            dropdown.style.cssText = `
-                position: absolute;
-                background: white;
-                border: 1px solid #ccc;
-                max-height: 150px;
-                overflow-y: auto;
-                z-index: 1000;
-                display: none;
-            `;
-            document.body.appendChild(dropdown);
-            return dropdown;
-        }
-        
-        function getCursorPosition(textarea) {
-            const selectionStart = textarea.selectionStart;
-            const div = document.createElement('div');
-            const copyStyle = getComputedStyle(textarea);
-            
-            for (const prop of copyStyle) {
-                div.style[prop] = copyStyle[prop];
-            }
-            
-            div.style.position = 'absolute';
-            div.style.left = '-9999px';
-            div.style.whiteSpace = 'pre-wrap';
-            div.style.wordWrap = 'break-word';
-            div.textContent = textarea.value.substring(0, selectionStart);
-            
-            const span = document.createElement('span');
-            span.textContent = textarea.value.substring(selectionStart) || '.';
-            div.appendChild(span);
-            
-            document.body.appendChild(div);
-            
-            const rect = span.getBoundingClientRect();
-            const textareaRect = textarea.getBoundingClientRect();
-            
-            document.body.removeChild(div);
-            
-            return {
-                x: textareaRect.left + rect.left,
-                y: textareaRect.top + rect.top
-            };
+        // Format date to a more readable format
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
         }
         
         // Load all posts
         function loadPosts() {
-            fetch('/api/reports', {
-                credentials: 'include'  // Include cookies for session authentication
+            const url = showOnlyMyPosts ? 
+                `/api/reports?username=${currentUser.jina.toLowerCase()}` : 
+                '/api/reports';
+                
+            fetch(url, {
+                credentials: 'include'
             })
                 .then(response => {
                     if (!response.ok) {
@@ -580,6 +610,11 @@
         function renderPosts(posts) {
             postsFeed.innerHTML = '';
             
+            if (posts.length === 0) {
+                postsFeed.innerHTML = '<p>No posts found.</p>';
+                return;
+            }
+            
             posts.forEach(post => {
                 const postElement = document.createElement('div');
                 postElement.className = 'post-card';
@@ -590,6 +625,11 @@
                     imageHtml = `<img src="${post.image}" alt="Post image" class="post-image">`;
                 }
                 
+                // Check if user has already reacted to this post
+                const userHasReacted = post.user_thumb !== null;
+                const likeClass = userHasReacted && post.user_thumb === 'up' ? 'disabled' : '';
+                const dislikeClass = userHasReacted && post.user_thumb === 'down' ? 'disabled' : '';
+                
                 postElement.innerHTML = `
                     ${imageHtml}
                     <div class="post-content">
@@ -597,14 +637,14 @@
                         <p class="post-desc">${post.description}</p>
                         <div class="post-meta">
                             <span class="post-author">@${post.username}</span>
-                            <span class="post-time">${post.timestamp}</span>
+                            <span class="post-time">${formatDate(post.timestamp)}</span>
                         </div>
                     </div>
                     <div class="post-stats">
-                        <div class="stat">
+                        <div class="stat ${likeClass}" data-type="up">
                             <span>👍</span> <span>${post.thumbs_up}</span>
                         </div>
-                        <div class="stat">
+                        <div class="stat ${dislikeClass}" data-type="down">
                             <span>👎</span> <span>${post.thumbs_down}</span>
                         </div>
                         <div class="stat">
@@ -613,7 +653,31 @@
                     </div>
                 `;
                 
-                postElement.addEventListener('click', () => openPostModal(post));
+                postElement.addEventListener('click', (e) => {
+                    // Don't open modal if clicking on a reaction stat
+                    if (!e.target.closest('.stat')) {
+                        openPostModal(post);
+                    }
+                });
+                
+                // Add reaction handlers
+                const likeStat = postElement.querySelector('.stat[data-type="up"]');
+                const dislikeStat = postElement.querySelector('.stat[data-type="down"]');
+                
+                if (!likeStat.classList.contains('disabled')) {
+                    likeStat.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        reactToPost(post.id, 'up');
+                    });
+                }
+                
+                if (!dislikeStat.classList.contains('disabled')) {
+                    dislikeStat.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        reactToPost(post.id, 'down');
+                    });
+                }
+                
                 postsFeed.appendChild(postElement);
             });
         }
@@ -625,7 +689,7 @@
             // Update modal content
             document.getElementById('modalUserName').textContent = post.username;
             document.getElementById('modalUserAvatar').textContent = post.username.charAt(0);
-            document.getElementById('modalPostTime').textContent = post.timestamp;
+            document.getElementById('modalPostTime').textContent = formatDate(post.timestamp);
             document.getElementById('modalPostTitle').textContent = post.title;
             document.getElementById('modalPostDesc').textContent = post.description;
             
@@ -643,8 +707,9 @@
             // Update reaction buttons based on user's previous reaction
             updateReactionButtons(post);
             
-            // Load comments
-            renderComments(post.comments || []);
+            // Load comments (sorted by latest first)
+            const sortedComments = [...(post.comments || [])].reverse();
+            renderComments(sortedComments);
             
             // Show modal
             postModal.style.display = 'block';
@@ -653,15 +718,20 @@
         // Update reaction buttons based on user's previous reaction
         function updateReactionButtons(post) {
             // Reset both buttons
-            likeBtn.classList.remove('active');
-            dislikeBtn.classList.remove('active');
+            likeBtn.classList.remove('active', 'disabled');
+            dislikeBtn.classList.remove('active', 'disabled');
             
             // Check if user has reacted to this post
-            // This would require your backend to return user's reaction status
-            // For now, we'll assume no reaction
+            if (post.user_thumb) {
+                if (post.user_thumb === 'up') {
+                    likeBtn.classList.add('active', 'disabled');
+                } else if (post.user_thumb === 'down') {
+                    dislikeBtn.classList.add('active', 'disabled');
+                }
+            }
         }
         
-        // Render comments in the modal
+        // Render comments in the modal (latest first)
         function renderComments(comments) {
             commentList.innerHTML = '';
             
@@ -683,7 +753,7 @@
                     <div class="comment-content">
                         <div class="comment-author">${comment.username}</div>
                         <div class="comment-text">${commentText}</div>
-                        <div class="comment-time">${comment.timestamp}</div>
+                        <div class="comment-time">${formatDate(comment.timestamp)}</div>
                     </div>
                 `;
                 
@@ -694,7 +764,7 @@
         // Check for new notifications
         function checkNotifications() {
             fetch('/api/mentions', {
-                credentials: 'include'  // Include cookies for session authentication
+                credentials: 'include'
             })
                 .then(response => response.json())
                 .then(notifications => {
@@ -717,8 +787,8 @@
                 const notificationElement = document.createElement('div');
                 notificationElement.className = 'notification';
                 notificationElement.innerHTML = `
-                    <p>${notification.from_user} mentioned you in a comment on ${notification.report_user}'s post</p>
-                    <small>${new Date(notification.created_at).toLocaleString()}</small>
+                    <p>${notification.comment_user} mentioned you in a comment on ${notification.report_user}'s post</p>
+                    <small>${formatDate(notification.created_at)}</small>
                 `;
                 
                 notificationElement.addEventListener('click', () => {
@@ -742,7 +812,7 @@
         // Load a specific post by ID
         function loadPostById(postId) {
             fetch(`/api/reports/${postId}`, {
-                credentials: 'include'  // Include cookies for session authentication
+                credentials: 'include'
             })
                 .then(response => response.json())
                 .then(data => {
@@ -775,12 +845,16 @@
             
             // Like button
             likeBtn.addEventListener('click', () => {
-                reactToPost('up');
+                if (!likeBtn.classList.contains('disabled')) {
+                    reactToPost(currentPost.id, 'up');
+                }
             });
             
             // Dislike button
             dislikeBtn.addEventListener('click', () => {
-                reactToPost('down');
+                if (!dislikeBtn.classList.contains('disabled')) {
+                    reactToPost(currentPost.id, 'down');
+                }
             });
             
             // Comment submit
@@ -795,19 +869,35 @@
             logoutBtn.addEventListener('click', () => {
                 window.location.href = '/logout';
             });
+            
+            // Filter buttons
+            allPostsBtn.addEventListener('click', () => {
+                showOnlyMyPosts = false;
+                allPostsBtn.classList.add('active');
+                myPostsBtn.classList.remove('active');
+                loadPosts();
+            });
+            
+            myPostsBtn.addEventListener('click', () => {
+                showOnlyMyPosts = true;
+                myPostsBtn.classList.add('active');
+                allPostsBtn.classList.remove('active');
+                loadPosts();
+            });
+            
+            // Setup mentions autocomplete
+            setupMentionsAutocomplete();
         }
         
         // React to a post
-        function reactToPost(type) {
-            if (!currentPost) return;
-            
-            fetch(`/api/reactions/${currentPost.id}`, {
+        function reactToPost(postId, type) {
+            fetch(`/api/reactions/${postId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ type }),
-                credentials: 'include'  // Include cookies for session authentication
+                credentials: 'include'
             })
             .then(response => {
                 if (response.ok) {
@@ -816,21 +906,21 @@
                 return response.text().then(text => { throw new Error(text) });
             })
             .then(data => {
-                // Update counts
+                // Update counts in modal
                 likeCount.textContent = data.thumbs_up;
                 dislikeCount.textContent = data.thumbs_down;
                 
-                // Update buttons
+                // Update buttons in modal
                 if (type === 'up') {
-                    likeBtn.classList.add('active');
-                    dislikeBtn.classList.remove('active');
+                    likeBtn.classList.add('active', 'disabled');
+                    dislikeBtn.classList.remove('active', 'disabled');
                 } else {
-                    dislikeBtn.classList.add('active');
-                    likeBtn.classList.remove('active');
+                    dislikeBtn.classList.add('active', 'disabled');
+                    likeBtn.classList.remove('active', 'disabled');
                 }
                 
                 // Update the post in the feed
-                updatePostInFeed(currentPost.id, data.thumbs_up, data.thumbs_down);
+                updatePostInFeed(postId, data.thumbs_up, data.thumbs_down, type);
             })
             .catch(error => {
                 console.error('Error reacting to post:', error);
@@ -839,14 +929,27 @@
         }
         
         // Update post in the feed
-        function updatePostInFeed(postId, thumbsUp, thumbsDown) {
+        function updatePostInFeed(postId, thumbsUp, thumbsDown, reactionType) {
             const postElement = document.querySelector(`.post-card[data-id="${postId}"]`);
             if (postElement) {
-                const likeStat = postElement.querySelector('.stat:nth-child(1) span:last-child');
-                const dislikeStat = postElement.querySelector('.stat:nth-child(2) span:last-child');
+                const likeStat = postElement.querySelector('.stat[data-type="up"]');
+                const dislikeStat = postElement.querySelector('.stat[data-type="down"]');
                 
-                if (likeStat) likeStat.textContent = thumbsUp;
-                if (dislikeStat) dislikeStat.textContent = thumbsDown;
+                if (likeStat) {
+                    likeStat.querySelector('span:last-child').textContent = thumbsUp;
+                    if (reactionType === 'up') {
+                        likeStat.classList.add('disabled');
+                        dislikeStat.classList.remove('disabled');
+                    }
+                }
+                
+                if (dislikeStat) {
+                    dislikeStat.querySelector('span:last-child').textContent = thumbsDown;
+                    if (reactionType === 'down') {
+                        dislikeStat.classList.add('disabled');
+                        likeStat.classList.remove('disabled');
+                    }
+                }
             }
         }
         
@@ -862,7 +965,7 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ comment }),
-                credentials: 'include'  // Include cookies for session authentication
+                credentials: 'include'
             })
             .then(response => {
                 if (response.ok) {
@@ -871,7 +974,7 @@
                 return response.text().then(text => { throw new Error(text) });
             })
             .then(newComment => {
-                // Add the new comment to the list
+                // Add the new comment to the list (at the top)
                 const commentElement = document.createElement('div');
                 commentElement.className = 'comment';
                 
@@ -884,11 +987,12 @@
                     <div class="comment-content">
                         <div class="comment-author">${newComment.username}</div>
                         <div class="comment-text">${commentText}</div>
-                        <div class="comment-time">${newComment.timestamp}</div>
+                        <div class="comment-time">${formatDate(newComment.timestamp)}</div>
                     </div>
                 `;
                 
-                commentList.appendChild(commentElement);
+                // Add to the top of the comments list
+                commentList.insertBefore(commentElement, commentList.firstChild);
                 
                 // Clear input
                 commentInput.value = '';
