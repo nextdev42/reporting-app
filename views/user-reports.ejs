@@ -366,6 +366,15 @@
             color: white;
             border-color: var(--primary-color);
         }
+        
+        .no-posts-message {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
@@ -519,6 +528,7 @@
                 .then(response => response.json())
                 .then(users => {
                     allUsers = users;
+                    setupMentionsAutocomplete();
                 })
                 .catch(error => console.error('Error loading users:', error));
         }
@@ -588,7 +598,7 @@
         // Load all posts
         function loadPosts() {
             const url = showOnlyMyPosts ? 
-                `/api/reports?username=${currentUser.jina.toLowerCase()}` : 
+                `/api/reports?username=${currentUser.username}` : 
                 '/api/reports';
                 
             fetch(url, {
@@ -603,7 +613,15 @@
                 .then(data => {
                     renderPosts(data.reports);
                 })
-                .catch(error => console.error('Error loading posts:', error));
+                .catch(error => {
+                    console.error('Error loading posts:', error);
+                    postsFeed.innerHTML = `
+                        <div class="no-posts-message">
+                            <h3>Error loading posts</h3>
+                            <p>Please try again later</p>
+                        </div>
+                    `;
+                });
         }
         
         // Render posts in the feed
@@ -611,7 +629,15 @@
             postsFeed.innerHTML = '';
             
             if (posts.length === 0) {
-                postsFeed.innerHTML = '<p>No posts found.</p>';
+                const message = showOnlyMyPosts ? 
+                    "You haven't created any posts yet." : 
+                    "No posts found.";
+                    
+                postsFeed.innerHTML = `
+                    <div class="no-posts-message">
+                        <h3>${message}</h3>
+                    </div>
+                `;
                 return;
             }
             
