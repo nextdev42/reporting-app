@@ -420,8 +420,15 @@
         
         // Load current user info
         function loadUserInfo() {
-            fetch('/api/user')
-                .then(response => response.json())
+            fetch('/api/user', {
+                credentials: 'include'  // Include cookies for session authentication
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Not authenticated');
+                    }
+                    return response.json();
+                })
                 .then(user => {
                     currentUser = user;
                     userName.textContent = user.jina;
@@ -435,7 +442,9 @@
         
         // Load all users for mentions
         function loadAllUsers() {
-            fetch('/api/users')
+            fetch('/api/users', {
+                credentials: 'include'  // Include cookies for session authentication
+            })
                 .then(response => response.json())
                 .then(users => {
                     allUsers = users;
@@ -552,8 +561,15 @@
         
         // Load all posts
         function loadPosts() {
-            fetch('/api/reports')
-                .then(response => response.json())
+            fetch('/api/reports', {
+                credentials: 'include'  // Include cookies for session authentication
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load posts');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     renderPosts(data.reports);
                 })
@@ -677,7 +693,9 @@
         
         // Check for new notifications
         function checkNotifications() {
-            fetch('/api/mentions')
+            fetch('/api/mentions', {
+                credentials: 'include'  // Include cookies for session authentication
+            })
                 .then(response => response.json())
                 .then(notifications => {
                     if (notifications.length > 0) {
@@ -705,7 +723,10 @@
                 
                 notificationElement.addEventListener('click', () => {
                     // Mark as read and open the post
-                    fetch(`/api/mentions/${notification.id}/read`, { method: 'POST' })
+                    fetch(`/api/mentions/${notification.id}/read`, { 
+                        method: 'POST',
+                        credentials: 'include'
+                    })
                         .then(() => {
                             loadPostById(notification.report_id);
                             notificationsModal.style.display = 'none';
@@ -720,7 +741,9 @@
         
         // Load a specific post by ID
         function loadPostById(postId) {
-            fetch(`/api/reports/${postId}`)
+            fetch(`/api/reports/${postId}`, {
+                credentials: 'include'  // Include cookies for session authentication
+            })
                 .then(response => response.json())
                 .then(data => {
                     openPostModal(data.report);
@@ -783,13 +806,14 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ type })
+                body: JSON.stringify({ type }),
+                credentials: 'include'  // Include cookies for session authentication
             })
             .then(response => {
                 if (response.ok) {
                     return response.json();
                 }
-                throw new Error('Reaction failed');
+                return response.text().then(text => { throw new Error(text) });
             })
             .then(data => {
                 // Update counts
@@ -810,7 +834,7 @@
             })
             .catch(error => {
                 console.error('Error reacting to post:', error);
-                alert('Unable to react to post. Please try again.');
+                alert('Unable to react to post. ' + error.message);
             });
         }
         
@@ -837,13 +861,14 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ comment })
+                body: JSON.stringify({ comment }),
+                credentials: 'include'  // Include cookies for session authentication
             })
             .then(response => {
                 if (response.ok) {
                     return response.json();
                 }
-                throw new Error('Comment failed');
+                return response.text().then(text => { throw new Error(text) });
             })
             .then(newComment => {
                 // Add the new comment to the list
@@ -873,7 +898,7 @@
             })
             .catch(error => {
                 console.error('Error submitting comment:', error);
-                alert('Unable to submit comment. Please try again.');
+                alert('Unable to submit comment. ' + error.message);
             });
         }
         
