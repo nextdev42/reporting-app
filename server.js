@@ -455,19 +455,17 @@ app.get("/api/reports", auth, async (req, res) => {
   }
 });
 
-// API endpoint for AJAX mentions
-
+// API endpoint for user
 
 app.get("/api/reports/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Fetch report with user info
+    // Fetch report with user info (no avatar column)
     const { rows } = await pool.query(
       `SELECT reports.*, 
               users.username, 
-              users.kituo, 
-              COALESCE(users.avatar, '') AS avatar,  -- safe avatar fallback
+              users.kituo,
               to_char(reports.created_at, 'YYYY-MM-DD HH24:MI:SS') AS formatted_date
        FROM reports
        JOIN users ON reports.user_id = users.id
@@ -480,17 +478,14 @@ app.get("/api/reports/:id", auth, async (req, res) => {
     }
 
     const report = rows[0];
-    // Generate dynamic avatar if missing
-    if (!report.avatar) {
-      report.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.username)}&background=405DE6&color=fff`;
-    }
+    // Generate dynamic avatar for frontend
+    report.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.username)}&background=405DE6&color=fff`;
 
-    // Fetch comments with user info + reactions
+    // Fetch comments
     const commentsQuery = await pool.query(
       `SELECT comments.*, 
               users.username, 
-              users.kituo, 
-              COALESCE(users.avatar, '') AS avatar,
+              users.kituo,
               to_char(comments.timestamp, 'YYYY-MM-DD HH24:MI:SS') AS formatted_date,
               COALESCE(json_agg(
                 json_build_object(
@@ -503,29 +498,24 @@ app.get("/api/reports/:id", auth, async (req, res) => {
        JOIN users ON comments.user_id = users.id
        LEFT JOIN reactions ON comments.id = reactions.comment_id
        WHERE comments.report_id = $1
-       GROUP BY comments.id, users.username, users.kituo, users.avatar
+       GROUP BY comments.id, users.username, users.kituo
        ORDER BY comments.timestamp ASC`,
       [id]
     );
 
     const comments = commentsQuery.rows.map(c => {
-      if (!c.avatar) {
-        c.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=405DE6&color=fff`;
-      }
+      c.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=405DE6&color=fff`;
       return c;
     });
 
-    res.json({
-      report,
-      comments,
-      reply_box: true
-    });
+    res.json({ report, comments, reply_box: true });
 
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error loading report" });
   }
 });
+
     
 
 
