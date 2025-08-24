@@ -457,6 +457,7 @@ app.get("/api/reports", auth, async (req, res) => {
 
 // API endpoint for AJAX mentions
 
+
 app.get("/api/reports/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -466,7 +467,7 @@ app.get("/api/reports/:id", auth, async (req, res) => {
       `SELECT reports.*, 
               users.username, 
               users.kituo, 
-              COALESCE(users.avatar, '') AS avatar,  -- safe avatar
+              COALESCE(users.avatar, '') AS avatar,  -- safe avatar fallback
               to_char(reports.created_at, 'YYYY-MM-DD HH24:MI:SS') AS formatted_date
        FROM reports
        JOIN users ON reports.user_id = users.id
@@ -479,9 +480,9 @@ app.get("/api/reports/:id", auth, async (req, res) => {
     }
 
     const report = rows[0];
+    // Generate dynamic avatar if missing
     if (!report.avatar) {
-      // generate dynamic avatar if missing
-      report.avatar = `https://ui-avatars.com/api/?name=${report.username}&background=405DE6&color=fff`;
+      report.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.username)}&background=405DE6&color=fff`;
     }
 
     // Fetch comments with user info + reactions
@@ -509,7 +510,7 @@ app.get("/api/reports/:id", auth, async (req, res) => {
 
     const comments = commentsQuery.rows.map(c => {
       if (!c.avatar) {
-        c.avatar = `https://ui-avatars.com/api/?name=${c.username}&background=405DE6&color=fff`;
+        c.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=405DE6&color=fff`;
       }
       return c;
     });
@@ -525,6 +526,9 @@ app.get("/api/reports/:id", auth, async (req, res) => {
     res.status(500).json({ error: "Server error loading report" });
   }
 });
+    
+
+
     
 
     
