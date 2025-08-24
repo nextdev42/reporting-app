@@ -394,66 +394,6 @@ app.post("/submit", auth, upload.single("image"), async (req, res) => {
   }
 });
 
-  
-
-// ====== Get reports ======
-
-// GET /api/reports?username=...
-
-app.get("/api/reports", auth, async (req, res) => {
-  try {
-    const username = (req.query.username || "").toLowerCase();
-    let query = `
-      SELECT 
-        r.id, r.timestamp, r.title, r.description, r.image, r.user_id, 
-        u.username, u.kituo AS clinic,
-        COALESCE(ru.thumbs_up, 0) AS thumbs_up,
-        COALESCE(ru.thumbs_down, 0) AS thumbs_down,
-        ru.user_thumb
-      FROM reports r
-      JOIN users u ON r.user_id = u.id
-      LEFT JOIN (
-        SELECT report_id,
-               SUM(CASE WHEN type='up' THEN 1 ELSE 0 END) AS thumbs_up,
-               SUM(CASE WHEN type='down' THEN 1 ELSE 0 END) AS thumbs_down,
-               MAX(CASE WHEN user_id=$1 THEN type END) AS user_thumb
-        FROM reactions
-        GROUP BY report_id
-      ) ru ON ru.report_id = r.id
-    `;
-
-    const params = [req.session.userId]; // correct session variable
-    if (username) {
-      query += ` WHERE u.username = $2`;
-      params.push(username);
-    }
-
-    query += ` ORDER BY r.id DESC`;
-
-    const { rows: reports } = await pool.query(query, params);
-
-    // Attach comments
-    for (let r of reports) {
-      const { rows: comments } = await pool.query(
-        `SELECT c.comment, c.timestamp, u.username 
-         FROM comments c 
-         JOIN users u ON c.user_id = u.id 
-         WHERE c.report_id = $1
-         ORDER BY c.id ASC`,
-        [r.id]
-      );
-      r.comments = comments.map(c => ({
-        ...c,
-        timestamp: formatTanzaniaTime(c.timestamp)
-      }));
-    }
-
-    res.json({ reports });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Hitilafu katika kupakia ripoti");
-  }
-});
 
 // API endpoint for user
 
