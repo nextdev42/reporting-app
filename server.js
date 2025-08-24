@@ -457,16 +457,17 @@ app.get("/api/reports", auth, async (req, res) => {
 
 // API endpoint for user
 
+
 app.get("/api/reports/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Fetch report with user info (no avatar column)
+    // Fetch report with user info
     const { rows } = await pool.query(
       `SELECT reports.*, 
               users.username, 
               users.kituo,
-              to_char(reports.created_at, 'YYYY-MM-DD HH24:MI:SS') AS formatted_date
+              reports.timestamp
        FROM reports
        JOIN users ON reports.user_id = users.id
        WHERE reports.id = $1`,
@@ -478,15 +479,14 @@ app.get("/api/reports/:id", auth, async (req, res) => {
     }
 
     const report = rows[0];
-    // Generate dynamic avatar for frontend
     report.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.username)}&background=405DE6&color=fff`;
 
-    // Fetch comments
+    // Fetch comments + reactions
     const commentsQuery = await pool.query(
       `SELECT comments.*, 
               users.username, 
               users.kituo,
-              to_char(comments.timestamp, 'YYYY-MM-DD HH24:MI:SS') AS formatted_date,
+              comments.timestamp,
               COALESCE(json_agg(
                 json_build_object(
                   'id', reactions.id,
@@ -498,7 +498,7 @@ app.get("/api/reports/:id", auth, async (req, res) => {
        JOIN users ON comments.user_id = users.id
        LEFT JOIN reactions ON comments.id = reactions.comment_id
        WHERE comments.report_id = $1
-       GROUP BY comments.id, users.username, users.kituo
+       GROUP BY comments.id, users.username, users.kituo, comments.timestamp
        ORDER BY comments.timestamp ASC`,
       [id]
     );
@@ -508,13 +508,19 @@ app.get("/api/reports/:id", auth, async (req, res) => {
       return c;
     });
 
-    res.json({ report, comments, reply_box: true });
+    res.json({
+      report,
+      comments,
+      reply_box: true
+    });
 
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error loading report" });
   }
 });
+    
+
 
     
 
