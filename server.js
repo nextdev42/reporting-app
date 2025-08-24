@@ -458,55 +458,59 @@ app.get("/api/reports", auth, async (req, res) => {
 // API endpoint for user
 
 
+
 app.get("/api/reports/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
 
     // Fetch report with user info
-    const { rows } = await pool.query(
-      `SELECT reports.*, 
-              users.username, 
-              users.kituo,
-              reports.timestamp
-       FROM reports
-       JOIN users ON reports.user_id = users.id
-       WHERE reports.id = $1`,
+    const reportResult = await pool.query(
+      `SELECT r.id, r.title, r.description, r.image, r.user_id,
+              u.username, u.kituo,
+              to_char(r.timestamp, 'YYYY-MM-DD HH24:MI:SS') AS formatted_date
+       FROM reports r
+       JOIN users u ON r.user_id = u.id
+       WHERE r.id = $1`,
       [id]
     );
 
-    if (!rows.length) {
+    if (!reportResult.rows.length) {
       return res.status(404).json({ error: "Report not found" });
     }
 
-    const report = rows[0];
+    const report = reportResult.rows[0];
+    // Generate avatar if missing
     report.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.username)}&background=405DE6&color=fff`;
 
-    // Fetch comments + reactions
-    const commentsQuery = await pool.query(
-      `SELECT comments.*, 
-              users.username, 
-              users.kituo,
-              comments.timestamp,
-              COALESCE(json_agg(
-                json_build_object(
-                  'id', reactions.id,
-                  'type', reactions.type,
-                  'user_id', reactions.user_id
-                )
-              ) FILTER (WHERE reactions.id IS NOT NULL), '[]') AS reactions
-       FROM comments
-       JOIN users ON comments.user_id = users.id
-       LEFT JOIN reactions ON comments.id = reactions.comment_id
-       WHERE comments.report_id = $1
-       GROUP BY comments.id, users.username, users.kituo, comments.timestamp
-       ORDER BY comments.timestamp ASC`,
+    // Fetch report reactions (only report reactions)
+    const reactionsResult = await pool.query(
+      `SELECT type, COUNT(*) AS count
+       FROM reactions
+       WHERE report_id = $1
+       GROUP BY type`,
+      [id]
+    );
+    const thumbsUp = reactionsResult.rows.find(r => r.type === "up")?.count || 0;
+    const thumbsDown = reactionsResult.rows.find(r => r.type === "down")?.count || 0;
+    report.thumbs_up = thumbsUp;
+    report.thumbs_down = thumbsDown;
+
+    // Fetch comments with user info
+    const commentsResult = await pool.query(
+      `SELECT c.id, c.comment, c.timestamp,
+              u.username, u.kituo
+       FROM comments c
+       JOIN users u ON c.user_id = u.id
+       WHERE c.report_id = $1
+       ORDER BY c.timestamp ASC`,
       [id]
     );
 
-    const comments = commentsQuery.rows.map(c => {
-      c.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=405DE6&color=fff`;
-      return c;
-    });
+    // Add avatar to comments
+    const comments = commentsResult.rows.map(c => ({
+      ...c,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=405DE6&color=fff`
+    }));
 
     res.json({
       report,
@@ -521,13 +525,7 @@ app.get("/api/reports/:id", auth, async (req, res) => {
 });
     
 
-
-    
-
-
-    
-
-    
+     
     
   app.get("/api/mentions", auth, async (req, res) => {
   try {
