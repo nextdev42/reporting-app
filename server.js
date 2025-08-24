@@ -457,20 +457,19 @@ app.get("/api/reports", auth, async (req, res) => {
 
 // API endpoint for AJAX mentions
 
-
-    app.get("/api/reports/:id", auth, async (req, res) => {
+app.get("/api/reports/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Get report with user info
+    // Fetch report with user info
     const { rows } = await pool.query(
       `SELECT reports.*, 
               users.username, 
               users.kituo, 
-              users.avatar,  -- assume avatar column in users
-              to_char(reports.created_at, 'YYYY-MM-DD HH24:MI:SS') as formatted_date
-       FROM reports 
-       JOIN users ON reports.user_id = users.id 
+              COALESCE(users.avatar, '') AS avatar,  -- safe avatar
+              to_char(reports.created_at, 'YYYY-MM-DD HH24:MI:SS') AS formatted_date
+       FROM reports
+       JOIN users ON reports.user_id = users.id
        WHERE reports.id = $1`,
       [id]
     );
@@ -480,21 +479,25 @@ app.get("/api/reports", auth, async (req, res) => {
     }
 
     const report = rows[0];
+    if (!report.avatar) {
+      // generate dynamic avatar if missing
+      report.avatar = `https://ui-avatars.com/api/?name=${report.username}&background=405DE6&color=fff`;
+    }
 
-    // Get comments with user info + reactions
-    const comments = await pool.query(
+    // Fetch comments with user info + reactions
+    const commentsQuery = await pool.query(
       `SELECT comments.*, 
               users.username, 
               users.kituo, 
-              users.avatar, 
-              to_char(comments.timestamp, 'YYYY-MM-DD HH24:MI:SS') as formatted_date,
+              COALESCE(users.avatar, '') AS avatar,
+              to_char(comments.timestamp, 'YYYY-MM-DD HH24:MI:SS') AS formatted_date,
               COALESCE(json_agg(
                 json_build_object(
                   'id', reactions.id,
                   'type', reactions.type,
                   'user_id', reactions.user_id
                 )
-              ) FILTER (WHERE reactions.id IS NOT NULL), '[]') as reactions
+              ) FILTER (WHERE reactions.id IS NOT NULL), '[]') AS reactions
        FROM comments
        JOIN users ON comments.user_id = users.id
        LEFT JOIN reactions ON comments.id = reactions.comment_id
@@ -504,16 +507,27 @@ app.get("/api/reports", auth, async (req, res) => {
       [id]
     );
 
-    res.json({ 
-      report, 
-      comments: comments.rows,
-      reply_box: true  // tell frontend to show textbox for reply
+    const comments = commentsQuery.rows.map(c => {
+      if (!c.avatar) {
+        c.avatar = `https://ui-avatars.com/api/?name=${c.username}&background=405DE6&color=fff`;
+      }
+      return c;
     });
+
+    res.json({
+      report,
+      comments,
+      reply_box: true
+    });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error loading report" });
   }
 });
+    
+
+    
     
   app.get("/api/mentions", auth, async (req, res) => {
   try {
