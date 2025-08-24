@@ -459,7 +459,50 @@ app.get("/api/reports/:id", auth, async (req, res) => {
 
 // GET VIEW: /reports/:id
 
-    
+    app.get("/reports/:id", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch report + user info
+    const reportResult = await pool.query(
+      `SELECT r.*, u.username AS report_user, u.kituo AS clinic
+       FROM reports r
+       JOIN users u ON r.user_id = u.id
+       WHERE r.id = $1`,
+      [id]
+    );
+    if (!reportResult.rows.length) return res.status(404).send("Ripoti haipo");
+
+    const report = reportResult.rows[0];
+    report.timestamp = formatTanzaniaTime(report.created_at); // fixed
+    report.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.report_user)}&background=405DE6&color=fff`;
+
+    // Fetch comments
+    const commentsResult = await pool.query(
+      `SELECT c.*, u.username, u.kituo
+       FROM comments c
+       JOIN users u ON c.user_id = u.id
+       WHERE c.report_id = $1
+       ORDER BY c.id ASC`,
+      [id]
+    );
+
+    const comments = commentsResult.rows.map(c => ({
+      ...c,
+      timestamp: formatTanzaniaTime(c.created_at), // fixed
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=405DE6&color=fff`
+    }));
+
+    res.render("report-view", {
+      report,
+      comments,
+      loggedInUser: req.session.username
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Tatizo kufungua ripoti hii, jaribu tena");
+  }
+});
         
   app.get("/api/mentions", auth, async (req, res) => {
   try {
@@ -487,50 +530,7 @@ app.get("/api/reports/:id", auth, async (req, res) => {
 
 
 // GET VIEW: /reports/:id
-app.get("/reports/:id", auth, async (req, res) => {
-  try {
-    const { id } = req.params;
 
-    // Fetch report + user info
-    const reportResult = await pool.query(
-      `SELECT r.*, u.username AS report_user, u.kituo AS clinic
-       FROM reports r
-       JOIN users u ON r.user_id = u.id
-       WHERE r.id = $1`,
-      [id]
-    );
-    if (!reportResult.rows.length) return res.status(404).send("Ripoti haipo");
-
-    const report = reportResult.rows[0];
-    report.timestamp = formatTanzaniaTime(report.timestamp);
-    report.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(report.report_user)}&background=405DE6&color=fff`;
-
-    // Fetch comments
-    const commentsResult = await pool.query(
-      `SELECT c.*, u.username, u.kituo
-       FROM comments c
-       JOIN users u ON c.user_id = u.id
-       WHERE c.report_id = $1
-       ORDER BY c.id ASC`,
-      [id]
-    );
-
-    const comments = commentsResult.rows.map(c => ({
-      ...c,
-      timestamp: formatTanzaniaTime(c.timestamp),
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=405DE6&color=fff`
-    }));
-
-    res.render("report-view", {
-      report,
-      comments,
-      loggedInUser: req.session.username
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error loading report");
-  }
-});
 
 
 app.post("/api/mentions/:id/read", auth, async (req, res) => {
