@@ -527,7 +527,9 @@
                     document.getElementById('modalUserAvatar').textContent = user.jina.charAt(0);
                     
                     // Try to get username from session or use jina as fallback
-                    currentUsername = user.username || user.jina.toLowerCase().replace(/\s+/g, '');
+                    // We need to get the username from a different endpoint or store it in session
+                    // For now, we'll use a workaround
+                    getUsernameFromServer();
                 })
                 .catch(error => {
                     console.error('Error loading user info:', error);
@@ -535,16 +537,20 @@
                 });
         }
         
-        // Load all users for mentions
-        function loadAllUsers() {
+        // Workaround to get username since /api/user doesn't return it
+        function getUsernameFromServer() {
             fetch('/api/users', {
                 credentials: 'include'
             })
                 .then(response => response.json())
-                .then(users => {
-                    allUsers = users;
-                    setupMentionsAutocomplete();
-                })
+                .then(user => {
+                currentUser = user;
+                userName.textContent = user.jina;
+               document.getElementById('modalUserAvatar').textContent = user.jina.charAt(0);
+    
+           // Now we can get the username directly from the API response
+              currentUsername = user.username;
+})
                 .catch(error => console.error('Error loading users:', error));
         }
         
@@ -600,7 +606,7 @@
         
         // Load all posts
         function loadPosts() {
-            const url = showOnlyMyPosts ? 
+            const url = showOnlyMyPosts && currentUsername ? 
                 `/api/reports?username=${currentUsername}` : 
                 '/api/reports';
                 
@@ -614,7 +620,9 @@
                     return response.json();
                 })
                 .then(data => {
-                    renderPosts(data.reports);
+                    // Handle both response formats
+                    const reports = data.reports || data;
+                    renderPosts(reports);
                 })
                 .catch(error => {
                     console.error('Error loading posts:', error);
@@ -655,7 +663,7 @@
                 }
                 
                 // Check if user has already reacted to this post
-                const userHasReacted = post.user_thumb !== null;
+                const userHasReacted = post.user_thumb !== null && post.user_thumb !== undefined;
                 const likeClass = userHasReacted && post.user_thumb === 'up' ? 'disabled' : '';
                 const dislikeClass = userHasReacted && post.user_thumb === 'down' ? 'disabled' : '';
                 
@@ -671,10 +679,10 @@
                     </div>
                     <div class="post-stats">
                         <div class="stat ${likeClass}" data-type="up">
-                            <span>👍</span> <span>${post.thumbs_up}</span>
+                            <span>👍</span> <span>${post.thumbs_up || 0}</span>
                         </div>
                         <div class="stat ${dislikeClass}" data-type="down">
-                            <span>👎</span> <span>${post.thumbs_down}</span>
+                            <span>👎</span> <span>${post.thumbs_down || 0}</span>
                         </div>
                         <div class="stat">
                             <span>💬</span> <span>${post.comments ? post.comments.length : 0}</span>
@@ -730,8 +738,8 @@
                 postImage.style.display = 'none';
             }
             
-            likeCount.textContent = post.thumbs_up;
-            dislikeCount.textContent = post.thumbs_down;
+            likeCount.textContent = post.thumbs_up || 0;
+            dislikeCount.textContent = post.thumbs_down || 0;
             
             // Update reaction buttons based on user's previous reaction
             updateReactionButtons(post);
@@ -815,15 +823,20 @@
             notifications.forEach(notification => {
                 const notificationElement = document.createElement('div');
                 notificationElement.className = 'notification';
+                
+                // Format the date properly
+                const notificationDate = new Date(notification.created_at);
+                const formattedDate = notificationDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
                 notificationElement.innerHTML = `
                     <p>${notification.comment_user} mentioned you in a comment on ${notification.report_user}'s post</p>
-                    <small>${new Date(notification.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}</small>
+                    <small>${formattedDate}</small>
                 `;
                 
                 notificationElement.addEventListener('click', () => {
@@ -851,7 +864,9 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    openPostModal(data.report);
+                    // Handle both response formats
+                    const post = data.report || data;
+                    openPostModal(post);
                 })
                 .catch(error => console.error('Error loading post:', error));
         }
