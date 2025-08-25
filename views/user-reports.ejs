@@ -375,77 +375,149 @@
             border-radius: 8px;
             color: var(--text-secondary);
         }
+        
+        .notification {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+        
+        .notification:hover {
+            background-color: var(--bg-color);
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 20px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .form-input {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        
+        .login-btn {
+            padding: 10px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .error-message {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">SocialApp</div>
-            <div class="user-info">
-                <button class="notifications-btn" id="notificationsBtn">
-                    🔔 <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
-                </button>
-                <span id="userName">User</span>
-                <button class="logout-btn" id="logoutBtn">Logout</button>
-            </div>
+    <div id="app">
+        <!-- Login form will be shown if not authenticated -->
+        <div class="login-container" id="loginContainer" style="display: none;">
+            <h2>Login to SocialApp</h2>
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="form-input" placeholder="Enter your username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+                <div class="error-message" id="loginError"></div>
+            </form>
         </div>
         
-        <div class="filter-buttons">
-            <button class="filter-btn active" id="allPostsBtn">All Posts</button>
-            <button class="filter-btn" id="myPostsBtn">My Posts</button>
-        </div>
-        
-        <div class="feed" id="postsFeed">
-            <!-- Posts will be loaded here -->
-        </div>
-    </div>
-    
-    <!-- Post Modal -->
-    <div class="modal" id="postModal">
-        <div class="modal-content">
-            <span class="close-modal" id="closeModal">&times;</span>
-            <div class="post-header">
-                <div class="user-avatar" id="modalUserAvatar">U</div>
-                <div>
-                    <div id="modalUserName">User Name</div>
-                    <div id="modalPostTime" class="post-time">Time</div>
+        <!-- Main app content will be shown if authenticated -->
+        <div class="container" id="appContainer" style="display: none;">
+            <div class="header">
+                <div class="logo">SocialApp</div>
+                <div class="user-info">
+                    <button class="notifications-btn" id="notificationsBtn">
+                        🔔 <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                    </button>
+                    <span id="userName">User</span>
+                    <button class="logout-btn" id="logoutBtn">Logout</button>
                 </div>
             </div>
             
-            <h2 id="modalPostTitle"></h2>
-            <p id="modalPostDesc"></p>
-            <img id="modalPostImage" class="post-full-image" src="" alt="Post image">
-            
-            <div class="reactions">
-                <button class="reaction-btn" id="likeBtn">
-                    <span>👍</span> <span id="likeCount">0</span>
-                </button>
-                <button class="reaction-btn" id="dislikeBtn">
-                    <span>👎</span> <span id="dislikeCount">0</span>
-                </button>
+            <div class="filter-buttons">
+                <button class="filter-btn active" id="allPostsBtn">All Posts</button>
+                <button class="filter-btn" id="myPostsBtn">My Posts</button>
             </div>
             
-            <div class="comments-section">
-                <div class="comment-form">
-                    <textarea class="comment-input" id="commentInput" placeholder="Write a comment..."></textarea>
-                    <button class="comment-submit" id="commentSubmit">Post</button>
-                    <div class="mentions-dropdown" id="mentionsDropdown"></div>
+            <div class="feed" id="postsFeed">
+                <!-- Posts will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Post Modal -->
+        <div class="modal" id="postModal">
+            <div class="modal-content">
+                <span class="close-modal" id="closeModal">&times;</span>
+                <div class="post-header">
+                    <div class="user-avatar" id="modalUserAvatar">U</div>
+                    <div>
+                        <div id="modalUserName">User Name</div>
+                        <div id="modalPostTime" class="post-time">Time</div>
+                    </div>
                 </div>
                 
-                <div class="comment-list" id="commentList">
-                    <!-- Comments will be loaded here -->
+                <h2 id="modalPostTitle"></h2>
+                <p id="modalPostDesc"></p>
+                <img id="modalPostImage" class="post-full-image" src="" alt="Post image">
+                
+                <div class="reactions">
+                    <button class="reaction-btn" id="likeBtn">
+                        <span>👍</span> <span id="likeCount">0</span>
+                    </button>
+                    <button class="reaction-btn" id="dislikeBtn">
+                        <span>👎</span> <span id="dislikeCount">0</span>
+                    </button>
+                </div>
+                
+                <div class="comments-section">
+                    <div class="comment-form">
+                        <textarea class="comment-input" id="commentInput" placeholder="Write a comment..."></textarea>
+                        <button class="comment-submit" id="commentSubmit">Post</button>
+                        <div class="mentions-dropdown" id="mentionsDropdown"></div>
+                    </div>
+                    
+                    <div class="comment-list" id="commentList">
+                        <!-- Comments will be loaded here -->
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Notifications Modal -->
-    <div class="modal" id="notificationsModal">
-        <div class="modal-content">
-            <span class="close-modal" id="closeNotificationsModal">&times;</span>
-            <h2>Notifications</h2>
-            <div id="notificationsList">
-                <!-- Notifications will be loaded here -->
+        
+        <!-- Notifications Modal -->
+        <div class="modal" id="notificationsModal">
+            <div class="modal-content">
+                <span class="close-modal" id="closeNotificationsModal">&times;</span>
+                <h2>Notifications</h2>
+                <div id="notificationsList">
+                    <!-- Notifications will be loaded here -->
+                </div>
             </div>
         </div>
     </div>
@@ -456,9 +528,13 @@
         let currentPost = null;
         let allUsers = [];
         let showOnlyMyPosts = false;
-        let currentUsername = ''; // Store the username from session
+        let authToken = null;
         
         // DOM elements
+        const appContainer = document.getElementById('appContainer');
+        const loginContainer = document.getElementById('loginContainer');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
         const postsFeed = document.getElementById('postsFeed');
         const postModal = document.getElementById('postModal');
         const closeModal = document.getElementById('closeModal');
@@ -480,61 +556,109 @@
         const allPostsBtn = document.getElementById('allPostsBtn');
         const myPostsBtn = document.getElementById('myPostsBtn');
         
+        // API endpoints (replace with your actual API endpoints)
+        const API_BASE = '/api';
+        const API_ENDPOINTS = {
+            LOGIN: `${API_BASE}/login`,
+            USER: `${API_BASE}/user`,
+            USERS: `${API_BASE}/users`,
+            REPORTS: `${API_BASE}/reports`,
+            REACTIONS: (id) => `${API_BASE}/reactions/${id}`,
+            COMMENTS: (id) => `${API_BASE}/comments/${id}`,
+            MENTIONS: `${API_BASE}/mentions`,
+            MARK_READ: (id) => `${API_BASE}/mentions/${id}/read`
+        };
+        
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             checkAuth();
-            loadUserInfo();
-            loadPosts();
-            loadAllUsers();
             setupEventListeners();
-            checkNotifications();
-            
-            // Check for notifications every 30 seconds
-            setInterval(checkNotifications, 30000);
         });
         
         // Check if user is authenticated
         function checkAuth() {
-            // In a real app, you would check for a valid session/token
-            // For demo purposes, we'll assume the user is logged in
+            // Check if we have a stored token
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                authToken = token;
+                showApp();
+                loadUserInfo();
+                loadPosts();
+                loadAllUsers();
+                checkNotifications();
+            } else {
+                showLogin();
+            }
+        }
+        
+        // Show login form
+        function showLogin() {
+            appContainer.style.display = 'none';
+            loginContainer.style.display = 'block';
+        }
+        
+        // Show main app
+        function showApp() {
+            loginContainer.style.display = 'none';
+            appContainer.style.display = 'block';
         }
         
         // Load current user info
         function loadUserInfo() {
-            fetch('/api/user', {
-                credentials: 'include'
+            // For demo purposes, we'll create a mock user if API is not available
+            if (!API_ENDPOINTS.USER) {
+                currentUser = {
+                    id: 1,
+                    name: 'Demo User',
+                    username: 'demouser'
+                };
+                userName.textContent = currentUser.name;
+                document.getElementById('modalUserAvatar').textContent = currentUser.name.charAt(0);
+                return;
+            }
+            
+            fetch(API_ENDPOINTS.USER, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
             })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Not authenticated');
-                    }
-                    return response.json();
-                })
-                .then(user => {
-                    currentUser = user;
-                    userName.textContent = user.jina;
-                    document.getElementById('modalUserAvatar').textContent = user.jina.charAt(0);
-                    
-                    // Try to get username from session or use jina as fallback
-                    currentUsername = user.username || user.jina.toLowerCase().replace(/\s+/g, '');
-                })
-                .catch(error => {
-                    console.error('Error loading user info:', error);
-                    window.location.href = '/';
-                });
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Not authenticated');
+                }
+                return response.json();
+            })
+            .then(user => {
+                currentUser = user;
+                userName.textContent = user.name || user.username;
+                document.getElementById('modalUserAvatar').textContent = (user.name || user.username).charAt(0);
+            })
+            .catch(error => {
+                console.error('Error loading user info:', error);
+                logout();
+            });
         }
         
         // Load all users for mentions
         function loadAllUsers() {
-            fetch('/api/users', {
-                credentials: 'include'
+            // For demo purposes, we'll create mock users if API is not available
+            if (!API_ENDPOINTS.USERS) {
+                allUsers = ['johndoe', 'janedoe', 'alexsmith', 'sarahjones'];
+                setupMentionsAutocomplete();
+                return;
+            }
+            
+            fetch(API_ENDPOINTS.USERS, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
             })
-                .then(response => response.json())
-                .then(users => {
-                    allUsers = users;
-                    setupMentionsAutocomplete();
-                })
-                .catch(error => console.error('Error loading users:', error));
+            .then(response => response.json())
+            .then(users => {
+                allUsers = users.map(user => user.username);
+                setupMentionsAutocomplete();
+            })
+            .catch(error => console.error('Error loading users:', error));
         }
         
         // Setup mentions autocomplete in comment input
@@ -545,10 +669,12 @@
                 
                 if (lastAtPos > -1) {
                     const currentText = value.substring(lastAtPos + 1);
+                    const spacePos = currentText.indexOf(' ');
                     
-                    if (currentText.length > 0) {
+                    if (spacePos === -1) {
+                        const searchText = currentText.toLowerCase();
                         const filteredUsers = allUsers.filter(user => 
-                            user.toLowerCase().includes(currentText.toLowerCase())
+                            user.toLowerCase().includes(searchText)
                         );
                         
                         if (filteredUsers.length > 0) {
@@ -589,31 +715,72 @@
         
         // Load all posts
         function loadPosts() {
+            // For demo purposes, we'll create mock posts if API is not available
+            if (!API_ENDPOINTS.REPORTS) {
+                const mockPosts = [
+                    {
+                        id: 1,
+                        title: 'Welcome to SocialApp',
+                        description: 'This is a demo post showing how the social feed works. You can like, comment, and share posts!',
+                        username: 'admin',
+                        timestamp: '2 hours ago',
+                        thumbs_up: 15,
+                        thumbs_down: 2,
+                        user_thumb: null,
+                        comments: [
+                            {
+                                id: 1,
+                                username: 'johndoe',
+                                comment: 'Great app! @demouser what do you think?',
+                                timestamp: '1 hour ago'
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        title: 'Beautiful Sunset',
+                        description: 'Captured this amazing sunset yesterday evening. Nature is truly breathtaking!',
+                        image: 'https://placehold.co/600x400?text=Sunset+Image',
+                        username: 'janedoe',
+                        timestamp: '5 hours ago',
+                        thumbs_up: 42,
+                        thumbs_down: 3,
+                        user_thumb: 'up',
+                        comments: []
+                    }
+                ];
+                
+                renderPosts(showOnlyMyPosts ? mockPosts.filter(post => post.username === currentUser.username) : mockPosts);
+                return;
+            }
+            
             const url = showOnlyMyPosts ? 
-                `/api/reports?username=${currentUsername}` : 
-                '/api/reports';
+                `${API_ENDPOINTS.REPORTS}?username=${currentUser.username}` : 
+                API_ENDPOINTS.REPORTS;
                 
             fetch(url, {
-                credentials: 'include'
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
             })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to load posts');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    renderPosts(data.reports);
-                })
-                .catch(error => {
-                    console.error('Error loading posts:', error);
-                    postsFeed.innerHTML = `
-                        <div class="no-posts-message">
-                            <h3>Error loading posts</h3>
-                            <p>Please try again later</p>
-                        </div>
-                    `;
-                });
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load posts');
+                }
+                return response.json();
+            })
+            .then(data => {
+                renderPosts(data.reports || data);
+            })
+            .catch(error => {
+                console.error('Error loading posts:', error);
+                postsFeed.innerHTML = `
+                    <div class="no-posts-message">
+                        <h3>Error loading posts</h3>
+                        <p>Please try again later</p>
+                    </div>
+                `;
+            });
         }
         
         // Render posts in the feed
@@ -644,7 +811,7 @@
                 }
                 
                 // Check if user has already reacted to this post
-                const userHasReacted = post.user_thumb !== null;
+                const userHasReacted = post.user_thumb !== null && post.user_thumb !== undefined;
                 const likeClass = userHasReacted && post.user_thumb === 'up' ? 'disabled' : '';
                 const dislikeClass = userHasReacted && post.user_thumb === 'down' ? 'disabled' : '';
                 
@@ -660,10 +827,10 @@
                     </div>
                     <div class="post-stats">
                         <div class="stat ${likeClass}" data-type="up">
-                            <span>👍</span> <span>${post.thumbs_up}</span>
+                            <span>👍</span> <span>${post.thumbs_up || 0}</span>
                         </div>
                         <div class="stat ${dislikeClass}" data-type="down">
-                            <span>👎</span> <span>${post.thumbs_down}</span>
+                            <span>👎</span> <span>${post.thumbs_down || 0}</span>
                         </div>
                         <div class="stat">
                             <span>💬</span> <span>${post.comments ? post.comments.length : 0}</span>
@@ -719,14 +886,14 @@
                 postImage.style.display = 'none';
             }
             
-            likeCount.textContent = post.thumbs_up;
-            dislikeCount.textContent = post.thumbs_down;
+            likeCount.textContent = post.thumbs_up || 0;
+            dislikeCount.textContent = post.thumbs_down || 0;
             
             // Update reaction buttons based on user's previous reaction
             updateReactionButtons(post);
             
             // Load comments (sorted by latest first)
-            const sortedComments = [...(post.comments || [])].reverse();
+            const sortedComments = [...(post.comments || [])].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             renderComments(sortedComments);
             
             // Show modal
@@ -781,20 +948,44 @@
         
         // Check for new notifications
         function checkNotifications() {
-            fetch('/api/mentions', {
-                credentials: 'include'
-            })
-                .then(response => response.json())
-                .then(notifications => {
-                    if (notifications.length > 0) {
-                        notificationBadge.textContent = notifications.length;
-                        notificationBadge.style.display = 'flex';
-                        renderNotifications(notifications);
-                    } else {
-                        notificationBadge.style.display = 'none';
+            // For demo purposes, we'll create mock notifications if API is not available
+            if (!API_ENDPOINTS.MENTIONS) {
+                const mockNotifications = [
+                    {
+                        id: 1,
+                        comment_user: 'johndoe',
+                        report_user: 'admin',
+                        report_id: 1,
+                        created_at: new Date().toISOString()
                     }
-                })
-                .catch(error => console.error('Error checking notifications:', error));
+                ];
+                
+                if (mockNotifications.length > 0) {
+                    notificationBadge.textContent = mockNotifications.length;
+                    notificationBadge.style.display = 'flex';
+                    renderNotifications(mockNotifications);
+                } else {
+                    notificationBadge.style.display = 'none';
+                }
+                return;
+            }
+            
+            fetch(API_ENDPOINTS.MENTIONS, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(notifications => {
+                if (notifications.length > 0) {
+                    notificationBadge.textContent = notifications.length;
+                    notificationBadge.style.display = 'flex';
+                    renderNotifications(notifications);
+                } else {
+                    notificationBadge.style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Error checking notifications:', error));
         }
         
         // Render notifications
@@ -817,16 +1008,24 @@
                 
                 notificationElement.addEventListener('click', () => {
                     // Mark as read and open the post
-                    fetch(`/api/mentions/${notification.id}/read`, { 
-                        method: 'POST',
-                        credentials: 'include'
-                    })
+                    if (API_ENDPOINTS.MARK_READ) {
+                        fetch(API_ENDPOINTS.MARK_READ(notification.id), { 
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`
+                            }
+                        })
                         .then(() => {
                             loadPostById(notification.report_id);
                             notificationsModal.style.display = 'none';
                             checkNotifications(); // Update badge
                         })
                         .catch(error => console.error('Error marking notification as read:', error));
+                    } else {
+                        loadPostById(notification.report_id);
+                        notificationsModal.style.display = 'none';
+                        checkNotifications(); // Update badge
+                    }
                 });
                 
                 notificationsList.appendChild(notificationElement);
@@ -835,18 +1034,118 @@
         
         // Load a specific post by ID
         function loadPostById(postId) {
-            fetch(`/api/reports/${postId}`, {
-                credentials: 'include'
+            // For demo purposes, we'll use the mock posts if API is not available
+            if (!API_ENDPOINTS.REPORTS) {
+                const mockPosts = [
+                    {
+                        id: 1,
+                        title: 'Welcome to SocialApp',
+                        description: 'This is a demo post showing how the social feed works. You can like, comment, and share posts!',
+                        username: 'admin',
+                        timestamp: '2 hours ago',
+                        thumbs_up: 15,
+                        thumbs_down: 2,
+                        user_thumb: null,
+                        comments: [
+                            {
+                                id: 1,
+                                username: 'johndoe',
+                                comment: 'Great app! @demouser what do you think?',
+                                timestamp: '1 hour ago'
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        title: 'Beautiful Sunset',
+                        description: 'Captured this amazing sunset yesterday evening. Nature is truly breathtaking!',
+                        image: 'https://placehold.co/600x400?text=Sunset+Image',
+                        username: 'janedoe',
+                        timestamp: '5 hours ago',
+                        thumbs_up: 42,
+                        thumbs_down: 3,
+                        user_thumb: 'up',
+                        comments: []
+                    }
+                ];
+                
+                const post = mockPosts.find(p => p.id == postId);
+                if (post) {
+                    openPostModal(post);
+                }
+                return;
+            }
+            
+            fetch(`${API_ENDPOINTS.REPORTS}/${postId}`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
             })
-                .then(response => response.json())
-                .then(data => {
-                    openPostModal(data.report);
-                })
-                .catch(error => console.error('Error loading post:', error));
+            .then(response => response.json())
+            .then(data => {
+                openPostModal(data.report || data);
+            })
+            .catch(error => console.error('Error loading post:', error));
         }
         
         // Setup event listeners
         function setupEventListeners() {
+            // Login form
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                // For demo purposes, we'll simulate a login if API is not available
+                if (!API_ENDPOINTS.LOGIN) {
+                    if (username && password) {
+                        // Mock successful login
+                        authToken = 'demo-token';
+                        localStorage.setItem('authToken', authToken);
+                        currentUser = {
+                            id: 1,
+                            name: 'Demo User',
+                            username: username
+                        };
+                        showApp();
+                        loadUserInfo();
+                        loadPosts();
+                        loadAllUsers();
+                        checkNotifications();
+                    } else {
+                        loginError.textContent = 'Please enter username and password';
+                    }
+                    return;
+                }
+                
+                fetch(API_ENDPOINTS.LOGIN, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Login failed');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    showApp();
+                    loadUserInfo();
+                    loadPosts();
+                    loadAllUsers();
+                    checkNotifications();
+                })
+                .catch(error => {
+                    console.error('Login error:', error);
+                    loginError.textContent = 'Invalid username or password';
+                });
+            });
+            
             // Close modal
             closeModal.addEventListener('click', () => {
                 postModal.style.display = 'none';
@@ -883,6 +1182,12 @@
             
             // Comment submit
             commentSubmit.addEventListener('click', submitComment);
+            commentInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitComment();
+                }
+            });
             
             // Notifications button
             notificationsBtn.addEventListener('click', () => {
@@ -890,9 +1195,7 @@
             });
             
             // Logout button
-            logoutBtn.addEventListener('click', () => {
-                window.location.href = '/logout';
-            });
+            logoutBtn.addEventListener('click', logout);
             
             // Filter buttons
             allPostsBtn.addEventListener('click', () => {
@@ -908,20 +1211,45 @@
                 allPostsBtn.classList.remove('active');
                 loadPosts();
             });
-            
-            // Setup mentions autocomplete
-            setupMentionsAutocomplete();
+        }
+        
+        // Logout function
+        function logout() {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            showLogin();
         }
         
         // React to a post
         function reactToPost(postId, type) {
-            fetch(`/api/reactions/${postId}`, {
+            // For demo purposes, we'll simulate reaction if API is not available
+            if (!API_ENDPOINTS.REACTIONS) {
+                // Update UI directly
+                if (type === 'up') {
+                    likeCount.textContent = parseInt(likeCount.textContent) + 1;
+                    likeBtn.classList.add('active', 'disabled');
+                    dislikeBtn.classList.remove('active', 'disabled');
+                    
+                    // Update the post in the feed
+                    updatePostInFeed(postId, parseInt(likeCount.textContent), parseInt(dislikeCount.textContent), type);
+                } else {
+                    dislikeCount.textContent = parseInt(dislikeCount.textContent) + 1;
+                    dislikeBtn.classList.add('active', 'disabled');
+                    likeBtn.classList.remove('active', 'disabled');
+                    
+                    // Update the post in the feed
+                    updatePostInFeed(postId, parseInt(likeCount.textContent), parseInt(dislikeCount.textContent), type);
+                }
+                return;
+            }
+            
+            fetch(API_ENDPOINTS.REACTIONS(postId), {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ type }),
-                credentials: 'include'
+                body: JSON.stringify({ type })
             })
             .then(response => {
                 if (response.ok) {
@@ -983,13 +1311,50 @@
             
             const comment = commentInput.value.trim();
             
-            fetch(`/api/comments/${currentPost.id}`, {
+            // For demo purposes, we'll simulate comment submission if API is not available
+            if (!API_ENDPOINTS.COMMENTS) {
+                const newComment = {
+                    id: Date.now(),
+                    username: currentUser.username,
+                    comment: comment,
+                    timestamp: 'Just now'
+                };
+                
+                // Add the new comment to the list (at the top)
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment';
+                
+                // Process mentions in comment text
+                let commentText = newComment.comment;
+                commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+                
+                commentElement.innerHTML = `
+                    <div class="comment-avatar">${newComment.username.charAt(0)}</div>
+                    <div class="comment-content">
+                        <div class="comment-author">${newComment.username}</div>
+                        <div class="comment-text">${commentText}</div>
+                        <div class="comment-time">${newComment.timestamp}</div>
+                    </div>
+                `;
+                
+                // Add to the top of the comments list
+                commentList.insertBefore(commentElement, commentList.firstChild);
+                
+                // Clear input
+                commentInput.value = '';
+                
+                // Update comment count in the feed
+                updateCommentCountInFeed(currentPost.id);
+                return;
+            }
+            
+            fetch(API_ENDPOINTS.COMMENTS(currentPost.id), {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ comment }),
-                credentials: 'include'
+                body: JSON.stringify({ comment })
             })
             .then(response => {
                 if (response.ok) {
