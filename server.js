@@ -251,8 +251,14 @@ app.get("/logout", (req,res)=>{
 });
 
 // User info
-app.get("/api/user", auth, (req,res)=>res.json({jina:req.session.jina, kituo:req.session.kituo}));
-
+// User info - Updated to include username
+app.get("/api/user", auth, (req, res) => {
+  res.json({
+    jina: req.session.jina,
+    kituo: req.session.kituo,
+    username: req.session.username  // Add this line
+  });
+});
 
 // List of all users for mention dropdown
 app.get("/api/users", auth, async (req, res) => {
