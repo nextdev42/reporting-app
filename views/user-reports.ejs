@@ -3,9 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Social Feed with Reactions</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Social Feed</title>
     <style>
+        :root {
+            --primary-color: #1877f2;
+            --secondary-color: #42b72a;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-color: #050505;
+            --text-secondary: #65676b;
+            --border-color: #dddfe2;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -14,15 +23,14 @@
         }
         
         body {
-            background-color: #f0f2f5;
-            color: #1c1e21;
-            line-height: 1.5;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
         }
         
         .header {
@@ -30,7 +38,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px 20px;
-            background-color: white;
+            background-color: var(--card-bg);
             border-radius: 8px;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
@@ -39,7 +47,7 @@
         .logo {
             font-size: 24px;
             font-weight: bold;
-            color: #1877f2;
+            color: var(--primary-color);
         }
         
         .user-info {
@@ -48,21 +56,9 @@
             gap: 10px;
         }
         
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #1877f2;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-        
         .logout-btn {
             padding: 8px 16px;
-            background-color: #1877f2;
+            background-color: var(--primary-color);
             color: white;
             border: none;
             border-radius: 4px;
@@ -76,7 +72,7 @@
         }
         
         .post-card {
-            background-color: white;
+            background-color: var(--card-bg);
             border-radius: 8px;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
             overflow: hidden;
@@ -104,7 +100,7 @@
         }
         
         .post-desc {
-            color: #65676b;
+            color: var(--text-secondary);
             margin-bottom: 10px;
             display: -webkit-box;
             -webkit-line-clamp: 3;
@@ -115,7 +111,7 @@
         .post-meta {
             display: flex;
             justify-content: space-between;
-            color: #65676b;
+            color: var(--text-secondary);
             font-size: 14px;
         }
         
@@ -123,7 +119,7 @@
             display: flex;
             gap: 15px;
             padding: 10px 15px;
-            border-top: 1px solid #dddfe2;
+            border-top: 1px solid var(--border-color);
         }
         
         .stat {
@@ -131,6 +127,11 @@
             align-items: center;
             gap: 5px;
             cursor: pointer;
+        }
+        
+        .stat.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
         /* Modal Styles */
@@ -147,7 +148,7 @@
         }
         
         .modal-content {
-            background-color: white;
+            background-color: var(--card-bg);
             margin: 50px auto;
             padding: 20px;
             border-radius: 8px;
@@ -174,7 +175,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background-color: #1877f2;
+            background-color: var(--primary-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -194,8 +195,8 @@
             display: flex;
             gap: 15px;
             padding: 15px 0;
-            border-top: 1px solid #dddfe2;
-            border-bottom: 1px solid #dddfe2;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
         }
         
         .reaction-btn {
@@ -204,14 +205,19 @@
             gap: 5px;
             padding: 8px 15px;
             border-radius: 20px;
-            background-color: #f0f2f5;
+            background-color: var(--bg-color);
             cursor: pointer;
             border: none;
         }
         
         .reaction-btn.active {
             background-color: #e7f3ff;
-            color: #1877f2;
+            color: var(--primary-color);
+        }
+        
+        .reaction-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
         .comments-section {
@@ -222,13 +228,14 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            position: relative;
         }
         
         .comment-input {
             flex: 1;
             padding: 10px;
             border-radius: 20px;
-            border: 1px solid #dddfe2;
+            border: 1px solid var(--border-color);
             resize: none;
             height: 40px;
         }
@@ -237,7 +244,7 @@
             padding: 0 20px;
             border-radius: 20px;
             border: none;
-            background-color: #1877f2;
+            background-color: var(--primary-color);
             color: white;
             cursor: pointer;
         }
@@ -257,7 +264,7 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background-color: #42b72a;
+            background-color: var(--secondary-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -268,7 +275,7 @@
         
         .comment-content {
             flex: 1;
-            background-color: #f0f2f5;
+            background-color: var(--bg-color);
             padding: 10px 15px;
             border-radius: 18px;
         }
@@ -279,7 +286,18 @@
         }
         
         .comment-text {
-            color: #1c1e21;
+            color: var(--text-color);
+        }
+        
+        .comment-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        .mention {
+            color: var(--primary-color);
+            font-weight: bold;
         }
         
         .notification-badge {
@@ -304,6 +322,59 @@
             font-size: 20px;
             cursor: pointer;
         }
+        
+        /* Mentions dropdown */
+        .mentions-dropdown {
+            position: absolute;
+            bottom: 45px;
+            left: 0;
+            width: 200px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .mention-option {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        
+        .mention-option:hover {
+            background-color: #f0f2f5;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .no-posts-message {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
@@ -311,225 +382,663 @@
         <div class="header">
             <div class="logo">SocialApp</div>
             <div class="user-info">
-                <button class="notifications-btn">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge">3</span>
+                <button class="notifications-btn" id="notificationsBtn">
+                    🔔 <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
                 </button>
-                <div class="avatar">B</div>
-                <span>Bobg</span>
-                <button class="logout-btn">Logout</button>
+                <span id="userName">User</span>
+                <button class="logout-btn" id="logoutBtn">Logout</button>
             </div>
         </div>
         
-        <div class="feed">
-            <!-- Post 1 -->
-            <div class="post-card">
-                <img src="https://images.unsplash.com/photo-1520333789090-1afc82db536a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" alt="Post image" class="post-image">
-                <div class="post-content">
-                    <h3 class="post-title">Beautiful Sunset</h3>
-                    <p class="post-desc">Just witnessed this amazing sunset at the beach. Nature is truly incredible! #sunset #beach #nature</p>
-                    <div class="post-meta">
-                        <span class="post-author">@bobg</span>
-                        <span class="post-time">24 Agosti 2025, 18:39:35</span>
-                    </div>
-                </div>
-                <div class="post-stats">
-                    <div class="stat">
-                        <i class="fas fa-thumbs-up"></i> <span>12</span>
-                    </div>
-                    <div class="stat">
-                        <i class="fas fa-thumbs-down"></i> <span>2</span>
-                    </div>
-                    <div class="stat">
-                        <i class="fas fa-comment"></i> <span>5</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Post 2 -->
-            <div class="post-card">
-                <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" alt="Post image" class="post-image">
-                <div class="post-content">
-                    <h3 class="post-title">Mountain Adventure</h3>
-                    <p class="post-desc">Just completed an amazing hike to the summit. The view was worth every step! #hiking #mountains #adventure</p>
-                    <div class="post-meta">
-                        <span class="post-author">@sarah_m</span>
-                        <span class="post-time">23 Agosti 2025, 14:20:18</span>
-                    </div>
-                </div>
-                <div class="post-stats">
-                    <div class="stat">
-                        <i class="fas fa-thumbs-up"></i> <span>24</span>
-                    </div>
-                    <div class="stat">
-                        <i class="fas fa-thumbs-down"></i> <span>1</span>
-                    </div>
-                    <div class="stat">
-                        <i class="fas fa-comment"></i> <span>8</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Post 3 -->
-            <div class="post-card">
-                <div class="post-content">
-                    <h3 class="post-title">Test Post</h3>
-                    <p class="post-desc">This is a test post to check the functionality of our new social platform. Feel free to react and comment! #test #newplatform</p>
-                    <div class="post-meta">
-                        <span class="post-author">@bobg</span>
-                        <span class="post-time">23 Agosti 2025, 10:15:47</span>
-                    </div>
-                </div>
-                <div class="post-stats">
-                    <div class="stat">
-                        <i class="fas fa-thumbs-up"></i> <span>7</span>
-                    </div>
-                    <div class="stat">
-                        <i class="fas fa-thumbs-down"></i> <span>0</span>
-                    </div>
-                    <div class="stat">
-                        <i class="fas fa-comment"></i> <span>3</span>
-                    </div>
-                </div>
-            </div>
+        <div class="filter-buttons">
+            <button class="filter-btn active" id="allPostsBtn">All Posts</button>
+            <button class="filter-btn" id="myPostsBtn">My Posts</button>
+        </div>
+        
+        <div class="feed" id="postsFeed">
+            <!-- Posts will be loaded here -->
         </div>
     </div>
     
     <!-- Post Modal -->
     <div class="modal" id="postModal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
+            <span class="close-modal" id="closeModal">&times;</span>
             <div class="post-header">
-                <div class="user-avatar">B</div>
+                <div class="user-avatar" id="modalUserAvatar">U</div>
                 <div>
-                    <div>Bobg</div>
-                    <div class="post-time">24 Agosti 2025, 18:39:35</div>
+                    <div id="modalUserName">User Name</div>
+                    <div id="modalPostTime" class="post-time">Time</div>
                 </div>
             </div>
             
-            <h2>Beautiful Sunset</h2>
-            <p>Just witnessed this amazing sunset at the beach. Nature is truly incredible! #sunset #beach #nature</p>
-            <img src="https://images.unsplash.com/photo-1520333789090-1afc82db536a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" alt="Post image" class="post-full-image">
+            <h2 id="modalPostTitle"></h2>
+            <p id="modalPostDesc"></p>
+            <img id="modalPostImage" class="post-full-image" src="" alt="Post image">
             
             <div class="reactions">
-                <button class="reaction-btn">
-                    <i class="fas fa-thumbs-up"></i> <span>12</span>
+                <button class="reaction-btn" id="likeBtn">
+                    <span>👍</span> <span id="likeCount">0</span>
                 </button>
-                <button class="reaction-btn">
-                    <i class="fas fa-thumbs-down"></i> <span>2</span>
+                <button class="reaction-btn" id="dislikeBtn">
+                    <span>👎</span> <span id="dislikeCount">0</span>
                 </button>
             </div>
             
             <div class="comments-section">
                 <div class="comment-form">
-                    <textarea class="comment-input" placeholder="Write a comment..."></textarea>
-                    <button class="comment-submit">Post</button>
+                    <textarea class="comment-input" id="commentInput" placeholder="Write a comment..."></textarea>
+                    <button class="comment-submit" id="commentSubmit">Post</button>
+                    <div class="mentions-dropdown" id="mentionsDropdown"></div>
                 </div>
                 
-                <div class="comment-list">
-                    <div class="comment">
-                        <div class="comment-avatar">S</div>
-                        <div class="comment-content">
-                            <div class="comment-author">Sarah M.</div>
-                            <div class="comment-text">Wow, this is absolutely stunning! Where was this taken?</div>
-                        </div>
-                    </div>
-                    <div class="comment">
-                        <div class="comment-avatar">J</div>
-                        <div class="comment-content">
-                            <div class="comment-author">John D.</div>
-                            <div class="comment-text">Amazing capture! The colors are incredible.</div>
-                        </div>
-                    </div>
-                    <div class="comment">
-                        <div class="comment-avatar">M</div>
-                        <div class="comment-content">
-                            <div class="comment-author">Mike T.</div>
-                            <div class="comment-text">I was there yesterday too! Such a beautiful evening.</div>
-                        </div>
-                    </div>
+                <div class="comment-list" id="commentList">
+                    <!-- Comments will be loaded here -->
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notifications Modal -->
+    <div class="modal" id="notificationsModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeNotificationsModal">&times;</span>
+            <h2>Notifications</h2>
+            <div id="notificationsList">
+                <!-- Notifications will be loaded here -->
             </div>
         </div>
     </div>
 
     <script>
+        // Global variables
+        let currentUser = {};
+        let currentPost = null;
+        let allUsers = [];
+        let showOnlyMyPosts = false;
+        let currentUsername = ''; // Store the username from session
+        
         // DOM elements
-        const postCards = document.querySelectorAll('.post-card');
-        const modal = document.getElementById('postModal');
-        const closeModal = document.querySelector('.close-modal');
-        const reactionBtns = document.querySelectorAll('.reaction-btn');
-        const commentSubmit = document.querySelector('.comment-submit');
-        const commentInput = document.querySelector('.comment-input');
-        const commentList = document.querySelector('.comment-list');
+        const postsFeed = document.getElementById('postsFeed');
+        const postModal = document.getElementById('postModal');
+        const closeModal = document.getElementById('closeModal');
+        const likeBtn = document.getElementById('likeBtn');
+        const dislikeBtn = document.getElementById('dislikeBtn');
+        const likeCount = document.getElementById('likeCount');
+        const dislikeCount = document.getElementById('dislikeCount');
+        const commentInput = document.getElementById('commentInput');
+        const commentSubmit = document.getElementById('commentSubmit');
+        const commentList = document.getElementById('commentList');
+        const notificationsBtn = document.getElementById('notificationsBtn');
+        const notificationBadge = document.getElementById('notificationBadge');
+        const notificationsModal = document.getElementById('notificationsModal');
+        const closeNotificationsModal = document.getElementById('closeNotificationsModal');
+        const notificationsList = document.getElementById('notificationsList');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userName = document.getElementById('userName');
+        const mentionsDropdown = document.getElementById('mentionsDropdown');
+        const allPostsBtn = document.getElementById('allPostsBtn');
+        const myPostsBtn = document.getElementById('myPostsBtn');
         
-        // Open modal when post is clicked
-        postCards.forEach(card => {
-            card.addEventListener('click', () => {
-                modal.style.display = 'block';
-            });
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadUserInfo();
+            loadPosts();
+            loadAllUsers();
+            setupEventListeners();
+            checkNotifications();
+            
+            // Check for notifications every 30 seconds
+            setInterval(checkNotifications, 30000);
         });
         
-        // Close modal
-        closeModal.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
+        // Check if user is authenticated
+        function checkAuth() {
+            // In a real app, you would check for a valid session/token
+            // For demo purposes, we'll assume the user is logged in
+        }
         
-        // Click outside modal to close
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
+        // Load current user info
+        function loadUserInfo() {
+            fetch('/api/user', {
+                credentials: 'include'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Not authenticated');
+                    }
+                    return response.json();
+                })
+                .then(user => {
+                    currentUser = user;
+                    userName.textContent = user.jina;
+                    document.getElementById('modalUserAvatar').textContent = user.jina.charAt(0);
+                    
+                    // Try to get username from session or use jina as fallback
+                    currentUsername = user.username || user.jina.toLowerCase().replace(/\s+/g, '');
+                })
+                .catch(error => {
+                    console.error('Error loading user info:', error);
+                    window.location.href = '/';
+                });
+        }
         
-        // Handle reaction clicks
-        reactionBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                btn.classList.toggle('active');
+        // Load all users for mentions
+        function loadAllUsers() {
+            fetch('/api/users', {
+                credentials: 'include'
+            })
+                .then(response => response.json())
+                .then(users => {
+                    allUsers = users;
+                    setupMentionsAutocomplete();
+                })
+                .catch(error => console.error('Error loading users:', error));
+        }
+        
+        // Setup mentions autocomplete in comment input
+        function setupMentionsAutocomplete() {
+            commentInput.addEventListener('input', function(e) {
+                const value = e.target.value;
+                const lastAtPos = value.lastIndexOf('@');
                 
-                // Update count
-                const countSpan = btn.querySelector('span');
-                let count = parseInt(countSpan.textContent);
-                
-                if (btn.classList.contains('active')) {
-                    countSpan.textContent = count + 1;
+                if (lastAtPos > -1) {
+                    const currentText = value.substring(lastAtPos + 1);
+                    
+                    if (currentText.length > 0) {
+                        const filteredUsers = allUsers.filter(user => 
+                            user.toLowerCase().includes(currentText.toLowerCase())
+                        );
+                        
+                        if (filteredUsers.length > 0) {
+                            mentionsDropdown.innerHTML = filteredUsers.map(user => 
+                                `<div class="mention-option" data-username="${user}">@${user}</div>`
+                            ).join('');
+                            
+                            mentionsDropdown.style.display = 'block';
+                            
+                            // Add click event to options
+                            document.querySelectorAll('.mention-option').forEach(option => {
+                                option.addEventListener('click', function() {
+                                    const username = this.getAttribute('data-username');
+                                    const newValue = value.substring(0, lastAtPos + 1) + username + ' ';
+                                    commentInput.value = newValue;
+                                    mentionsDropdown.style.display = 'none';
+                                    commentInput.focus();
+                                });
+                            });
+                        } else {
+                            mentionsDropdown.style.display = 'none';
+                        }
+                    } else {
+                        mentionsDropdown.style.display = 'none';
+                    }
                 } else {
-                    countSpan.textContent = count - 1;
+                    mentionsDropdown.style.display = 'none';
                 }
             });
-        });
+            
+            // Hide dropdown when clicking elsewhere
+            document.addEventListener('click', function(e) {
+                if (e.target !== commentInput && !e.target.closest('.mentions-dropdown')) {
+                    mentionsDropdown.style.display = 'none';
+                }
+            });
+        }
         
-        // Handle comment submission
-        commentSubmit.addEventListener('click', () => {
-            const commentText = commentInput.value.trim();
-            if (commentText) {
-                const newComment = document.createElement('div');
-                newComment.className = 'comment';
-                newComment.innerHTML = `
-                    <div class="comment-avatar">B</div>
-                    <div class="comment-content">
-                        <div class="comment-author">Bobg</div>
-                        <div class="comment-text">${commentText}</div>
+        // Load all posts
+        function loadPosts() {
+            const url = showOnlyMyPosts ? 
+                `/api/reports?username=${currentUsername}` : 
+                '/api/reports';
+                
+            fetch(url, {
+                credentials: 'include'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load posts');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderPosts(data.reports);
+                })
+                .catch(error => {
+                    console.error('Error loading posts:', error);
+                    postsFeed.innerHTML = `
+                        <div class="no-posts-message">
+                            <h3>Error loading posts</h3>
+                            <p>Please try again later</p>
+                        </div>
+                    `;
+                });
+        }
+        
+        // Render posts in the feed
+        function renderPosts(posts) {
+            postsFeed.innerHTML = '';
+            
+            if (posts.length === 0) {
+                const message = showOnlyMyPosts ? 
+                    "You haven't created any posts yet." : 
+                    "No posts found.";
+                    
+                postsFeed.innerHTML = `
+                    <div class="no-posts-message">
+                        <h3>${message}</h3>
+                    </div>
+                `;
+                return;
+            }
+            
+            posts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.className = 'post-card';
+                postElement.dataset.id = post.id;
+                
+                let imageHtml = '';
+                if (post.image) {
+                    imageHtml = `<img src="${post.image}" alt="Post image" class="post-image">`;
+                }
+                
+                // Check if user has already reacted to this post
+                const userHasReacted = post.user_thumb !== null;
+                const likeClass = userHasReacted && post.user_thumb === 'up' ? 'disabled' : '';
+                const dislikeClass = userHasReacted && post.user_thumb === 'down' ? 'disabled' : '';
+                
+                postElement.innerHTML = `
+                    ${imageHtml}
+                    <div class="post-content">
+                        <h3 class="post-title">${post.title}</h3>
+                        <p class="post-desc">${post.description}</p>
+                        <div class="post-meta">
+                            <span class="post-author">@${post.username}</span>
+                            <span class="post-time">${post.timestamp}</span>
+                        </div>
+                    </div>
+                    <div class="post-stats">
+                        <div class="stat ${likeClass}" data-type="up">
+                            <span>👍</span> <span>${post.thumbs_up}</span>
+                        </div>
+                        <div class="stat ${dislikeClass}" data-type="down">
+                            <span>👎</span> <span>${post.thumbs_down}</span>
+                        </div>
+                        <div class="stat">
+                            <span>💬</span> <span>${post.comments ? post.comments.length : 0}</span>
+                        </div>
                     </div>
                 `;
                 
-                commentList.prepend(newComment);
+                postElement.addEventListener('click', (e) => {
+                    // Don't open modal if clicking on a reaction stat
+                    if (!e.target.closest('.stat')) {
+                        openPostModal(post);
+                    }
+                });
+                
+                // Add reaction handlers
+                const likeStat = postElement.querySelector('.stat[data-type="up"]');
+                const dislikeStat = postElement.querySelector('.stat[data-type="down"]');
+                
+                if (!likeStat.classList.contains('disabled')) {
+                    likeStat.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        reactToPost(post.id, 'up');
+                    });
+                }
+                
+                if (!dislikeStat.classList.contains('disabled')) {
+                    dislikeStat.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        reactToPost(post.id, 'down');
+                    });
+                }
+                
+                postsFeed.appendChild(postElement);
+            });
+        }
+        
+        // Open post modal
+        function openPostModal(post) {
+            currentPost = post;
+            
+            // Update modal content
+            document.getElementById('modalUserName').textContent = post.username;
+            document.getElementById('modalUserAvatar').textContent = post.username.charAt(0);
+            document.getElementById('modalPostTime').textContent = post.timestamp;
+            document.getElementById('modalPostTitle').textContent = post.title;
+            document.getElementById('modalPostDesc').textContent = post.description;
+            
+            const postImage = document.getElementById('modalPostImage');
+            if (post.image) {
+                postImage.src = post.image;
+                postImage.style.display = 'block';
+            } else {
+                postImage.style.display = 'none';
+            }
+            
+            likeCount.textContent = post.thumbs_up;
+            dislikeCount.textContent = post.thumbs_down;
+            
+            // Update reaction buttons based on user's previous reaction
+            updateReactionButtons(post);
+            
+            // Load comments (sorted by latest first)
+            const sortedComments = [...(post.comments || [])].reverse();
+            renderComments(sortedComments);
+            
+            // Show modal
+            postModal.style.display = 'block';
+        }
+        
+        // Update reaction buttons based on user's previous reaction
+        function updateReactionButtons(post) {
+            // Reset both buttons
+            likeBtn.classList.remove('active', 'disabled');
+            dislikeBtn.classList.remove('active', 'disabled');
+            
+            // Check if user has reacted to this post
+            if (post.user_thumb) {
+                if (post.user_thumb === 'up') {
+                    likeBtn.classList.add('active', 'disabled');
+                } else if (post.user_thumb === 'down') {
+                    dislikeBtn.classList.add('active', 'disabled');
+                }
+            }
+        }
+        
+        // Render comments in the modal (latest first)
+        function renderComments(comments) {
+            commentList.innerHTML = '';
+            
+            if (comments.length === 0) {
+                commentList.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
+                return;
+            }
+            
+            comments.forEach(comment => {
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment';
+                
+                // Process mentions in comment text
+                let commentText = comment.comment;
+                commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+                
+                commentElement.innerHTML = `
+                    <div class="comment-avatar">${comment.username.charAt(0)}</div>
+                    <div class="comment-content">
+                        <div class="comment-author">${comment.username}</div>
+                        <div class="comment-text">${commentText}</div>
+                        <div class="comment-time">${comment.timestamp}</div>
+                    </div>
+                `;
+                
+                commentList.appendChild(commentElement);
+            });
+        }
+        
+        // Check for new notifications
+        function checkNotifications() {
+            fetch('/api/mentions', {
+                credentials: 'include'
+            })
+                .then(response => response.json())
+                .then(notifications => {
+                    if (notifications.length > 0) {
+                        notificationBadge.textContent = notifications.length;
+                        notificationBadge.style.display = 'flex';
+                        renderNotifications(notifications);
+                    } else {
+                        notificationBadge.style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Error checking notifications:', error));
+        }
+        
+        // Render notifications
+        function renderNotifications(notifications) {
+            notificationsList.innerHTML = '';
+            
+            notifications.forEach(notification => {
+                const notificationElement = document.createElement('div');
+                notificationElement.className = 'notification';
+                notificationElement.innerHTML = `
+                    <p>${notification.comment_user} mentioned you in a comment on ${notification.report_user}'s post</p>
+                    <small>${new Date(notification.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}</small>
+                `;
+                
+                notificationElement.addEventListener('click', () => {
+                    // Mark as read and open the post
+                    fetch(`/api/mentions/${notification.id}/read`, { 
+                        method: 'POST',
+                        credentials: 'include'
+                    })
+                        .then(() => {
+                            loadPostById(notification.report_id);
+                            notificationsModal.style.display = 'none';
+                            checkNotifications(); // Update badge
+                        })
+                        .catch(error => console.error('Error marking notification as read:', error));
+                });
+                
+                notificationsList.appendChild(notificationElement);
+            });
+        }
+        
+        // Load a specific post by ID
+        function loadPostById(postId) {
+            fetch(`/api/reports/${postId}`, {
+                credentials: 'include'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    openPostModal(data.report);
+                })
+                .catch(error => console.error('Error loading post:', error));
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Close modal
+            closeModal.addEventListener('click', () => {
+                postModal.style.display = 'none';
+            });
+            
+            // Close notifications modal
+            closeNotificationsModal.addEventListener('click', () => {
+                notificationsModal.style.display = 'none';
+            });
+            
+            // Click outside modal to close
+            window.addEventListener('click', (e) => {
+                if (e.target === postModal) {
+                    postModal.style.display = 'none';
+                }
+                if (e.target === notificationsModal) {
+                    notificationsModal.style.display = 'none';
+                }
+            });
+            
+            // Like button
+            likeBtn.addEventListener('click', () => {
+                if (!likeBtn.classList.contains('disabled')) {
+                    reactToPost(currentPost.id, 'up');
+                }
+            });
+            
+            // Dislike button
+            dislikeBtn.addEventListener('click', () => {
+                if (!dislikeBtn.classList.contains('disabled')) {
+                    reactToPost(currentPost.id, 'down');
+                }
+            });
+            
+            // Comment submit
+            commentSubmit.addEventListener('click', submitComment);
+            
+            // Notifications button
+            notificationsBtn.addEventListener('click', () => {
+                notificationsModal.style.display = 'block';
+            });
+            
+            // Logout button
+            logoutBtn.addEventListener('click', () => {
+                window.location.href = '/logout';
+            });
+            
+            // Filter buttons
+            allPostsBtn.addEventListener('click', () => {
+                showOnlyMyPosts = false;
+                allPostsBtn.classList.add('active');
+                myPostsBtn.classList.remove('active');
+                loadPosts();
+            });
+            
+            myPostsBtn.addEventListener('click', () => {
+                showOnlyMyPosts = true;
+                myPostsBtn.classList.add('active');
+                allPostsBtn.classList.remove('active');
+                loadPosts();
+            });
+            
+            // Setup mentions autocomplete
+            setupMentionsAutocomplete();
+        }
+        
+        // React to a post
+        function reactToPost(postId, type) {
+            fetch(`/api/reactions/${postId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ type }),
+                credentials: 'include'
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                return response.text().then(text => { throw new Error(text) });
+            })
+            .then(data => {
+                // Update counts in modal
+                likeCount.textContent = data.thumbs_up;
+                dislikeCount.textContent = data.thumbs_down;
+                
+                // Update buttons in modal
+                if (type === 'up') {
+                    likeBtn.classList.add('active', 'disabled');
+                    dislikeBtn.classList.remove('active', 'disabled');
+                } else {
+                    dislikeBtn.classList.add('active', 'disabled');
+                    likeBtn.classList.remove('active', 'disabled');
+                }
+                
+                // Update the post in the feed
+                updatePostInFeed(postId, data.thumbs_up, data.thumbs_down, type);
+            })
+            .catch(error => {
+                console.error('Error reacting to post:', error);
+                alert('Unable to react to post. ' + error.message);
+            });
+        }
+        
+        // Update post in the feed
+        function updatePostInFeed(postId, thumbsUp, thumbsDown, reactionType) {
+            const postElement = document.querySelector(`.post-card[data-id="${postId}"]`);
+            if (postElement) {
+                const likeStat = postElement.querySelector('.stat[data-type="up"]');
+                const dislikeStat = postElement.querySelector('.stat[data-type="down"]');
+                
+                if (likeStat) {
+                    likeStat.querySelector('span:last-child').textContent = thumbsUp;
+                    if (reactionType === 'up') {
+                        likeStat.classList.add('disabled');
+                        dislikeStat.classList.remove('disabled');
+                    }
+                }
+                
+                if (dislikeStat) {
+                    dislikeStat.querySelector('span:last-child').textContent = thumbsDown;
+                    if (reactionType === 'down') {
+                        dislikeStat.classList.add('disabled');
+                        likeStat.classList.remove('disabled');
+                    }
+                }
+            }
+        }
+        
+        // Submit a comment
+        function submitComment() {
+            if (!currentPost || !commentInput.value.trim()) return;
+            
+            const comment = commentInput.value.trim();
+            
+            fetch(`/api/comments/${currentPost.id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ comment }),
+                credentials: 'include'
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                return response.text().then(text => { throw new Error(text) });
+            })
+            .then(newComment => {
+                // Add the new comment to the list (at the top)
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment';
+                
+                // Process mentions in comment text
+                let commentText = newComment.comment;
+                commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+                
+                commentElement.innerHTML = `
+                    <div class="comment-avatar">${newComment.username.charAt(0)}</div>
+                    <div class="comment-content">
+                        <div class="comment-author">${newComment.username}</div>
+                        <div class="comment-text">${commentText}</div>
+                        <div class="comment-time">${newComment.timestamp}</div>
+                    </div>
+                `;
+                
+                // Add to the top of the comments list
+                commentList.insertBefore(commentElement, commentList.firstChild);
+                
+                // Clear input
                 commentInput.value = '';
                 
-                // Update comment count in the post stats
-                const commentStat = document.querySelector('.post-stats .stat:last-child span');
-                commentStat.textContent = parseInt(commentStat.textContent) + 1;
-            }
-        });
+                // Update comment count in the feed
+                updateCommentCountInFeed(currentPost.id);
+            })
+            .catch(error => {
+                console.error('Error submitting comment:', error);
+                alert('Unable to submit comment. ' + error.message);
+            });
+        }
         
-        // Allow pressing Enter to submit comment
-        commentInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                commentSubmit.click();
+        // Update comment count in the feed
+        function updateCommentCountInFeed(postId) {
+            const postElement = document.querySelector(`.post-card[data-id="${postId}"]`);
+            if (postElement) {
+                const commentStat = postElement.querySelector('.stat:nth-child(3) span:last-child');
+                const currentCount = parseInt(commentStat.textContent) || 0;
+                commentStat.textContent = currentCount + 1;
             }
-        });
+        }
     </script>
 </body>
 </html>
