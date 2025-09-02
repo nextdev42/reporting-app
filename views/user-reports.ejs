@@ -185,14 +185,13 @@
                     const currentText = value.substring(lastAtPos + 1);
                     
                     if (currentText.length > 0) {
-                        const filteredUsers = allUsers.filter(user => 
-                            user.toLowerCase().includes(currentText.toLowerCase())
-                        );
-                        
-                        if (filteredUsers.length > 0) {
-                            mentionsDropdown.innerHTML = filteredUsers.map(user => 
-                                `<div class="mention-option" data-username="${user}">@${user}</div>`
-                            ).join('');
+                        const filteredUsers = allUsers.filter(u => 
+                      u.username.toLowerCase().includes(currentText.toLowerCase())
+                      );
+
+                   mentionsDropdown.innerHTML = filteredUsers.map(u => 
+                   `<div class="mention-option" data-username="${u.username}">@${u.username}</div>`
+                    ).join('');
                             
                             mentionsDropdown.style.display = 'block';
                             
