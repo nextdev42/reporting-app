@@ -122,7 +122,15 @@
             // Check for notifications every 30 seconds
             setInterval(checkNotifications, 30000);
         });
-        
+        function formatDate(timestamp) {
+        return new Date(timestamp).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
         // Check if user is authenticated
         function checkAuth() {
             // In a real app, you would check for a valid session/token
@@ -285,7 +293,7 @@
                         <p class="post-desc">${post.description}</p>
                         <div class="post-meta">
                             <span class="post-author">@${post.username}</span>
-                            <span class="post-time">${post.timestamp}</span>
+                            <span class="post-time">${formatDate(post.timestamp)}</span>
                         </div>
                     </div>
                     <div class="post-stats">
@@ -337,7 +345,7 @@
             // Update modal content
             document.getElementById('modalUserName').textContent = post.username;
             document.getElementById('modalUserAvatar').textContent = post.username.charAt(0);
-            document.getElementById('modalPostTime').textContent = post.timestamp;
+            document.getElementById('modalPostTime').textContent = formatDate(post.timestamp);
             document.getElementById('modalPostTitle').textContent = post.title;
             document.getElementById('modalPostDesc').textContent = post.description;
             
@@ -401,7 +409,7 @@
                     <div class="comment-content">
                         <div class="comment-author">${comment.username}</div>
                         <div class="comment-text">${commentText}</div>
-                        <div class="comment-time">${comment.timestamp}</div>
+                        <div class="comment-time">${formatDate(comment.timestamp)}</div>
                     </div>
                 `;
                 
@@ -634,7 +642,7 @@
                 
                 // Process mentions in comment text
                 let commentText = newComment.comment;
-                commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+                commentText = commentText.replace(/@([a-zA-Z0-9._-]+)/g, '<span class="mention">@$1</span>');
                 
                 commentElement.innerHTML = `
                     <div class="comment-avatar">${newComment.username.charAt(0)}</div>
