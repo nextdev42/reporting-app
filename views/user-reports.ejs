@@ -501,861 +501,826 @@
         <div id="debugLogs"></div>
     </div>
 
-    <script>
-        // Global variables
-        let currentUser = {};
-        let currentPost = null;
-        let allUsers = [];
-        let showOnlyMyPosts = false;
-        let currentUsername = '';
+<script>
+    // Global variables
+    let currentUser = {};
+    let currentPost = null;
+    let allUsers = [];
+    let showOnlyMyPosts = false;
+    let currentUsername = '';
+    
+    // DOM elements
+    const postsFeed = document.getElementById('postsFeed');
+    const postModal = document.getElementById('postModal');
+    const closeModal = document.getElementById('closeModal');
+    const likeBtn = document.getElementById('likeBtn');
+    const dislikeBtn = document.getElementById('dislikeBtn');
+    const likeCount = document.getElementById('likeCount');
+    const dislikeCount = document.getElementById('dislikeCount');
+    const commentInput = document.getElementById('commentInput');
+    const commentSubmit = document.getElementById('commentSubmit');
+    const commentList = document.getElementById('commentList');
+    const notificationsBtn = document.getElementById('notificationsBtn');
+    const notificationBadge = document.getElementById('notificationBadge');
+    const notificationsModal = document.getElementById('notificationsModal');
+    const closeNotificationsModal = document.getElementById('closeNotificationsModal');
+    const notificationsList = document.getElementById('notificationsList');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userName = document.getElementById('userName');
+    const mentionsDropdown = document.getElementById('mentionsDropdown');
+    const allPostsBtn = document.getElementById('allPostsBtn');
+    const myPostsBtn = document.getElementById('myPostsBtn');
+    const debugLogs = document.getElementById('debugLogs');
+    
+    // Debug mode - set to true to see debug information
+    const DEBUG_MODE = true;
+    
+    // Debug logging function
+    function debugLog(message, data = null) {
+        if (DEBUG_MODE) {
+            console.log(message, data || '');
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `${new Date().toLocaleTimeString()}: ${message}`;
+            debugLogs.appendChild(logEntry);
+            debugLogs.scrollTop = debugLogs.scrollHeight;
+        }
+    }
+    
+    // Date formatting function
+    function formatDate(dateString) {
+        if (!dateString) return 'Unknown date';
         
-        // DOM elements
-        const postsFeed = document.getElementById('postsFeed');
-        const postModal = document.getElementById('postModal');
-        const closeModal = document.getElementById('closeModal');
-        const likeBtn = document.getElementById('likeBtn');
-        const dislikeBtn = document.getElementById('dislikeBtn');
-        const likeCount = document.getElementById('likeCount');
-        const dislikeCount = document.getElementById('dislikeCount');
-        const commentInput = document.getElementById('commentInput');
-        const commentSubmit = document.getElementById('commentSubmit');
-        const commentList = document.getElementById('commentList');
-        const notificationsBtn = document.getElementById('notificationsBtn');
-        const notificationBadge = document.getElementById('notificationBadge');
-        const notificationsModal = document.getElementById('notificationsModal');
-        const closeNotificationsModal = document.getElementById('closeNotificationsModal');
-        const notificationsList = document.getElementById('notificationsList');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const userName = document.getElementById('userName');
-        const mentionsDropdown = document.getElementById('mentionsDropdown');
-        const allPostsBtn = document.getElementById('allPostsBtn');
-        const myPostsBtn = document.getElementById('myPostsBtn');
-        const debugLogs = document.getElementById('debugLogs');
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
         
-        // Debug mode - set to true to see debug information
-        const DEBUG_MODE = true;
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
         
-        // Debug logging function
-        function debugLog(message, data = null) {
-            if (DEBUG_MODE) {
-                console.log(message, data || '');
-                const logEntry = document.createElement('div');
-                logEntry.innerHTML = `${new Date().toLocaleTimeString()}: ${message}`;
-                debugLogs.appendChild(logEntry);
-                debugLogs.scrollTop = debugLogs.scrollHeight;
-            }
+        // If less than a minute ago
+        if (diffInSeconds < 60) {
+            return 'just now';
         }
         
-        // Date formatting function
-        function formatDate(dateString) {
-            if (!dateString) return 'Unknown date';
-            
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return dateString;
-            
-            const now = new Date();
-            const diffInSeconds = Math.floor((now - date) / 1000);
-            
-            // If less than a minute ago
-            if (diffInSeconds < 60) {
-                return 'just now';
-            }
-            
-            // If less than an hour ago
-            const diffInMinutes = Math.floor(diffInSeconds / 60);
-            if (diffInMinutes < 60) {
-                return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
-            }
-            
-            // If less than a day ago
-            const diffInHours = Math.floor(diffInMinutes / 60);
-            if (diffInHours < 24) {
-                return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
-            }
-            
-            // If less than a week ago
-            const diffInDays = Math.floor(diffInHours / 24);
-            if (diffInDays < 7) {
-                return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
-            }
-            
-            // Otherwise, return formatted date
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+        // If less than an hour ago
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        if (diffInMinutes < 60) {
+            return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
         }
         
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', function() {
-            debugLog('Initializing application');
-            checkAuth();
-            loadUserInfo();
-            loadPosts();
-            loadAllUsers();
-            setupEventListeners();
-            checkNotifications();
-            
-            // Check for notifications every 30 seconds
-            setInterval(checkNotifications, 30000);
+        // If less than a day ago
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        if (diffInHours < 24) {
+            return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
+        }
+        
+        // If less than a week ago
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays < 7) {
+            return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
+        }
+        
+        // Otherwise, return formatted date
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
         });
+    }
+    
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+        debugLog('Initializing application');
+        checkAuth();
+        loadUserInfo();
+        loadPosts();
+        loadAllUsers();
+        setupEventListeners();
+        checkNotifications();
         
-        // Check if user is authenticated
-        function checkAuth() {
-            // In a real app, you would check for a valid session/token
-            // For demo purposes, we'll assume the user is logged in
-        }
-        
-        // Load current user info
-        function loadUserInfo() {
-            debugLog('Loading user info');
-            fetch('/api/user', {
-                credentials: 'include'
+        // Check for notifications every 30 seconds
+        setInterval(checkNotifications, 30000);
+    });
+    
+    // Check if user is authenticated
+    function checkAuth() {
+        // In a real app, you would check for a valid session/token
+        // For demo purposes, we'll assume the user is logged in
+    }
+    
+    // Load current user info
+    function loadUserInfo() {
+        debugLog('Loading user info');
+        fetch('/api/user', {
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Not authenticated');
+                }
+                return response.json();
             })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Not authenticated');
-                    }
-                    return response.json();
-                })
-                .then(user => {
-                    currentUser = user;
-                    userName.textContent = user.jina;
-                    document.getElementById('modalUserAvatar').textContent = user.jina.charAt(0);
-                    
-                    // Try to get username from session or use jina as fallback
-                    currentUsername = user.username || user.jina.toLowerCase().replace(/\s+/g, '');
-                    debugLog('User info loaded', { username: currentUsername });
-                })
-                .catch(error => {
-                    console.error('Error loading user info:', error);
-                    debugLog('Error loading user info', error.message);
-                    window.location.href = '/';
-                });
-        }
-        
-        // Load all users for mentions
-        function loadAllUsers() {
-            debugLog('Loading all users for mentions');
-            fetch('/api/users', {
-                credentials: 'include'
+            .then(user => {
+                currentUser = user;
+                userName.textContent = user.jina;
+                document.getElementById('modalUserAvatar').textContent = user.jina.charAt(0);
+                
+                // Try to get username from session or use jina as fallback
+                currentUsername = user.username || user.jina.toLowerCase().replace(/\s+/g, '');
+                debugLog('User info loaded', { username: currentUsername });
             })
-                .then(response => response.json())
-                .then(users => {
-                    // Extract usernames from user objects
-                    allUsers = users;
-                    debugLog('Users loaded', { count: allUsers.length, users: allUsers });
-                    setupMentionsAutocomplete();
-                })
-                .catch(error => {
-                    console.error('Error loading users:', error);
-                    debugLog('Error loading users', error.message);
-                    // Fallback to mock data if API fails
-                    allUsers = ['johndoe', 'janedoe', 'alice', 'bob', 'charlie'];
-                    debugLog('Using fallback users', { count: allUsers.length });
-                    setupMentionsAutocomplete();
-                });
-        }
+            .catch(error => {
+                console.error('Error loading user info:', error);
+                debugLog('Error loading user info', error.message);
+                window.location.href = '/';
+            });
+    }
+    
+    // Load all users for mentions
+    function loadAllUsers() {
+        debugLog('Loading all users for mentions');
+        fetch('/api/users', {
+            credentials: 'include'
+        })
+            .then(response => response.json())
+            .then(users => {
+                // Extract usernames from user objects
+                allUsers = users;
+                debugLog('Users loaded', { count: allUsers.length, users: allUsers });
+                setupMentionsAutocomplete();
+            })
+            .catch(error => {
+                console.error('Error loading users:', error);
+                debugLog('Error loading users', error.message);
+                // Fallback to mock data if API fails
+                allUsers = ['johndoe', 'janedoe', 'alice', 'bob', 'charlie'];
+                debugLog('Using fallback users', { count: allUsers.length });
+                setupMentionsAutocomplete();
+            });
+    }
+    
+    // Setup mentions autocomplete in comment input
+    function setupMentionsAutocomplete() {
+        let isMentioning = false;
+        let mentionStartPos = 0;
         
-        // Setup mentions autocomplete in comment input
-        function setupMentionsAutocomplete() {
-            let isMentioning = false;
-            let mentionStartPos = 0;
+        commentInput.addEventListener('input', function(e) {
+            const value = e.target.value;
+            const cursorPos = e.target.selectionStart;
             
-            commentInput.addEventListener('input', function(e) {
-                const value = e.target.value;
-                const cursorPos = e.target.selectionStart;
+            // Find the last @ symbol before the cursor
+            const textBeforeCursor = value.substring(0, cursorPos);
+            const lastAtPos = textBeforeCursor.lastIndexOf('@');
+            
+            if (lastAtPos > -1) {
+                // Check if the @ is not part of a word (preceded by space or at start)
+                const precededBySpace = lastAtPos === 0 || /\s/.test(value[lastAtPos - 1]);
                 
-                // Find the last @ symbol before the cursor
-                const textBeforeCursor = value.substring(0, cursorPos);
-                const lastAtPos = textBeforeCursor.lastIndexOf('@');
-                
-                if (lastAtPos > -1) {
-                    // Check if the @ is not part of a word (preceded by space or at start)
-                    const precededBySpace = lastAtPos === 0 || /\s/.test(value[lastAtPos - 1]);
+                if (precededBySpace) {
+                    isMentioning = true;
+                    mentionStartPos = lastAtPos + 1;
+                    const currentText = value.substring(mentionStartPos, cursorPos);
                     
-                    if (precededBySpace) {
-                        isMentioning = true;
-                        mentionStartPos = lastAtPos + 1;
-                        const currentText = value.substring(mentionStartPos, cursorPos);
+                    if (currentText.length > 0) {
+                        const filteredUsers = allUsers.filter(user => 
+                            user.toLowerCase().includes(currentText.toLowerCase())
+                        );
                         
-                        if (currentText.length > 0) {
-                            const filteredUsers = allUsers.filter(user => 
-                                user.toLowerCase().includes(currentText.toLowerCase())
-                            );
-                            
-                            if (filteredUsers.length > 0) {
-                                mentionsDropdown.innerHTML = filteredUsers.map(user => 
-                                    `<div class="mention-option" data-username="${user}">@${user}</div>`
-                                ).join('');
-                                
-                                // Position the dropdown near the cursor
-                                positionMentionsDropdown(commentInput, lastAtPos);
-                                mentionsDropdown.style.display = 'block';
-                                
-                                // Add click event to options
-                                document.querySelectorAll('.mention-option').forEach(option => {
-                                    option.addEventListener('click', function() {
-                                        const username = this.getAttribute('data-username');
-                                        const beforeMention = value.substring(0, mentionStartPos - 1); // Include the @
-                                        const afterMention = value.substring(cursorPos);
-                                        commentInput.value = beforeMention + '@' + username + ' ' + afterMention;
-                                        
-                                        // Set cursor position after the mention
-                                        const newCursorPos = mentionStartPos + username.length + 1;
-                                        commentInput.setSelectionRange(newCursorPos, newCursorPos);
-                                        
-                                        mentionsDropdown.style.display = 'none';
-                                        isMentioning = false;
-                                        commentInput.focus();
-                                    });
-                                });
-                            } else {
-                                mentionsDropdown.style.display = 'none';
-                            }
-                        } else {
-                            // Show all users if just @ is typed
-                            mentionsDropdown.innerHTML = allUsers.map(user => 
+                        if (filteredUsers.length > 0) {
+                            mentionsDropdown.innerHTML = filteredUsers.map(user => 
                                 `<div class="mention-option" data-username="${user}">@${user}</div>`
                             ).join('');
                             
+                            // Position the dropdown near the cursor
                             positionMentionsDropdown(commentInput, lastAtPos);
                             mentionsDropdown.style.display = 'block';
+                            
+                            // Add click event to options
+                            document.querySelectorAll('.mention-option').forEach(option => {
+                                option.addEventListener('click', function() {
+                                    const username = this.getAttribute('data-username');
+                                    const beforeMention = value.substring(0, mentionStartPos - 1); // Include the @
+                                    const afterMention = value.substring(cursorPos);
+                                    commentInput.value = beforeMention + '@' + username + ' ' + afterMention;
+                                    
+                                    // Set cursor position after the mention
+                                    const newCursorPos = mentionStartPos + username.length + 1;
+                                    commentInput.setSelectionRange(newCursorPos, newCursorPos);
+                                    
+                                    mentionsDropdown.style.display = 'none';
+                                    isMentioning = false;
+                                    commentInput.focus();
+                                });
+                            });
+                        } else {
+                            mentionsDropdown.style.display = 'none';
                         }
                     } else {
-                        isMentioning = false;
-                        mentionsDropdown.style.display = 'none';
+                        // Show all users if just @ is typed
+                        mentionsDropdown.innerHTML = allUsers.map(user => 
+                            `<div class="mention-option" data-username="${user}">@${user}</div>`
+                        ).join('');
+                        
+                        positionMentionsDropdown(commentInput, lastAtPos);
+                        mentionsDropdown.style.display = 'block';
                     }
                 } else {
                     isMentioning = false;
                     mentionsDropdown.style.display = 'none';
                 }
-            });
-            
-            // Hide dropdown when clicking elsewhere
-            document.addEventListener('click', function(e) {
-                if (e.target !== commentInput && !e.target.closest('.mentions-dropdown')) {
+            } else {
+                isMentioning = false;
+                mentionsDropdown.style.display = 'none';
+            }
+        });
+        
+        // Hide dropdown when clicking elsewhere
+        document.addEventListener('click', function(e) {
+            if (e.target !== commentInput && !e.target.closest('.mentions-dropdown')) {
+                mentionsDropdown.style.display = 'none';
+            }
+        });
+        
+        // Handle keyboard navigation in mentions dropdown
+        commentInput.addEventListener('keydown', function(e) {
+            if (mentionsDropdown.style.display === 'block') {
+                const options = mentionsDropdown.querySelectorAll('.mention-option');
+                let activeOption = mentionsDropdown.querySelector('.mention-option.active');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (!activeOption) {
+                        options[0].classList.add('active');
+                    } else {
+                        activeOption.classList.remove('active');
+                        const next = activeOption.nextElementSibling || options[0];
+                        next.classList.add('active');
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (!activeOption) {
+                        options[options.length - 1].classList.add('active');
+                    } else {
+                        activeOption.classList.remove('active');
+                        const prev = activeOption.previousElementSibling || options[options.length - 1];
+                        prev.classList.add('active');
+                    }
+                } else if (e.key === 'Enter' && activeOption) {
+                    e.preventDefault();
+                    activeOption.click();
+                } else if (e.key === 'Escape') {
                     mentionsDropdown.style.display = 'none';
                 }
-            });
+            }
+        });
+    }
+    
+    // Position the mentions dropdown near the cursor
+    function positionMentionsDropdown(inputElement, atPos) {
+        // Create a temporary element to measure the text width
+        const tempSpan = document.createElement('span');
+        tempSpan.textContent = inputElement.value.substring(0, atPos);
+        tempSpan.style.whiteSpace = 'pre';
+        tempSpan.style.font = getComputedStyle(inputElement).font;
+        document.body.appendChild(tempSpan);
+        
+        const leftPos = tempSpan.offsetWidth;
+        document.body.removeChild(tempSpan);
+        
+        // Position the dropdown
+        mentionsDropdown.style.top = (inputElement.offsetTop + inputElement.offsetHeight) + 'px';
+        mentionsDropdown.style.left = (inputElement.offsetLeft + leftPos) + 'px';
+    }
+    
+    // Load all posts
+    function loadPosts() {
+        const url = showOnlyMyPosts ? 
+            `/api/reports?username=${currentUsername}` : 
+            '/api/reports';
             
-            // Handle keyboard navigation in mentions dropdown
-            commentInput.addEventListener('keydown', function(e) {
-                if (mentionsDropdown.style.display === 'block') {
-                    const options = mentionsDropdown.querySelectorAll('.mention-option');
-                    let activeOption = mentionsDropdown.querySelector('.mention-option.active');
-                    
-                    if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        if (!activeOption) {
-                            options[0].classList.add('active');
-                        } else {
-                            activeOption.classList.remove('active');
-                            const next = activeOption.nextElementSibling || options[0];
-                            next.classList.add('active');
-                        }
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        if (!activeOption) {
-                            options[options.length - 1].classList.add('active');
-                        } else {
-                            activeOption.classList.remove('active');
-                            const prev = activeOption.previousElementSibling || options[options.length - 1];
-                            prev.classList.add('active');
-                        }
-                    } else if (e.key === 'Enter' && activeOption) {
-                        e.preventDefault();
-                        activeOption.click();
-                    } else if (e.key === 'Escape') {
-                        mentionsDropdown.style.display = 'none';
-                    }
+        debugLog('Loading posts', { url, showOnlyMyPosts });
+            
+        fetch(url, {
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load posts');
                 }
-            });
-        }
-        
-        // Position the mentions dropdown near the cursor
-        function positionMentionsDropdown(inputElement, atPos) {
-            // Create a temporary element to measure the text width
-            const tempSpan = document.createElement('span');
-            tempSpan.textContent = inputElement.value.substring(0, atPos);
-            tempSpan.style.whiteSpace = 'pre';
-            tempSpan.style.font = getComputedStyle(inputElement).font;
-            document.body.appendChild(tempSpan);
-            
-            const leftPos = tempSpan.offsetWidth;
-            document.body.removeChild(tempSpan);
-            
-            // Position the dropdown
-            mentionsDropdown.style.top = (inputElement.offsetTop + inputElement.offsetHeight) + 'px';
-            mentionsDropdown.style.left = (inputElement.offsetLeft + leftPos) + 'px';
-        }
-        
-        // Load all posts
-        function loadPosts() {
-            const url = showOnlyMyPosts ? 
-                `/api/reports?username=${currentUsername}` : 
-                '/api/reports';
-                
-            debugLog('Loading posts', { url, showOnlyMyPosts });
-                
-            fetch(url, {
-                credentials: 'include'
+                return response.json();
             })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to load posts');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    debugLog('Posts loaded', { count: data.reports.length });
-                    renderPosts(data.reports);
-                })
-                .catch(error => {
-                    console.error('Error loading posts:', error);
-                    debugLog('Error loading posts', error.message);
-                    postsFeed.innerHTML = `
-                        <div class="no-posts-message">
-                            <h3>Error loading posts</h3>
-                            <p>Please try again later</p>
-                        </div>
-                    `;
-                });
-        }
-        
-        // Render posts in the feed
-        function renderPosts(posts) {
-            postsFeed.innerHTML = '';
-            
-            if (posts.length === 0) {
-                const message = showOnlyMyPosts ? 
-                    "You haven't created any posts yet." : 
-                    "No posts found.";
-                    
+            .then(data => {
+                debugLog('Posts loaded', { count: data.reports.length });
+                renderPosts(data.reports);
+            })
+            .catch(error => {
+                console.error('Error loading posts:', error);
+                debugLog('Error loading posts', error.message);
                 postsFeed.innerHTML = `
                     <div class="no-posts-message">
-                        <h3>${message}</h3>
+                        <h3>Error loading posts</h3>
+                        <p>Please try again later</p>
                     </div>
                 `;
-                return;
-            }
-            
-            posts.forEach(post => {
-                const postElement = document.createElement('div');
-                postElement.className = 'post-card';
-                postElement.dataset.id = post.id;
-                
-                let imageHtml = '';
-                if (post.image) {
-                    imageHtml = `<img src="${post.image}" alt="Post image" class="post-image">`;
-                }
-                
-                // Check if user has already reacted to this post
-                const userHasReacted = post.user_thumb !== null;
-                const likeClass = userHasReacted && post.user_thumb === 'up' ? 'disabled' : '';
-                const dislikeClass = userHasReacted && post.user_thumb === 'down' ? 'disabled' : '';
-                
-                // Format the timestamp
-                const formattedTime = formatDate(post.timestamp);
-                
-                postElement.innerHTML = `
-                    ${imageHtml}
-                    <div class="post-content">
-                        <h3 class="post-title">${post.title}</h3>
-                        <p class="post-desc">${post.description}</p>
-                        <div class="post-meta">
-                            <span class="post-author">@${post.username}</span>
-                            <span class="post-time">${formattedTime}</span>
-                        </div>
-                    </div>
-                    <div class="post-stats">
-                        <div class="stat ${likeClass}" data-type="up">
-                            <span>👍</span> <span>${post.thumbs_up}</span>
-                        </div>
-                        <div class="stat ${dislikeClass}" data-type="down">
-                            <span>👎</span> <span>${post.thumbs_down}</span>
-                        </div>
-                        <div class="stat">
-                            <span>💬</span> <span>${post.comments ? post.comments.length : 0}</span>
-                        </div>
-                    </div>
-                `;
-                
-                postElement.addEventListener('click', (e) => {
-                    // Don't open modal if clicking on a reaction stat
-                    if (!e.target.closest('.stat')) {
-                        openPostModal(post);
-                    }
-                });
-                
-                // Add reaction handlers
-                const likeStat = postElement.querySelector('.stat[data-type="up"]');
-                const dislikeStat = postElement.querySelector('.stat[data-type="down"]');
-                
-                if (!likeStat.classList.contains('disabled')) {
-                    likeStat.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        reactToPost(post.id, 'up');
-                    });
-                }
-                
-                if (!dislikeStat.classList.contains('disabled')) {
-                    dislikeStat.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        reactToPost(post.id, 'down');
-                    });
-                }
-                
-                postsFeed.appendChild(postElement);
             });
+    }
+    
+    // Render posts in the feed
+    function renderPosts(posts) {
+        postsFeed.innerHTML = '';
+        
+        if (posts.length === 0) {
+            const message = showOnlyMyPosts ? 
+                "You haven't created any posts yet." : 
+                "No posts found.";
+                
+            postsFeed.innerHTML = `
+                <div class="no-posts-message">
+                    <h3>${message}</h3>
+                </div>
+            `;
+            return;
         }
         
-        // Open post modal
-        function openPostModal(post) {
-            currentPost = post;
-            debugLog('Opening post modal', { postId: post.id });
+        posts.forEach(post => {
+            const postElement = document.createElement('div');
+            postElement.className = 'post-card';
+            postElement.dataset.id = post.id;
+            
+            let imageHtml = '';
+            if (post.image) {
+                imageHtml = `<img src="${post.image}" alt="Post image" class="post-image">`;
+            }
+            
+            // Check if user has already reacted to this post
+            const userHasReacted = post.user_thumb !== null;
+            const likeClass = userHasReacted && post.user_thumb === 'up' ? 'disabled' : '';
+            const dislikeClass = userHasReacted && post.user_thumb === 'down' ? 'disabled' : '';
             
             // Format the timestamp
             const formattedTime = formatDate(post.timestamp);
             
-            // Update modal content
-            document.getElementById('modalUserName').textContent = post.username;
-            document.getElementById('modalUserAvatar').textContent = post.username.charAt(0);
-            document.getElementById('modalPostTime').textContent = formattedTime;
-            document.getElementById('modalPostTitle').textContent = post.title;
-            document.getElementById('modalPostDesc').textContent = post.description;
-            
-            const postImage = document.getElementById('modalPostImage');
-            if (post.image) {
-                postImage.src = post.image;
-                postImage.style.display = 'block';
-            } else {
-                postImage.style.display = 'none';
-            }
-            
-            likeCount.textContent = post.thumbs_up;
-            dislikeCount.textContent = post.thumbs_down;
-            
-            // Update reaction buttons based on user's previous reaction
-            updateReactionButtons(post);
-            
-            // Load comments (sorted by latest first)
-            const sortedComments = [...(post.comments || [])].reverse();
-            renderComments(sortedComments);
-            
-            // Show modal
-            postModal.style.display = 'block';
-        }
-        
-        // Update reaction buttons based on user's previous reaction
-        function updateReactionButtons(post) {
-            // Reset both buttons
-            likeBtn.classList.remove('active', 'disabled');
-            dislikeBtn.classList.remove('active', 'disabled');
-            
-            // Check if user has reacted to this post
-            if (post.user_thumb) {
-                if (post.user_thumb === 'up') {
-                    likeBtn.classList.add('active', 'disabled');
-                } else if (post.user_thumb === 'down') {
-                    dislikeBtn.classList.add('active', 'disabled');
-                }
-            }
-        }
-        
-        // Render comments in the modal (latest first)
-        function renderComments(comments) {
-            commentList.innerHTML = '';
-            
-            if (comments.length === 0) {
-                commentList.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
-                return;
-            }
-            
-            comments.forEach(comment => {
-                const commentElement = document.createElement('div');
-                commentElement.className = 'comment';
-                
-                // Process mentions in comment text
-                let commentText = comment.comment;
-                commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
-                
-                // Format the timestamp
-                const formattedTime = formatDate(comment.timestamp);
-                
-                commentElement.innerHTML = `
-                    <div class="comment-avatar">${comment.username.charAt(0)}</div>
-                    <div class="comment-content">
-                        <div class="comment-author">${comment.username}</div>
-                        <div class="comment-text">${commentText}</div>
-                        <div class="comment-time">${formattedTime}</div>
+            postElement.innerHTML = `
+                ${imageHtml}
+                <div class="post-content">
+                    <h3 class="post-title">${post.title}</h3>
+                    <p class="post-desc">${post.description}</p>
+                    <div class="post-meta">
+                        <span class="post-author">@${post.username}</span>
+                        <span class="post-time">${formattedTime}</span>
                     </div>
-                `;
-                
-                commentList.appendChild(commentElement);
-            });
-        }
-        
-        // Check for new notifications
-        function checkNotifications() {
-            fetch('/api/mentions', {
-                credentials: 'include'
-            })
-                .then(response => response.json())
-                .then(notifications => {
-                    if (notifications.length > 0) {
-                        notificationBadge.textContent = notifications.length;
-                        notificationBadge.style.display = 'flex';
-                        renderNotifications(notifications);
-                    } else {
-                        notificationBadge.style.display = 'none';
-                    }
-                })
-                .catch(error => console.error('Error checking notifications:', error));
-        }
-        
-        // Render notifications
-        function renderNotifications(notifications) {
-            notificationsList.innerHTML = '';
+                </div>
+                <div class="post-stats">
+                    <div class="stat ${likeClass}" data-type="up">
+                        <span>👍</span> <span>${post.thumbs_up}</span>
+                    </div>
+                    <div class="stat ${dislikeClass}" data-type="down">
+                        <span>👎</span> <span>${post.thumbs_down}</span>
+                    </div>
+                    <div class="stat">
+                        <span>💬</span> <span>${post.comments ? post.comments.length : 0}</span>
+                    </div>
+                </div>
+            `;
             
-            notifications.forEach(notification => {
-                const notificationElement = document.createElement('div');
-                notificationElement.className = 'notification';
-                
-                // Format the timestamp
-                const formattedTime = formatDate(notification.created_at);
-                
-                notificationElement.innerHTML = `
-                    <p>${notification.comment_user} mentioned you in a comment on ${notification.report_user}'s post</p>
-                    <small>${formattedTime}</small>
-                `;
-                
-                notificationElement.addEventListener('click', () => {
-                    // Mark as read and open the post
-                    fetch(`/api/mentions/${notification.id}/read`, { 
-                        method: 'POST',
-                        credentials: 'include'
-                    })
-                        .then(() => {
-                            loadPostById(notification.report_id);
-                            notificationsModal.style.display = 'none';
-                            checkNotifications(); // Update badge
-                        })
-                        .catch(error => console.error('Error marking notification as read:', error));
+            postElement.addEventListener('click', (e) => {
+                // Don't open modal if clicking on a reaction stat
+                if (!e.target.closest('.stat')) {
+                    openPostModal(post);
+                }
+            });
+            
+            // Add reaction handlers
+            const likeStat = postElement.querySelector('.stat[data-type="up"]');
+            const dislikeStat = postElement.querySelector('.stat[data-type="down"]');
+            
+            if (!likeStat.classList.contains('disabled')) {
+                likeStat.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    reactToPost(post.id, 'up');
                 });
-                
-                notificationsList.appendChild(notificationElement);
-            });
-        }
-        
-        // Load a specific post by ID
-        function loadPostById(postId) {
-            fetch(`/api/reports/${postId}`, {
-                credentials: 'include'
-            })
-                .then(response => response.json())
-                .then(data => {
-                    openPostModal(data.report);
-                })
-                .catch(error => console.error('Error loading post:', error));
-        }
-        
-        // Setup event listeners
-        function setupEventListeners() {
-            debugLog('Setting up event listeners');
-            
-            // Close modal
-            closeModal.addEventListener('click', () => {
-                postModal.style.display = 'none';
-            });
-            
-            // Close notifications modal
-            closeNotificationsModal.addEventListener('click', () => {
-                notificationsModal.style.display = 'none';
-            });
-            
-            // Click outside modal to close
-            window.addEventListener('click', (e) => {
-                if (e.target === postModal) {
-                    postModal.style.display = 'none';
-                }
-                if (e.target === notificationsModal) {
-                    notificationsModal.style.display = 'none';
-                }
-            });
-            
-            // Like button
-            likeBtn.addEventListener('click', () => {
-                if (!likeBtn.classList.contains('disabled')) {
-                    reactToPost(currentPost.id, 'up');
-                }
-            });
-            
-            // Dislike button
-            dislikeBtn.addEventListener('click', () => {
-                if (!dislikeBtn.classList.contains('disabled')) {
-                    reactToPost(currentPost.id, 'down');
-                }
-            });
-            
-            // Comment submit - fixed to handle both click and Enter key
-            commentSubmit.addEventListener('click', submitComment);
-            commentInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    submitComment();
-                }
-            });
-            
-            // Notifications button
-            notificationsBtn.addEventListener('click', () => {
-                notificationsModal.style.display = 'block';
-            });
-            
-            // Logout button
-            logoutBtn.addEventListener('click', () => {
-                window.location.href = '/logout';
-            });
-            
-            // Filter buttons
-            allPostsBtn.addEventListener('click', () => {
-                showOnlyMyPosts = false;
-                allPostsBtn.classList.add('active');
-                myPostsBtn.classList.remove('active');
-                loadPosts();
-            });
-            
-            myPostsBtn.addEventListener('click', () => {
-                showOnlyMyPosts = true;
-                myPostsBtn.classList.add('active');
-                allPostsBtn.classList.remove('active');
-                loadPosts();
-            });
-        }
-        
-        // React to a post
-        function reactToPost(postId, type) {
-            debugLog('Reacting to post', { postId, type });
-            
-            fetch(`/api/reactions/${postId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ type }),
-                credentials: 'include'
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                return response.text().then(text => { throw new Error(text) });
-            })
-            .then(data => {
-                debugLog('Reaction successful', data);
-                
-                // Update counts in modal
-                likeCount.textContent = data.thumbs_up;
-                dislikeCount.textContent = data.thumbs_down;
-                
-                // Update buttons in modal
-                if (type === 'up') {
-                    likeBtn.classList.add('active', 'disabled');
-                    dislikeBtn.classList.remove('active', 'disabled');
-                } else {
-                    dislikeBtn.classList.add('active', 'disabled');
-                    likeBtn.classList.remove('active', 'disabled');
-                }
-                
-                // Update the post in the feed
-                updatePostInFeed(postId, data.thumbs_up, data.thumbs_down, type);
-            })
-            .catch(error => {
-                console.error('Error reacting to post:', error);
-                debugLog('Error reacting to post', error.message);
-                alert('Unable to react to post. ' + error.message);
-            });
-        }
-        
-        // Update post in the feed
-        function updatePostInFeed(postId, thumbsUp, thumbsDown, reactionType) {
-            const postElement = document.querySelector(`.post-card[data-id="${postId}"]`);
-            if (postElement) {
-                const likeStat = postElement.querySelector('.stat[data-type="up"]');
-                const dislikeStat = postElement.querySelector('.stat[data-type="down"]');
-                
-                if (likeStat) {
-                    likeStat.querySelector('span:last-child').textContent = thumbsUp;
-                    if (reactionType === 'up') {
-                        likeStat.classList.add('disabled');
-                        dislikeStat.classList.remove('disabled');
-                    }
-                }
-                
-                if (dislikeStat) {
-                    dislikeStat.querySelector('span:last-child').textContent = thumbsDown;
-                    if (reactionType === 'down') {
-                        dislikeStat.classList.add('disabled');
-                        likeStat.classList.remove('disabled');
-                    }
-                }
             }
-        }
-        
-        // Submit a comment - FIXED VERSION
-     // Submit a comment - FIXED VERSION
-// Submit a comment - FIXED VERSION
-function submitComment() {
-    if (!currentPost) {
-        debugLog('No current post selected');
-        alert('Please select a post first');
-        return;
-    }
-    
-    const comment = commentInput.value.trim();
-    
-    if (!comment) {
-        debugLog('Comment is empty');
-        alert('Please write a comment first');
-        return;
-    }
-    
-    debugLog('Submitting comment', { postId: currentPost.id, comment });
-    
-    fetch(`/api/comments/${currentPost.id}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ comment }),
-        credentials: 'include'
-    })
-    .then(response => {
-        debugLog('Comment API response status', response.status);
-        
-        if (response.ok) {
-            return response.json();
-        }
-        
-        // Try to get error message from response
-        return response.text().then(text => {
-            debugLog('Comment API error response', text);
-            throw new Error(text || 'Failed to submit comment');
+            
+            if (!dislikeStat.classList.contains('disabled')) {
+                dislikeStat.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    reactToPost(post.id, 'down');
+                });
+            }
+            
+            postsFeed.appendChild(postElement);
         });
-    })
-    .then(newComment => {
-        debugLog('Comment submitted successfully', newComment);
-        
-        // Add the new comment to the list (at the top)
-        const commentElement = document.createElement('div');
-        commentElement.className = 'comment';
-        
-        // Process mentions in comment text
-        let commentText = newComment.comment;
-        commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+    }
+    
+    // Open post modal
+    function openPostModal(post) {
+        currentPost = post;
+        debugLog('Opening post modal', { postId: post.id });
         
         // Format the timestamp
-        const formattedTime = formatDate(newComment.timestamp);
+        const formattedTime = formatDate(post.timestamp);
         
-        commentElement.innerHTML = `
-            <div class="comment-avatar">${newComment.username.charAt(0)}</div>
-            <div class="comment-content">
-                <div class="comment-author">${newComment.username}</div>
-                <div class="comment-text">${commentText}</div>
-                <div class="comment-time">${formattedTime}</div>
-            </div>
-        `;
+        // Update modal content
+        document.getElementById('modalUserName').textContent = post.username;
+        document.getElementById('modalUserAvatar').textContent = post.username.charAt(0);
+        document.getElementById('modalPostTime').textContent = formattedTime;
+        document.getElementById('modalPostTitle').textContent = post.title;
+        document.getElementById('modalPostDesc').textContent = post.description;
         
-        // Add to the top of the comments list
-        commentList.insertBefore(commentElement, commentList.firstChild);
-        
-        // Clear input
-        commentInput.value = '';
-        
-        // Update comment count in the feed
-        updateCommentCountInFeed(currentPost.id);
-        
-        // Check for new mentions
-        checkNotifications();
-        
-        // Show success message
-        const successMsg = document.createElement('div');
-        successMsg.className = 'comment';
-        successMsg.innerHTML = `
-            <div style="text-align: center; color: green; padding: 10px;">
-                Comment posted successfully!
-            </div>
-        `;
-        commentList.insertBefore(successMsg, commentList.firstChild);
-        
-        // Remove success message after 2 seconds
-        setTimeout(() => {
-            if (successMsg.parentNode) {
-                successMsg.parentNode.removeChild(successMsg);
-            }
-        }, 2000);
-    })
-    .catch(error => {
-        console.error('Error submitting comment:', error);
-        debugLog('Error submitting comment', error.message);
-        
-        // More specific error handling
-        if (error.message.includes('Failed to fetch')) {
-            alert('Network error. Please check your connection and try again.');
-        } else if (error.message.includes('401') || error.message.includes('403')) {
-            alert('Session expired. Please log in again.');
-            window.location.href = '/';
+        const postImage = document.getElementById('modalPostImage');
+        if (post.image) {
+            postImage.src = post.image;
+            postImage.style.display = 'block';
         } else {
-            alert('Unable to submit comment. ' + error.message);
-        }
-    });
-}
-                
-                // Clear input
-                commentInput.value = '';
-                
-                // Update comment count in the feed
-                updateCommentCountInFeed(currentPost.id);
-                
-                // Check for new mentions
-                checkNotifications();
-                
-                // Show success message
-                const successMsg = document.createElement('div');
-                successMsg.className = 'comment';
-                successMsg.innerHTML = `
-                    <div style="text-align: center; color: green; padding: 10px;">
-                        Comment posted successfully!
-                    </div>
-                `;
-                commentList.insertBefore(successMsg, commentList.firstChild);
-                
-                // Remove success message after 2 seconds
-                setTimeout(() => {
-                    if (successMsg.parentNode) {
-                        successMsg.parentNode.removeChild(successMsg);
-                    }
-                }, 2000);
-            })
-            .catch(error => {
-                console.error('Error submitting comment:', error);
-                debugLog('Error submitting comment', error.message);
-                alert('Unable to submit comment. ' + error.message);
-            });
+            postImage.style.display = 'none';
         }
         
-        // Update comment count in the feed
-        function updateCommentCountInFeed(postId) {
-            const postElement = document.querySelector(`.post-card[data-id="${postId}"]`);
-            if (postElement) {
-                const commentStat = postElement.querySelector('.stat:nth-child(3) span:last-child');
-                const currentCount = parseInt(commentStat.textContent) || 0;
-                commentStat.textContent = currentCount + 1;
+        likeCount.textContent = post.thumbs_up;
+        dislikeCount.textContent = post.thumbs_down;
+        
+        // Update reaction buttons based on user's previous reaction
+        updateReactionButtons(post);
+        
+        // Load comments (sorted by latest first)
+        const sortedComments = [...(post.comments || [])].reverse();
+        renderComments(sortedComments);
+        
+        // Show modal
+        postModal.style.display = 'block';
+    }
+    
+    // Update reaction buttons based on user's previous reaction
+    function updateReactionButtons(post) {
+        // Reset both buttons
+        likeBtn.classList.remove('active', 'disabled');
+        dislikeBtn.classList.remove('active', 'disabled');
+        
+        // Check if user has reacted to this post
+        if (post.user_thumb) {
+            if (post.user_thumb === 'up') {
+                likeBtn.classList.add('active', 'disabled');
+            } else if (post.user_thumb === 'down') {
+                dislikeBtn.classList.add('active', 'disabled');
             }
         }
-    </script>
+    }
+    
+    // Render comments in the modal (latest first)
+    function renderComments(comments) {
+        commentList.innerHTML = '';
+        
+        if (comments.length === 0) {
+            commentList.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
+            return;
+        }
+        
+        comments.forEach(comment => {
+            const commentElement = document.createElement('div');
+            commentElement.className = 'comment';
+            
+            // Process mentions in comment text
+            let commentText = comment.comment;
+            commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+            
+            // Format the timestamp
+            const formattedTime = formatDate(comment.timestamp);
+            
+            commentElement.innerHTML = `
+                <div class="comment-avatar">${comment.username.charAt(0)}</div>
+                <div class="comment-content">
+                    <div class="comment-author">${comment.username}</div>
+                    <div class="comment-text">${commentText}</div>
+                    <div class="comment-time">${formattedTime}</div>
+                </div>
+            `;
+            
+            commentList.appendChild(commentElement);
+        });
+    }
+    
+    // Check for new notifications
+    function checkNotifications() {
+        fetch('/api/mentions', {
+            credentials: 'include'
+        })
+            .then(response => response.json())
+            .then(notifications => {
+                if (notifications.length > 0) {
+                    notificationBadge.textContent = notifications.length;
+                    notificationBadge.style.display = 'flex';
+                    renderNotifications(notifications);
+                } else {
+                    notificationBadge.style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Error checking notifications:', error));
+    }
+    
+    // Render notifications
+    function renderNotifications(notifications) {
+        notificationsList.innerHTML = '';
+        
+        notifications.forEach(notification => {
+            const notificationElement = document.createElement('div');
+            notificationElement.className = 'notification';
+            
+            // Format the timestamp
+            const formattedTime = formatDate(notification.created_at);
+            
+            notificationElement.innerHTML = `
+                <p>${notification.comment_user} mentioned you in a comment on ${notification.report_user}'s post</p>
+                <small>${formattedTime}</small>
+            `;
+            
+            notificationElement.addEventListener('click', () => {
+                // Mark as read and open the post
+                fetch(`/api/mentions/${notification.id}/read`, { 
+                    method: 'POST',
+                    credentials: 'include'
+                })
+                    .then(() => {
+                        loadPostById(notification.report_id);
+                        notificationsModal.style.display = 'none';
+                        checkNotifications(); // Update badge
+                    })
+                    .catch(error => console.error('Error marking notification as read:', error));
+            });
+            
+            notificationsList.appendChild(notificationElement);
+        });
+    }
+    
+    // Load a specific post by ID
+    function loadPostById(postId) {
+        fetch(`/api/reports/${postId}`, {
+            credentials: 'include'
+        })
+            .then(response => response.json())
+            .then(data => {
+                openPostModal(data.report);
+            })
+            .catch(error => console.error('Error loading post:', error));
+    }
+    
+    // Setup event listeners
+    function setupEventListeners() {
+        debugLog('Setting up event listeners');
+        
+        // Close modal
+        closeModal.addEventListener('click', () => {
+            postModal.style.display = 'none';
+        });
+        
+        // Close notifications modal
+        closeNotificationsModal.addEventListener('click', () => {
+            notificationsModal.style.display = 'none';
+        });
+        
+        // Click outside modal to close
+        window.addEventListener('click', (e) => {
+            if (e.target === postModal) {
+                postModal.style.display = 'none';
+            }
+            if (e.target === notificationsModal) {
+                notificationsModal.style.display = 'none';
+            }
+        });
+        
+        // Like button
+        likeBtn.addEventListener('click', () => {
+            if (!likeBtn.classList.contains('disabled')) {
+                reactToPost(currentPost.id, 'up');
+            }
+        });
+        
+        // Dislike button
+        dislikeBtn.addEventListener('click', () => {
+            if (!dislikeBtn.classList.contains('disabled')) {
+                reactToPost(currentPost.id, 'down');
+            }
+        });
+        
+        // Comment submit - fixed to handle both click and Enter key
+        commentSubmit.addEventListener('click', submitComment);
+        commentInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitComment();
+            }
+        });
+        
+        // Notifications button
+        notificationsBtn.addEventListener('click', () => {
+            notificationsModal.style.display = 'block';
+        });
+        
+        // Logout button
+        logoutBtn.addEventListener('click', () => {
+            window.location.href = '/logout';
+        });
+        
+        // Filter buttons
+        allPostsBtn.addEventListener('click', () => {
+            showOnlyMyPosts = false;
+            allPostsBtn.classList.add('active');
+            myPostsBtn.classList.remove('active');
+            loadPosts();
+        });
+        
+        myPostsBtn.addEventListener('click', () => {
+            showOnlyMyPosts = true;
+            myPostsBtn.classList.add('active');
+            allPostsBtn.classList.remove('active');
+            loadPosts();
+        });
+    }
+    
+    // React to a post
+    function reactToPost(postId, type) {
+        debugLog('Reacting to post', { postId, type });
+        
+        fetch(`/api/reactions/${postId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ type }),
+            credentials: 'include'
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            return response.text().then(text => { throw new Error(text) });
+        })
+        .then(data => {
+            debugLog('Reaction successful', data);
+            
+            // Update counts in modal
+            likeCount.textContent = data.thumbs_up;
+            dislikeCount.textContent = data.thumbs_down;
+            
+            // Update buttons in modal
+            if (type === 'up') {
+                likeBtn.classList.add('active', 'disabled');
+                dislikeBtn.classList.remove('active', 'disabled');
+            } else {
+                dislikeBtn.classList.add('active', 'disabled');
+                likeBtn.classList.remove('active', 'disabled');
+            }
+            
+            // Update the post in the feed
+            updatePostInFeed(postId, data.thumbs_up, data.thumbs_down, type);
+        })
+        .catch(error => {
+            console.error('Error reacting to post:', error);
+            debugLog('Error reacting to post', error.message);
+            alert('Unable to react to post. ' + error.message);
+        });
+    }
+    
+    // Update post in the feed
+    function updatePostInFeed(postId, thumbsUp, thumbsDown, reactionType) {
+        const postElement = document.querySelector(`.post-card[data-id="${postId}"]`);
+        if (postElement) {
+            const likeStat = postElement.querySelector('.stat[data-type="up"]');
+            const dislikeStat = postElement.querySelector('.stat[data-type="down"]');
+            
+            if (likeStat) {
+                likeStat.querySelector('span:last-child').textContent = thumbsUp;
+                if (reactionType === 'up') {
+                    likeStat.classList.add('disabled');
+                    dislikeStat.classList.remove('disabled');
+                }
+            }
+            
+            if (dislikeStat) {
+                dislikeStat.querySelector('span:last-child').textContent = thumbsDown;
+                if (reactionType === 'down') {
+                    dislikeStat.classList.add('disabled');
+                    likeStat.classList.remove('disabled');
+                }
+            }
+        }
+    }
+    
+    // Submit a comment - FIXED VERSION
+    function submitComment() {
+        if (!currentPost) {
+            debugLog('No current post selected');
+            alert('Please select a post first');
+            return;
+        }
+        
+        const comment = commentInput.value.trim();
+        
+        if (!comment) {
+            debugLog('Comment is empty');
+            alert('Please write a comment first');
+            return;
+        }
+        
+        debugLog('Submitting comment', { postId: currentPost.id, comment });
+        
+        fetch(`/api/comments/${currentPost.id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ comment }),
+            credentials: 'include'
+        })
+        .then(response => {
+            debugLog('Comment API response status', response.status);
+            
+            if (response.ok) {
+                return response.json();
+            }
+            
+            // Try to get error message from response
+            return response.text().then(text => {
+                debugLog('Comment API error response', text);
+                throw new Error(text || 'Failed to submit comment');
+            });
+        })
+        .then(newComment => {
+            debugLog('Comment submitted successfully', newComment);
+            
+            // Add the new comment to the list (at the top)
+            const commentElement = document.createElement('div');
+            commentElement.className = 'comment';
+            
+            // Process mentions in comment text
+            let commentText = newComment.comment;
+            commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+            
+            // Format the timestamp
+            const formattedTime = formatDate(newComment.timestamp);
+            
+            commentElement.innerHTML = `
+                <div class="comment-avatar">${newComment.username.charAt(0)}</div>
+                <div class="comment-content">
+                    <div class="comment-author">${newComment.username}</div>
+                    <div class="comment-text">${commentText}</div>
+                    <div class="comment-time">${formattedTime}</div>
+                </div>
+            `;
+            
+            // Add to the top of the comments list
+            commentList.insertBefore(commentElement, commentList.firstChild);
+            
+            // Clear input
+            commentInput.value = '';
+            
+            // Update comment count in the feed
+            updateCommentCountInFeed(currentPost.id);
+            
+            // Check for new mentions
+            checkNotifications();
+            
+            // Show success message
+            const successMsg = document.createElement('div');
+            successMsg.className = 'comment';
+            successMsg.innerHTML = `
+                <div style="text-align: center; color: green; padding: 10px;">
+                    Comment posted successfully!
+                </div>
+            `;
+            commentList.insertBefore(successMsg, commentList.firstChild);
+            
+            // Remove success message after 2 seconds
+            setTimeout(() => {
+                if (successMsg.parentNode) {
+                    successMsg.parentNode.removeChild(successMsg);
+                }
+            }, 2000);
+        })
+        .catch(error => {
+            console.error('Error submitting comment:', error);
+            debugLog('Error submitting comment', error.message);
+            
+            // More specific error handling
+            if (error.message.includes('Failed to fetch')) {
+                alert('Network error. Please check your connection and try again.');
+            } else if (error.message.includes('401') || error.message.includes('403')) {
+                alert('Session expired. Please log in again.');
+                window.location.href = '/';
+            } else {
+                alert('Unable to submit comment. ' + error.message);
+            }
+        });
+    }
+    
+    // Update comment count in the feed
+    function updateCommentCountInFeed(postId) {
+        const postElement = document.querySelector(`.post-card[data-id="${postId}"]`);
+        if (postElement) {
+            const commentStat = postElement.querySelector('.stat:nth-child(3) span:last-child');
+            const currentCount = parseInt(commentStat.textContent) || 0;
+            commentStat.textContent = currentCount + 1;
+        }
+    }
+</script>
 </body>
 </html>
