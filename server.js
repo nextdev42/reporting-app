@@ -598,15 +598,11 @@ app.get("/reports/:id", auth, async (req, res) => {
 // ====== Add comment ======
 // ====== Add comment ======
 // ====== Add comment ======
-app.post("/api/comments/:reportId", auth, async (req,res)=>{
+app.post("/api/comments/:reportId", auth, async (req, res) => {
   console.log("=== COMMENT ENDPOINT HIT ===");
-  console.log("Report ID:", req.params.reportId);
-  console.log("User ID:", req.session.userId);
-  console.log("Comment:", req.body.comment);
-  
+  const { reportId } = req.params;
   const { comment } = req.body;
-  const reportId = req.params.reportId;
-  
+
   if (!comment) {
     console.log("No comment provided");
     return res.status(400).json({ error: "Andika maoni." });
@@ -615,36 +611,32 @@ app.post("/api/comments/:reportId", auth, async (req,res)=>{
   try {
     // Insert comment
     const result = await pool.query(
-      "INSERT INTO comments(report_id,user_id,timestamp,comment) VALUES($1,$2,$3,$4) RETURNING *",
+      "INSERT INTO comments(report_id, user_id, timestamp, comment) VALUES($1,$2,$3,$4) RETURNING *",
       [reportId, req.session.userId, getTanzaniaTimestamp(), comment]
     );
 
     const newComment = result.rows[0];
-    console.log("New comment inserted:", newComment);
 
-    // Get username for the response
+    // Get username
     const userResult = await pool.query(
-      "SELECT username FROM users WHERE id = $1",
+      "SELECT username FROM users WHERE id=$1",
       [req.session.userId]
     );
-    
-    const username = userResult.rows[0]?.username || 'Unknown';
-    console.log("Username:", username);
+    const username = userResult.rows[0]?.username || "Unknown";
 
-    // Format the response to match frontend expectations
+    // Format timestamp for frontend
+    const formattedTimestamp = formatTanzaniaTime(newComment.timestamp);
+
+    // Prepare response
     const response = {
       id: newComment.id,
       comment: newComment.comment,
-      username: username,
-      timestamp: newComment.timestamp
+      username,
+      timestamp: formattedTimestamp  // ✅ send formatted timestamp
     };
-
-    console.log("Sending response:", response);
 
     // Handle mentions
     const mentionMatches = comment.match(/@(\w+)/g) || [];
-    console.log("Mentions found:", mentionMatches);
-    
     for (let mention of mentionMatches) {
       const mentionedUsername = mention.slice(1).toLowerCase();
       const { rows } = await pool.query(
@@ -660,6 +652,7 @@ app.post("/api/comments/:reportId", auth, async (req,res)=>{
       }
     }
 
+    console.log("Sending response:", response);
     res.json(response);
 
   } catch (err) {
