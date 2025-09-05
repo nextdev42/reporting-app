@@ -1207,111 +1207,111 @@
     
     // Submit a comment - FIXED VERSION
     function submitComment() {
-        if (!currentPost) {
-            debugLog('No current post selected');
-            alert('Please select a post first');
-            return;
-        }
-        
-        const comment = commentInput.value.trim();
-        
-        if (!comment) {
-            debugLog('Comment is empty');
-            alert('Please write a comment first');
-            return;
-        }
-        
-        debugLog('Submitting comment', { postId: currentPost.id, comment });
-        
-        fetch(`/api/comments/${currentPost.id}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ comment }),
-            credentials: 'include'
-        })
-        .then(response => {
-            debugLog('Comment API response status', response.status);
-            
-            if (response.ok) {
-                return response.json();
-            }
-            
-            // Try to get error message from response
-            return response.text().then(text => {
-                debugLog('Comment API error response', text);
-                throw new Error(text || 'Failed to submit comment');
-            });
-        })
-        .then(newComment => {
-            debugLog('Comment submitted successfully', newComment);
-            
-            // Add the new comment to the list (at the top)
-            const commentElement = document.createElement('div');
-            commentElement.className = 'comment';
-            
-            // Process mentions in comment text
-            let commentText = newComment.comment;
-            commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
-            
-            // Format the timestamp
-            const formattedTime = formatDate(newComment.timestamp);
-            
-            commentElement.innerHTML = `
-                <div class="comment-avatar">${newComment.username.charAt(0)}</div>
-                <div class="comment-content">
-                    <div class="comment-author">${newComment.username}</div>
-                    <div class="comment-text">${commentText}</div>
-                    <div class="comment-time">${formattedTime}</div>
-                </div>
-            `;
-            
-            // Add to the top of the comments list
-            commentList.insertBefore(commentElement, commentList.firstChild);
-            
-            // Clear input
-            commentInput.value = '';
-            
-            // Update comment count in the feed
-            updateCommentCountInFeed(currentPost.id);
-            
-            // Check for new mentions
-            checkNotifications();
-            
-            // Show success message
-            const successMsg = document.createElement('div');
-            successMsg.className = 'comment';
-            successMsg.innerHTML = `
-                <div style="text-align: center; color: green; padding: 10px;">
-                    Comment posted successfully!
-                </div>
-            `;
-            commentList.insertBefore(successMsg, commentList.firstChild);
-            
-            // Remove success message after 2 seconds
-            setTimeout(() => {
-                if (successMsg.parentNode) {
-                    successMsg.parentNode.removeChild(successMsg);
-                }
-            }, 2000);
-        })
-        .catch(error => {
-            console.error('Error submitting comment:', error);
-            debugLog('Error submitting comment', error.message);
-            
-            // More specific error handling
-            if (error.message.includes('Failed to fetch')) {
-                alert('Network error. Please check your connection and try again.');
-            } else if (error.message.includes('401') || error.message.includes('403')) {
-                alert('Session expired. Please log in again.');
-                window.location.href = '/';
-            } else {
-                alert('Unable to submit comment. ' + error.message);
-            }
-        });
+    if (!currentPost) {
+        debugLog("No current post selected");
+        alert("Please select a post first");
+        return;
     }
-    
+
+    const comment = commentInput.value.trim();
+    if (!comment) {
+        debugLog("Comment is empty");
+        alert("Please write a comment first");
+        return;
+    }
+
+    // Use reportId if available, otherwise fall back to id
+    const reportId = currentPost.reportId || currentPost.id;
+    const url = `/api/comments/${reportId}`;
+
+    debugLog("Submitting comment", { url, comment });
+
+    fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ comment }),
+        credentials: "include"
+    })
+    .then(response => {
+        debugLog("Comment API response status", response.status);
+
+        if (response.ok) {
+            return response.json();
+        }
+
+        return response.text().then(text => {
+            debugLog("Comment API error response", text);
+            throw new Error(text || "Failed to submit comment");
+        });
+    })
+    .then(newComment => {
+        debugLog("Comment submitted successfully", newComment);
+
+        // Create new comment element
+        const commentElement = document.createElement("div");
+        commentElement.className = "comment";
+
+        // Highlight mentions
+        let commentText = newComment.comment;
+        commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+
+        // Format timestamp
+        const formattedTime = formatDate(newComment.timestamp);
+
+        commentElement.innerHTML = `
+            <div class="comment-avatar">${newComment.username.charAt(0)}</div>
+            <div class="comment-content">
+                <div class="comment-author">${newComment.username}</div>
+                <div class="comment-text">${commentText}</div>
+                <div class="comment-time">${formattedTime}</div>
+            </div>
+        `;
+
+        // Add to the top of the comments list
+        commentList.insertBefore(commentElement, commentList.firstChild);
+
+        // Clear input
+        commentInput.value = "";
+
+        // Update comment count in feed
+        updateCommentCountInFeed(reportId);
+
+        // Check mentions
+        checkNotifications();
+
+        // Temporary success message
+        const successMsg = document.createElement("div");
+        successMsg.className = "comment";
+        successMsg.innerHTML = `
+            <div style="text-align: center; color: green; padding: 10px;">
+                Comment posted successfully!
+            </div>
+        `;
+        commentList.insertBefore(successMsg, commentList.firstChild);
+
+        setTimeout(() => {
+            if (successMsg.parentNode) {
+                successMsg.parentNode.removeChild(successMsg);
+            }
+        }, 2000);
+    })
+    .catch(error => {
+        console.error("Error submitting comment:", error);
+        debugLog("Error submitting comment", error.message);
+
+        if (error.message.includes("Failed to fetch")) {
+            alert("Network error. Please check your connection and try again.");
+        } else if (error.message.includes("401") || error.message.includes("403")) {
+            alert("Session expired. Please log in again.");
+            window.location.href = "/";
+        } else {
+            alert("Unable to submit comment. " + error.message);
+        }
+    });
+}
+
     // Update comment count in the feed
     function updateCommentCountInFeed(postId) {
         const postElement = document.querySelector(`.post-card[data-id="${postId}"]`);
