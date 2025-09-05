@@ -47,6 +47,21 @@
             color: #777;
             font-size: 0.9em;
         }
+        
+        /* Debug information styling */
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 10000;
+            max-width: 300px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -122,6 +137,9 @@
         </div>
     </div>
 
+    <!-- Debug information panel -->
+    <div class="debug-info" id="debugInfo"></div>
+
     <script>
         // Global variables
         let currentUser = {};
@@ -151,6 +169,19 @@
         const mentionsDropdown = document.getElementById('mentionsDropdown');
         const allPostsBtn = document.getElementById('allPostsBtn');
         const myPostsBtn = document.getElementById('myPostsBtn');
+        const debugInfo = document.getElementById('debugInfo');
+        
+        // Debug mode - set to true to see debug information
+        const DEBUG_MODE = true;
+        
+        // Debug logging function
+        function debugLog(message, data = null) {
+            if (DEBUG_MODE) {
+                console.log(message, data || '');
+                debugInfo.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+                debugInfo.style.display = 'block';
+            }
+        }
         
         // Date formatting function
         function formatDate(dateString) {
@@ -197,6 +228,7 @@
         
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
+            debugLog('Initializing application');
             checkAuth();
             loadUserInfo();
             loadPosts();
@@ -216,6 +248,7 @@
         
         // Load current user info
         function loadUserInfo() {
+            debugLog('Loading user info');
             fetch('/api/user', {
                 credentials: 'include'
             })
@@ -232,15 +265,18 @@
                     
                     // Try to get username from session or use jina as fallback
                     currentUsername = user.username || user.jina.toLowerCase().replace(/\s+/g, '');
+                    debugLog('User info loaded', { username: currentUsername });
                 })
                 .catch(error => {
                     console.error('Error loading user info:', error);
+                    debugLog('Error loading user info', error.message);
                     window.location.href = '/';
                 });
         }
         
         // Load all users for mentions
         function loadAllUsers() {
+            debugLog('Loading all users for mentions');
             fetch('/api/users', {
                 credentials: 'include'
             })
@@ -248,9 +284,13 @@
                 .then(users => {
                     // Extract usernames from user objects
                     allUsers = users.map(user => user.username || user.jina.toLowerCase().replace(/\s+/g, ''));
+                    debugLog('Users loaded', { count: allUsers.length });
                     setupMentionsAutocomplete();
                 })
-                .catch(error => console.error('Error loading users:', error));
+                .catch(error => {
+                    console.error('Error loading users:', error);
+                    debugLog('Error loading users', error.message);
+                });
         }
         
         // Setup mentions autocomplete in comment input
@@ -392,6 +432,8 @@
                 `/api/reports?username=${currentUsername}` : 
                 '/api/reports';
                 
+            debugLog('Loading posts', { url, showOnlyMyPosts });
+                
             fetch(url, {
                 credentials: 'include'
             })
@@ -402,10 +444,12 @@
                     return response.json();
                 })
                 .then(data => {
+                    debugLog('Posts loaded', { count: data.reports.length });
                     renderPosts(data.reports);
                 })
                 .catch(error => {
                     console.error('Error loading posts:', error);
+                    debugLog('Error loading posts', error.message);
                     postsFeed.innerHTML = `
                         <div class="no-posts-message">
                             <h3>Error loading posts</h3>
@@ -505,6 +549,7 @@
         // Open post modal
         function openPostModal(post) {
             currentPost = post;
+            debugLog('Opening post modal', { postId: post.id });
             
             // Format the timestamp
             const formattedTime = formatDate(post.timestamp);
@@ -653,6 +698,8 @@
         
         // Setup event listeners
         function setupEventListeners() {
+            debugLog('Setting up event listeners');
+            
             // Close modal
             closeModal.addEventListener('click', () => {
                 postModal.style.display = 'none';
@@ -687,8 +734,14 @@
                 }
             });
             
-            // Comment submit
+            // Comment submit - fixed to handle both click and Enter key
             commentSubmit.addEventListener('click', submitComment);
+            commentInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitComment();
+                }
+            });
             
             // Notifications button
             notificationsBtn.addEventListener('click', () => {
@@ -718,6 +771,8 @@
         
         // React to a post
         function reactToPost(postId, type) {
+            debugLog('Reacting to post', { postId, type });
+            
             fetch(`/api/reactions/${postId}`, {
                 method: 'POST',
                 headers: {
@@ -733,6 +788,8 @@
                 return response.text().then(text => { throw new Error(text) });
             })
             .then(data => {
+                debugLog('Reaction successful', data);
+                
                 // Update counts in modal
                 likeCount.textContent = data.thumbs_up;
                 dislikeCount.textContent = data.thumbs_down;
@@ -751,6 +808,7 @@
             })
             .catch(error => {
                 console.error('Error reacting to post:', error);
+                debugLog('Error reacting to post', error.message);
                 alert('Unable to react to post. ' + error.message);
             });
         }
@@ -780,11 +838,23 @@
             }
         }
         
-        // Submit a comment
+        // Submit a comment - FIXED VERSION
         function submitComment() {
-            if (!currentPost || !commentInput.value.trim()) return;
+            if (!currentPost) {
+                debugLog('No current post selected');
+                alert('Please select a post first');
+                return;
+            }
             
             const comment = commentInput.value.trim();
+            
+            if (!comment) {
+                debugLog('Comment is empty');
+                alert('Please write a comment first');
+                return;
+            }
+            
+            debugLog('Submitting comment', { postId: currentPost.id, comment });
             
             fetch(`/api/comments/${currentPost.id}`, {
                 method: 'POST',
@@ -795,12 +865,21 @@
                 credentials: 'include'
             })
             .then(response => {
+                debugLog('Comment API response status', response.status);
+                
                 if (response.ok) {
                     return response.json();
                 }
-                return response.text().then(text => { throw new Error(text) });
+                
+                // Try to get error message from response
+                return response.text().then(text => {
+                    debugLog('Comment API error response', text);
+                    throw new Error(text || 'Failed to submit comment');
+                });
             })
             .then(newComment => {
+                debugLog('Comment submitted successfully', newComment);
+                
                 // Add the new comment to the list (at the top)
                 const commentElement = document.createElement('div');
                 commentElement.className = 'comment';
@@ -829,9 +908,13 @@
                 
                 // Update comment count in the feed
                 updateCommentCountInFeed(currentPost.id);
+                
+                // Check for new mentions
+                checkNotifications();
             })
             .catch(error => {
                 console.error('Error submitting comment:', error);
+                debugLog('Error submitting comment', error.message);
                 alert('Unable to submit comment. ' + error.message);
             });
         }
