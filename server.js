@@ -597,44 +597,58 @@ app.get("/reports/:id", auth, async (req, res) => {
 
 // ====== Add comment ======
 // ====== Add comment ======
-app.post("/api/comments/:id", auth, async (req,res)=>{
+// ====== Add comment ======
+app.post("/api/comments/:reportId", auth, async (req,res)=>{
   const { comment } = req.body;
+  const reportId = req.params.reportId;
+  
   if (!comment) return res.status(400).json({ error: "Andika maoni." });
 
   try {
     // Insert comment
     const result = await pool.query(
       "INSERT INTO comments(report_id,user_id,timestamp,comment) VALUES($1,$2,$3,$4) RETURNING *",
-      [req.params.id, req.session.userId, getTanzaniaTimestamp(), comment]
+      [reportId, req.session.userId, getTanzaniaTimestamp(), comment]
     );
 
     const newComment = result.rows[0];
 
-    // Add username, clinic, formatted timestamp
-    newComment.username = req.session.username;
-    newComment.clinic = req.session.kituo;
-    newComment.timestamp = formatTanzaniaTime(newComment.timestamp);
+    // Get username for the response
+    const userResult = await pool.query(
+      "SELECT username FROM users WHERE id = $1",
+      [req.session.userId]
+    );
+    
+    const username = userResult.rows[0]?.username || 'Unknown';
 
-    // 🔹 Handle mentions here
+    // Format the response to match frontend expectations
+    const response = {
+      id: newComment.id,
+      comment: newComment.comment,
+      username: username,
+      timestamp: newComment.timestamp
+    };
+
+    // Handle mentions
     const mentionMatches = comment.match(/@(\w+)/g) || [];
     for (let mention of mentionMatches) {
-      const username = mention.slice(1).toLowerCase();
+      const mentionedUsername = mention.slice(1).toLowerCase();
       const { rows } = await pool.query(
         "SELECT id FROM users WHERE LOWER(username)=$1",
-        [username]
+        [mentionedUsername]
       );
       if (rows.length) {
         await pool.query(
           "INSERT INTO mentions(report_id, comment_id, mentioned_user_id) VALUES($1,$2,$3)",
-          [req.params.id, newComment.id, rows[0].id]
+          [reportId, newComment.id, rows[0].id]
         );
       }
     }
 
-    res.json(newComment); // send to frontend
+    res.json(response); // Send properly formatted response
 
   } catch (err) {
-    console.error(err);
+    console.error("Error adding comment:", err);
     res.status(500).json({ error: "Tatizo ku-hifadhi comment" });
   }
 });
