@@ -1207,6 +1207,7 @@
         
         // Submit a comment - FIXED VERSION
      // Submit a comment - FIXED VERSION
+// Submit a comment - FIXED VERSION
 function submitComment() {
     if (!currentPost) {
         debugLog('No current post selected');
@@ -1236,7 +1237,8 @@ function submitComment() {
         console.log("Raw response:", text);
     })
     .catch(err => console.error("Fetch error:", err));
-} // ✅ properly closes the function
+} // ✅ function is properly closed
+
 
                 
                 // Try to get error message from response
