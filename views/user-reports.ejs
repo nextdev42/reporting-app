@@ -5,7 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/css/user-reports.css">
     <title>Social Feed</title>
-
+    <style>
+        /* Additional styles for mentions dropdown and date formatting */
+        .mentions-dropdown {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            width: 200px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .mention-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .mention-option:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .mention-option:last-child {
+            border-bottom: none;
+        }
+        
+        .comment-form {
+            position: relative;
+        }
+        
+        .mention {
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .post-time, .comment-time {
+            color: #777;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -86,7 +128,7 @@
         let currentPost = null;
         let allUsers = [];
         let showOnlyMyPosts = false;
-        let currentUsername = ''; // Store the username from session
+        let currentUsername = '';
         
         // DOM elements
         const postsFeed = document.getElementById('postsFeed');
@@ -110,6 +152,49 @@
         const allPostsBtn = document.getElementById('allPostsBtn');
         const myPostsBtn = document.getElementById('myPostsBtn');
         
+        // Date formatting function
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown date';
+            
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            // If less than a minute ago
+            if (diffInSeconds < 60) {
+                return 'just now';
+            }
+            
+            // If less than an hour ago
+            const diffInMinutes = Math.floor(diffInSeconds / 60);
+            if (diffInMinutes < 60) {
+                return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
+            }
+            
+            // If less than a day ago
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) {
+                return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
+            }
+            
+            // If less than a week ago
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 7) {
+                return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
+            }
+            
+            // Otherwise, return formatted date
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             checkAuth();
@@ -122,15 +207,7 @@
             // Check for notifications every 30 seconds
             setInterval(checkNotifications, 30000);
         });
-        function formatDate(timestamp) {
-        return new Date(timestamp).toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
+        
         // Check if user is authenticated
         function checkAuth() {
             // In a real app, you would check for a valid session/token
@@ -169,7 +246,8 @@
             })
                 .then(response => response.json())
                 .then(users => {
-                    allUsers = users;
+                    // Extract usernames from user objects
+                    allUsers = users.map(user => user.username || user.jina.toLowerCase().replace(/\s+/g, ''));
                     setupMentionsAutocomplete();
                 })
                 .catch(error => console.error('Error loading users:', error));
@@ -177,41 +255,75 @@
         
         // Setup mentions autocomplete in comment input
         function setupMentionsAutocomplete() {
+            let isMentioning = false;
+            let mentionStartPos = 0;
+            
             commentInput.addEventListener('input', function(e) {
                 const value = e.target.value;
-                const lastAtPos = value.lastIndexOf('@');
+                const cursorPos = e.target.selectionStart;
+                
+                // Find the last @ symbol before the cursor
+                const textBeforeCursor = value.substring(0, cursorPos);
+                const lastAtPos = textBeforeCursor.lastIndexOf('@');
                 
                 if (lastAtPos > -1) {
-                    const currentText = value.substring(lastAtPos + 1);
+                    // Check if the @ is not part of a word (preceded by space or at start)
+                    const precededBySpace = lastAtPos === 0 || /\s/.test(value[lastAtPos - 1]);
                     
-                    if (currentText.length > 0) {
-                        const filteredUsers = allUsers.filter(u => 
-                      u.username.toLowerCase().includes(currentText.toLowerCase())
-                      );
-
-                   mentionsDropdown.innerHTML = filteredUsers.map(u => 
-                   `<div class="mention-option" data-username="${u.username}">@${u.username}</div>`
-                    ).join('');
+                    if (precededBySpace) {
+                        isMentioning = true;
+                        mentionStartPos = lastAtPos + 1;
+                        const currentText = value.substring(mentionStartPos, cursorPos);
+                        
+                        if (currentText.length > 0) {
+                            const filteredUsers = allUsers.filter(user => 
+                                user.toLowerCase().includes(currentText.toLowerCase())
+                            );
                             
-                            mentionsDropdown.style.display = 'block';
-                            
-                            // Add click event to options
-                            document.querySelectorAll('.mention-option').forEach(option => {
-                                option.addEventListener('click', function() {
-                                    const username = this.getAttribute('data-username');
-                                    const newValue = value.substring(0, lastAtPos + 1) + username + ' ';
-                                    commentInput.value = newValue;
-                                    mentionsDropdown.style.display = 'none';
-                                    commentInput.focus();
+                            if (filteredUsers.length > 0) {
+                                mentionsDropdown.innerHTML = filteredUsers.map(user => 
+                                    `<div class="mention-option" data-username="${user}">@${user}</div>`
+                                ).join('');
+                                
+                                // Position the dropdown near the cursor
+                                positionMentionsDropdown(commentInput, lastAtPos);
+                                mentionsDropdown.style.display = 'block';
+                                
+                                // Add click event to options
+                                document.querySelectorAll('.mention-option').forEach(option => {
+                                    option.addEventListener('click', function() {
+                                        const username = this.getAttribute('data-username');
+                                        const beforeMention = value.substring(0, mentionStartPos - 1); // Include the @
+                                        const afterMention = value.substring(cursorPos);
+                                        commentInput.value = beforeMention + '@' + username + ' ' + afterMention;
+                                        
+                                        // Set cursor position after the mention
+                                        const newCursorPos = mentionStartPos + username.length + 1;
+                                        commentInput.setSelectionRange(newCursorPos, newCursorPos);
+                                        
+                                        mentionsDropdown.style.display = 'none';
+                                        isMentioning = false;
+                                        commentInput.focus();
+                                    });
                                 });
-                            });
+                            } else {
+                                mentionsDropdown.style.display = 'none';
+                            }
                         } else {
-                            mentionsDropdown.style.display = 'none';
+                            // Show all users if just @ is typed
+                            mentionsDropdown.innerHTML = allUsers.map(user => 
+                                `<div class="mention-option" data-username="${user}">@${user}</div>`
+                            ).join('');
+                            
+                            positionMentionsDropdown(commentInput, lastAtPos);
+                            mentionsDropdown.style.display = 'block';
                         }
                     } else {
+                        isMentioning = false;
                         mentionsDropdown.style.display = 'none';
                     }
                 } else {
+                    isMentioning = false;
                     mentionsDropdown.style.display = 'none';
                 }
             });
@@ -222,6 +334,56 @@
                     mentionsDropdown.style.display = 'none';
                 }
             });
+            
+            // Handle keyboard navigation in mentions dropdown
+            commentInput.addEventListener('keydown', function(e) {
+                if (mentionsDropdown.style.display === 'block') {
+                    const options = mentionsDropdown.querySelectorAll('.mention-option');
+                    let activeOption = mentionsDropdown.querySelector('.mention-option.active');
+                    
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (!activeOption) {
+                            options[0].classList.add('active');
+                        } else {
+                            activeOption.classList.remove('active');
+                            const next = activeOption.nextElementSibling || options[0];
+                            next.classList.add('active');
+                        }
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (!activeOption) {
+                            options[options.length - 1].classList.add('active');
+                        } else {
+                            activeOption.classList.remove('active');
+                            const prev = activeOption.previousElementSibling || options[options.length - 1];
+                            prev.classList.add('active');
+                        }
+                    } else if (e.key === 'Enter' && activeOption) {
+                        e.preventDefault();
+                        activeOption.click();
+                    } else if (e.key === 'Escape') {
+                        mentionsDropdown.style.display = 'none';
+                    }
+                }
+            });
+        }
+        
+        // Position the mentions dropdown near the cursor
+        function positionMentionsDropdown(inputElement, atPos) {
+            // Create a temporary element to measure the text width
+            const tempSpan = document.createElement('span');
+            tempSpan.textContent = inputElement.value.substring(0, atPos);
+            tempSpan.style.whiteSpace = 'pre';
+            tempSpan.style.font = getComputedStyle(inputElement).font;
+            document.body.appendChild(tempSpan);
+            
+            const leftPos = tempSpan.offsetWidth;
+            document.body.removeChild(tempSpan);
+            
+            // Position the dropdown
+            mentionsDropdown.style.top = (inputElement.offsetTop + inputElement.offsetHeight) + 'px';
+            mentionsDropdown.style.left = (inputElement.offsetLeft + leftPos) + 'px';
         }
         
         // Load all posts
@@ -285,6 +447,9 @@
                 const likeClass = userHasReacted && post.user_thumb === 'up' ? 'disabled' : '';
                 const dislikeClass = userHasReacted && post.user_thumb === 'down' ? 'disabled' : '';
                 
+                // Format the timestamp
+                const formattedTime = formatDate(post.timestamp);
+                
                 postElement.innerHTML = `
                     ${imageHtml}
                     <div class="post-content">
@@ -292,7 +457,7 @@
                         <p class="post-desc">${post.description}</p>
                         <div class="post-meta">
                             <span class="post-author">@${post.username}</span>
-                            <span class="post-time">${formatDate(post.timestamp)}</span>
+                            <span class="post-time">${formattedTime}</span>
                         </div>
                     </div>
                     <div class="post-stats">
@@ -341,10 +506,13 @@
         function openPostModal(post) {
             currentPost = post;
             
+            // Format the timestamp
+            const formattedTime = formatDate(post.timestamp);
+            
             // Update modal content
             document.getElementById('modalUserName').textContent = post.username;
             document.getElementById('modalUserAvatar').textContent = post.username.charAt(0);
-            document.getElementById('modalPostTime').textContent = formatDate(post.timestamp);
+            document.getElementById('modalPostTime').textContent = formattedTime;
             document.getElementById('modalPostTitle').textContent = post.title;
             document.getElementById('modalPostDesc').textContent = post.description;
             
@@ -403,12 +571,15 @@
                 let commentText = comment.comment;
                 commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
                 
+                // Format the timestamp
+                const formattedTime = formatDate(comment.timestamp);
+                
                 commentElement.innerHTML = `
                     <div class="comment-avatar">${comment.username.charAt(0)}</div>
                     <div class="comment-content">
                         <div class="comment-author">${comment.username}</div>
                         <div class="comment-text">${commentText}</div>
-                        <div class="comment-time">${formatDate(comment.timestamp)}</div>
+                        <div class="comment-time">${formattedTime}</div>
                     </div>
                 `;
                 
@@ -441,15 +612,13 @@
             notifications.forEach(notification => {
                 const notificationElement = document.createElement('div');
                 notificationElement.className = 'notification';
+                
+                // Format the timestamp
+                const formattedTime = formatDate(notification.created_at);
+                
                 notificationElement.innerHTML = `
                     <p>${notification.comment_user} mentioned you in a comment on ${notification.report_user}'s post</p>
-                    <small>${new Date(notification.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}</small>
+                    <small>${formattedTime}</small>
                 `;
                 
                 notificationElement.addEventListener('click', () => {
@@ -545,9 +714,6 @@
                 allPostsBtn.classList.remove('active');
                 loadPosts();
             });
-            
-            // Setup mentions autocomplete
-            setupMentionsAutocomplete();
         }
         
         // React to a post
@@ -641,14 +807,17 @@
                 
                 // Process mentions in comment text
                 let commentText = newComment.comment;
-                commentText = commentText.replace(/@([a-zA-Z0-9._-]+)/g, '<span class="mention">@$1</span>');
+                commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+                
+                // Format the timestamp
+                const formattedTime = formatDate(newComment.timestamp);
                 
                 commentElement.innerHTML = `
                     <div class="comment-avatar">${newComment.username.charAt(0)}</div>
                     <div class="comment-content">
                         <div class="comment-author">${newComment.username}</div>
                         <div class="comment-text">${commentText}</div>
-                        <div class="comment-time">${newComment.timestamp}</div>
+                        <div class="comment-time">${formattedTime}</div>
                     </div>
                 `;
                 
