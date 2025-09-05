@@ -599,10 +599,18 @@ app.get("/reports/:id", auth, async (req, res) => {
 // ====== Add comment ======
 // ====== Add comment ======
 app.post("/api/comments/:reportId", auth, async (req,res)=>{
+  console.log("=== COMMENT ENDPOINT HIT ===");
+  console.log("Report ID:", req.params.reportId);
+  console.log("User ID:", req.session.userId);
+  console.log("Comment:", req.body.comment);
+  
   const { comment } = req.body;
   const reportId = req.params.reportId;
   
-  if (!comment) return res.status(400).json({ error: "Andika maoni." });
+  if (!comment) {
+    console.log("No comment provided");
+    return res.status(400).json({ error: "Andika maoni." });
+  }
 
   try {
     // Insert comment
@@ -612,6 +620,7 @@ app.post("/api/comments/:reportId", auth, async (req,res)=>{
     );
 
     const newComment = result.rows[0];
+    console.log("New comment inserted:", newComment);
 
     // Get username for the response
     const userResult = await pool.query(
@@ -620,6 +629,7 @@ app.post("/api/comments/:reportId", auth, async (req,res)=>{
     );
     
     const username = userResult.rows[0]?.username || 'Unknown';
+    console.log("Username:", username);
 
     // Format the response to match frontend expectations
     const response = {
@@ -629,8 +639,12 @@ app.post("/api/comments/:reportId", auth, async (req,res)=>{
       timestamp: newComment.timestamp
     };
 
+    console.log("Sending response:", response);
+
     // Handle mentions
     const mentionMatches = comment.match(/@(\w+)/g) || [];
+    console.log("Mentions found:", mentionMatches);
+    
     for (let mention of mentionMatches) {
       const mentionedUsername = mention.slice(1).toLowerCase();
       const { rows } = await pool.query(
@@ -642,13 +656,14 @@ app.post("/api/comments/:reportId", auth, async (req,res)=>{
           "INSERT INTO mentions(report_id, comment_id, mentioned_user_id) VALUES($1,$2,$3)",
           [reportId, newComment.id, rows[0].id]
         );
+        console.log("Mention added for user:", mentionedUsername);
       }
     }
 
-    res.json(response); // Send properly formatted response
+    res.json(response);
 
   } catch (err) {
-    console.error("Error adding comment:", err);
+    console.error("Error in comment endpoint:", err);
     res.status(500).json({ error: "Tatizo ku-hifadhi comment" });
   }
 });
