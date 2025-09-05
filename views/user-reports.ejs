@@ -1206,35 +1206,37 @@
         }
         
         // Submit a comment - FIXED VERSION
-        function submitComment() {
-            if (!currentPost) {
-                debugLog('No current post selected');
-                alert('Please select a post first');
-                return;
-            }
-            
-            const comment = commentInput.value.trim();
-            
-            if (!comment) {
-                debugLog('Comment is empty');
-                alert('Please write a comment first');
-                return;
-            }
-            
-            debugLog('Submitting comment', { postId: currentPost.id, comment });
-            
-       fetch(`/api/comments/${currentPost.id}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ comment }),
-    credentials: 'include'
-})
-.then(async response => {
-    console.log("Status:", response.status);
-    const text = await response.text();
-    console.log("Raw response:", text);
-})
-.catch(err => console.error("Fetch error:", err));
+     // Submit a comment - FIXED VERSION
+function submitComment() {
+    if (!currentPost) {
+        debugLog('No current post selected');
+        alert('Please select a post first');
+        return;
+    }
+    
+    const comment = commentInput.value.trim();
+    
+    if (!comment) {
+        debugLog('Comment is empty');
+        alert('Please write a comment first');
+        return;
+    }
+    
+    debugLog('Submitting comment', { postId: currentPost.id, comment });
+    
+    fetch(`/api/comments/${currentPost.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment }),
+        credentials: 'include'
+    })
+    .then(async response => {
+        console.log("Status:", response.status);
+        const text = await response.text();
+        console.log("Raw response:", text);
+    })
+    .catch(err => console.error("Fetch error:", err));
+} // ✅ properly closes the function
 
                 
                 // Try to get error message from response
